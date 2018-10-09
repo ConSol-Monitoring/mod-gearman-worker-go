@@ -51,7 +51,6 @@ var (
 func startPrometheus() {
 	run = false
 	if config.prometheus_server == "" {
-		logger.Debug("no prometheus defined")
 		return
 	}
 	http.Handle("/metrics", promhttp.Handler())

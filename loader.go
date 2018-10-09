@@ -16,7 +16,7 @@ func getKey() []byte {
 		if config.keyfile != "" {
 			return readKeyFile(config.keyfile)
 		}
-		logger.Debug("no key set!")
+		logger.Panic("no key set but encyption enabled!")
 		return nil
 	}
 	return nil
