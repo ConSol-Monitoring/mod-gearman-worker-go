@@ -146,17 +146,25 @@ func executeCommandWithTimeout(cmdString string, timeOut int) (string, int) {
 	}
 
 	command, args := splitCommandArguments(cmdString)
-	cmd := exec.Command("/bin/sh", "-c", cmdString)
+	runWithShell := true
 
 	//if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
 	if strings.HasPrefix(command, "/") || strings.HasPrefix(command, ".") {
-		cmd = exec.Command(command, args...)
-		// logger.Info(args)
+		runWithShell = false
 	}
 	for _, v := range []string{"!", "$", "^", "&", "*", "(", ")", "~", "[", "]", "\\", "|", "{", "\"", "}", ";", "<", ">", "?", "`", "\\", "'"} {
 		if strings.Contains(cmdString, v) {
-			cmd = exec.Command("/bin/sh", "-c", cmdString)
+			runWithShell = true
+			break
 		}
+	}
+
+	var cmd *exec.Cmd
+	if runWithShell {
+		cmd = exec.Command("/bin/sh", "-c", cmdString)
+	} else {
+		cmd = exec.Command(command, args...)
+		// logger.Info(args)
 	}
 
 	//byte buffer for output
