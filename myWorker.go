@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"runtime/debug"
 	time "time"
 
 	libworker "github.com/mikespook/gearman-go/worker"
@@ -33,7 +34,8 @@ func newWorker(counterChanel chan int) *worker {
 	defer w.Close()
 
 	w.ErrorHandler = func(e error) {
-		logger.Error(e)
+		logger.Errorf(e.Error())
+		logger.Errorf("%s", debug.Stack())
 	}
 
 	//listen to this servers
