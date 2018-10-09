@@ -47,7 +47,7 @@ build: dump
 	go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)"
 
 build-linux-amd64: dump
-	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o lmd.linux.amd64
+	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o mod-gearman-worker-go.linux.amd64
 
 debugbuild: deps fmt
 	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
@@ -130,7 +130,7 @@ fmt:
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
 		echo "**** ERROR:"; \
-		echo "**** LMD requires at least golang version $(MINGOVERSIONSTR) or higher"; \
+		echo "**** Mod-Gearman-Worker-Go requires at least golang version $(MINGOVERSIONSTR) or higher"; \
 		echo "**** this is: $$(go version)"; \
 		exit 1; \
 	}
