@@ -66,6 +66,11 @@ func setDefaultValues(result *configurationStruct) {
 	result.max_worker = 20
 	result.spawn_rate = 1
 	result.max_jobs = 1000
+	hostname, _ := os.Hostname()
+	result.identifier = hostname
+	if result.identifier == "" {
+		result.identifier = "unknown"
+	}
 }
 
 /**

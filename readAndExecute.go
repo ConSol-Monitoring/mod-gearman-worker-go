@@ -67,22 +67,11 @@ func readAndExecute(received *receivedStruct, key []byte) *answer {
 	var result answer
 	//first set the start time
 	result.start_time = float64(time.Now().UnixNano()) / 1e9
-
-	// check if an identifier got specified,
-	// else get the hostname and set the source of the answer as this host
-	if config.identifier == "" {
-		hostname, err := os.Hostname()
-		if err != nil {
-			hostname = "unknown"
-		}
-		result.source = "Mod-Gearman Worker @ " + hostname
-	} else {
-		result.source = "Mod-Gearman Worker @ " + config.identifier
-	}
+	result.source = "Mod-Gearman Worker @ " + config.identifier
 
 	logger.Debug("new Job Received\n")
-
 	logger.Debug(received)
+
 	//hostname and core start time are the same in the result as in receive
 	result.host_name = received.host_name
 	result.core_start_time = received.core_time

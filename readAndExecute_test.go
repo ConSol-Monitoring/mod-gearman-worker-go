@@ -7,7 +7,7 @@ import (
 )
 
 func TestReadAndExecute(t *testing.T) {
-	config.identifier = ""
+	setDefaultValues(&config)
 	thisHostname, error := os.Hostname()
 	if error != nil {
 		thisHostname = "unknown"
