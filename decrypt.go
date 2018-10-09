@@ -60,7 +60,10 @@ func decrypt(data []byte, key []byte) *receivedStruct {
 	if !config.encryption {
 		return createReceived(data)
 	}
-	cipher, _ := aes.NewCipher([]byte(key))
+	cipher, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		logger.Panic(err)
+	}
 	decrypted := make([]byte, len(data))
 	size := 16
 

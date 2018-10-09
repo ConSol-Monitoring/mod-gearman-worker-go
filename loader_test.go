@@ -11,8 +11,16 @@ func TestGetKey(t *testing.T) {
 	//get the key from the method
 	result := getKey()
 
-	if string(result) != "MeinTestKey" {
+	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("expected: %s, got:%s", "MeinTestKey", result)
+	}
+
+	if len(result) != 32 {
+		t.Errorf("length expected: %d, got: %d", 32, len(result))
+	}
+
+	if result[31] != 0 {
+		t.Errorf("key must be rightpadded with zero bytes")
 	}
 
 	config.key = ""
@@ -29,7 +37,7 @@ func TestGetKey(t *testing.T) {
 
 	result = getKey()
 
-	if string(result) != "MeinTestKey" {
+	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("getkey from file expected: %s, got:%s", "MeinTestKey", result)
 	}
 

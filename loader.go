@@ -11,10 +11,10 @@ import (
 func getKey() []byte {
 	if config.encryption {
 		if config.key != "" {
-			return []byte(config.key)
+			return fixKeySize([]byte(config.key))
 		}
 		if config.keyfile != "" {
-			return readKeyFile(config.keyfile)
+			return fixKeySize(readKeyFile(config.keyfile))
 		}
 		logger.Panic("no key set but encyption enabled!")
 		return nil
@@ -35,6 +35,18 @@ func readKeyFile(path string) []byte {
 
 	return dat[:]
 
+}
+
+func fixKeySize(key []byte) []byte {
+	if len(key) > 32 {
+		return key[0:32]
+	}
+	for {
+		if len(key) == 32 {
+			return key
+		}
+		key = append(key, 0)
+	}
 }
 
 func openFileOrCreate(path string) (os.File, error) {
