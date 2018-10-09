@@ -59,9 +59,13 @@ func setDefaultValues(result *configurationStruct) {
 	result.logmode = "automatic"
 	result.dup_results_are_passive = true
 	result.gearman_connection_timeout = -1
-	result.timeout_return = 3
-	result.idle_timeout = 60
+	result.timeout_return = 2
+	result.idle_timeout = 10
 	result.daemon = false
+	result.min_worker = 1
+	result.max_worker = 20
+	result.spawn_rate = 1
+	result.max_jobs = 1000
 }
 
 /**
