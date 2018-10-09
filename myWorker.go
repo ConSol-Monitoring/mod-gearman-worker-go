@@ -21,6 +21,7 @@ type worker struct {
 // counterChanel will receive +1 if a job is received and started
 // and -1 if a job is completed
 func newWorker(counterChanel chan int) *worker {
+	logger.Debugf("starting new worker")
 	workerCount.Inc()
 	iddleWorkerCount.Inc()
 	worker := &worker{
@@ -92,6 +93,7 @@ func newWorker(counterChanel chan int) *worker {
 }
 
 func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
+	logger.Debugf("worker got a job: %s", job.Handle())
 
 	//stop the idle timeout timer
 	worker.timer.Stop()
@@ -105,6 +107,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	workingWorkerCount.Inc()
 
 	received := decrypt((decodeBase64(string(job.Data()))), key)
+	logger.Tracef("job data: %s", received)
 
 	result := readAndExecute(received, key)
 

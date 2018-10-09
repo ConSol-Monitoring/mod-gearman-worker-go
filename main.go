@@ -92,6 +92,7 @@ func main() {
 
 	}
 
+	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.min_worker, config.max_worker)
 	startMinWorkers()
 
 }
