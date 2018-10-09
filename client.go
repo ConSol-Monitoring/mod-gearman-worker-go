@@ -1,6 +1,10 @@
 package main
 
 import (
+<<<<<<< 8ca1a00a87b214a983dab743ed1a0d88c22b21e4
+=======
+	//"github.com/mikespook/gearman-go/client"
+>>>>>>> fixed the benchmark test
 	"github.com/appscode/g2/client"
 	"github.com/appscode/g2/pkg/runtime"
 )

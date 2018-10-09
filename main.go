@@ -72,7 +72,7 @@ func main() {
 		if err != nil {
 			logger.Error("Could not open/create Pidfile!!")
 		} else {
-			f.WriteString(strconv.Itoa(os.Getppid()))
+			f.WriteString(strconv.Itoa(os.Getpid()))
 			defer deletePidFile(config.pidfile)
 		}
 

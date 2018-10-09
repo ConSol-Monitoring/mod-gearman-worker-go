@@ -94,5 +94,9 @@ func TestSplitCommandArguments(t *testing.T) {
 //Benchmark
 func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 	//set the default timeout time
-	executeCommandWithTimeout("/bin/true", 100)
+	config.debug = 0
+	createLogger()
+	for n := 0; n < b.N; n++ {
+		executeCommandWithTimeout("/bin/true", 100)
+	}
 }

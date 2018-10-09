@@ -34,8 +34,13 @@ func newWorker(counterChanel chan int) *worker {
 	defer w.Close()
 
 	w.ErrorHandler = func(e error) {
+<<<<<<< 8ca1a00a87b214a983dab743ed1a0d88c22b21e4
 		logger.Errorf(e.Error())
 		logger.Errorf("%s", debug.Stack())
+=======
+		logger.Error(e)
+
+>>>>>>> fixed the benchmark test
 	}
 
 	//listen to this servers
@@ -120,7 +125,9 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 		//send to al servers
 		if !sendSuccess {
 			for _, dupAddress := range config.dupserver {
-				result.active = "passive"
+				if config.dup_results_are_passive {
+					result.active = "passive"
+				}
 				sendSuccess = sendAnswer(result, key, dupAddress)
 			}
 		}
