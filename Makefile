@@ -1,6 +1,5 @@
 #!/usr/bin/make -f
 
-LAMPDDIR=.
 MAKE:=make
 SHELL:=bash
 GOVERSION:=$(shell \
@@ -40,37 +39,37 @@ updatedeps: versioncheck
 	done
 
 dump:
-	if [ $(shell grep -rc Dump $(LAMPDDIR)/*.go | grep -v :0 | grep -v $(LAMPDDIR)/dump.go | wc -l) -ne 0 ]; then \
-		sed -i.bak 's/\/\/ +build.*/\/\/ build with debug functions/' $(LAMPDDIR)/dump.go; \
+	if [ $(shell grep -rc Dump *.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
+		sed -i.bak 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
 	else \
-		sed -i.bak 's/\/\/ build.*/\/\/ +build ignore/' $(LAMPDDIR)/dump.go; \
+		sed -i.bak 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
 	fi
-	rm -f $(LAMPDDIR)/dump.go.bak
+	rm -f dump.go.bak
 
 build: dump
-	cd $(LAMPDDIR) && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)"
+	go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)"
 
 build-linux-amd64: dump
-	cd $(LAMPDDIR) && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o lmd.linux.amd64
+	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o lmd.linux.amd64
 
 debugbuild: deps fmt
-	cd $(LAMPDDIR) && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
+	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
 
 test: fmt dump
-	cd $(LAMPDDIR) && go test -short -v | ../t/test_counter.sh
+	go test -short -v
 	if grep -rn TODO: *.go; then exit 1; fi
 	if grep -rn Dump *.go | grep -v dump.go; then exit 1; fi
 
 longtest: fmt dump
-	cd $(LAMPDDIR) && go test -v | ../t/test_counter.sh
+	go test -v
 
 citest: deps
 	#
 	# Checking gofmt errors
 	#
-	if [ $$(cd $(LAMPDDIR) && gofmt -s -l . | wc -l) -gt 0 ]; then \
+	if [ $$(gofmt -s -l . | wc -l) -gt 0 ]; then \
 		echo "found format errors in these files:"; \
-		cd $(LAMPDDIR) && gofmt -s -l .; \
+		gofmt -s -l .; \
 		exit 1; \
 	fi
 	#
@@ -93,11 +92,11 @@ citest: deps
 	#
 	# Normal test cases
 	#
-	cd $(LAMPDDIR) && go test -v | ../t/test_counter.sh
+	go test -v
 	#
 	# Benchmark tests
 	#
-	cd $(LAMPDDIR) && go test -v -bench=B\* -run=^$$ . -benchmem
+	go test -v -bench=B\* -run=^$$ . -benchmem
 	#
 	# Race rondition tests
 	#
@@ -107,29 +106,29 @@ citest: deps
 	#
 
 benchmark: fmt
-	cd $(LAMPDDIR) && go test -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
+	go test -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
 
 racetest: fmt
-	cd $(LAMPDDIR) && go test -race -v
+	go test -race -v
 
 covertest: fmt
-	cd $(LAMPDDIR) && go test -v -coverprofile=cover.out
-	cd $(LAMPDDIR) && go tool cover -func=cover.out
-	cd $(LAMPDDIR) && go tool cover -html=cover.out -o coverage.html
+	go test -v -coverprofile=cover.out
+	go tool cover -func=cover.out
+	go tool cover -html=cover.out -o coverage.html
 
 coverweb: fmt
-	cd $(LAMPDDIR) && go test -v -coverprofile=cover.out
-	cd $(LAMPDDIR) && go tool cover -html=cover.out
+	go test -v -coverprofile=cover.out
+	go tool cover -html=cover.out
 
 clean:
-	rm -f $(LAMPDDIR)/lmd
-	rm -f $(LAMPDDIR)/cover.out
-	rm -f $(LAMPDDIR)/coverage.html
+	rm -f mod-gearman-worker-go
+	rm -f cover.out
+	rm -f coverage.html
 
 fmt:
-	cd $(LAMPDDIR) && goimports -w .
-	cd $(LAMPDDIR) && go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
-	cd $(LAMPDDIR) && gofmt -w -s .
+	goimports -w .
+	go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
+	gofmt -w -s .
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
@@ -143,7 +142,7 @@ lint:
 	#
 	# Check if golint complains
 	# see https://github.com/golang/lint/ for details.
-	cd $(LAMPDDIR) && golint -set_exit_status .
+	golint -set_exit_status .
 
 cyclo:
 	#
@@ -151,32 +150,32 @@ cyclo:
 	# Any function with a score higher than 15 is bad.
 	# See https://github.com/fzipp/gocyclo for details.
 	#
-	cd $(LAMPDDIR) && gocyclo -over 15 . | ../t/filter_cyclo_exceptions.sh
+	gocyclo -over 15 .
 
 misspell:
 	#
 	# Check if there are common spell errors.
 	# See https://github.com/client9/misspell
 	#
-	cd $(LAMPDDIR) && misspell -error .
+	misspell -error .
 
 copyfighter:
 	#
 	# Check if there are values better passed as pointer
 	# See https://github.com/jmhodges/copyfighter
 	#
-	cd $(LAMPDDIR) && copyfighter .
+	copyfighter .
 
 gosimple:
 	#
 	# Check if something could be made simpler
 	# See https://github.com/dominikh/go-tools/tree/master/cmd/gosimple
 	#
-	cd $(LAMPDDIR) && gosimple
+	gosimple
 
 version:
-	OLDVERSION="$(shell grep "VERSION =" $(LAMPDDIR)/main.go | awk '{print $$3}' | tr -d '"')"; \
+	OLDVERSION="$(shell grep "VERSION =" ./main.go | awk '{print $$3}' | tr -d '"')"; \
 	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "v$$OLDVERSION") && \
 		NEWVERSION=$$(echo $$NEWVERSION | sed "s/^v//g"); \
 		if [ "v$$OLDVERSION" = "v$$NEWVERSION" -o "x$$NEWVERSION" = "x" ]; then echo "no changes"; exit 1; fi; \
-		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' $(LAMPDDIR)/main.go
+		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' ./main.go
