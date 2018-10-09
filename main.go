@@ -25,8 +25,8 @@ func main() {
 			if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
 				if os.Args[i] == "--help" || os.Args[i] == "-h" {
 					print_usage()
-				} else if os.Args[i] == "-d" || os.Args[i] == "--deamon" {
-					config.deamon = true
+				} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
+					config.daemon = true
 				} else {
 					s := strings.Trim(os.Args[i], "--")
 					sa := strings.Split(s, "=")
@@ -47,12 +47,12 @@ func main() {
 
 	go startPrometheus()
 
-	if config.deamon {
+	if config.daemon {
 		cntxt := &daemon.Context{}
 		d, err := cntxt.Reborn()
 
 		if err != nil {
-			logger.Error("unable to start deamon mode")
+			logger.Error("unable to start daemon mode")
 		}
 		if d != nil {
 			return

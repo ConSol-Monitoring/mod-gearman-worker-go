@@ -47,7 +47,7 @@ type configurationStruct struct {
 	workaround_rc_25             bool
 	server                       []string
 	timeout_return               int
-	deamon                       bool
+	daemon                       bool
 	prometheus_server            string
 }
 
@@ -61,7 +61,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.gearman_connection_timeout = -1
 	result.timeout_return = 3
 	result.idle_timeout = 60
-	result.deamon = false
+	result.daemon = false
 }
 
 /**
