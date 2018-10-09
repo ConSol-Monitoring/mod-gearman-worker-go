@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/mikespook/gearman-go/client"
+	"github.com/appscode/g2/client"
+	"github.com/appscode/g2/pkg/runtime"
 )
 
 /**
@@ -10,7 +11,7 @@ import (
 *@input server: the server:port address where to send the data
  */
 func sendAnswer(answer *answer, key []byte, server string) bool {
-	c, err := client.New(client.Network, server)
+	c, err := client.New("tcp4", server)
 	if err != nil {
 		logger.Error("client: sendanswer: %s \n", err.Error())
 		return false
@@ -28,7 +29,7 @@ func sendAnswer(answer *answer, key []byte, server string) bool {
 	}
 
 	//send the data in the background to the right queue
-	c.DoBg(answer.result_queue, echomsg, client.JobNormal)
+	c.DoBg(answer.result_queue, echomsg, runtime.JobNormal)
 
 	return true
 }

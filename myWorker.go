@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	time "time"
 
-	libworker "github.com/mikespook/gearman-go/worker"
+	libworker "github.com/appscode/g2/worker"
 )
 
 type worker struct {

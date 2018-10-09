@@ -10,13 +10,10 @@ MINGOVERSION:=00010007
 MINGOVERSIONSTR:=1.7
 
 EXTERNAL_DEPS = \
-	github.com/BurntSushi/toml \
+	github.com/appscode/g2 \
 	github.com/kdar/factorlog \
-	github.com/mgutz/ansi \
+	github.com/sevlyar/go-daemon \
 	github.com/prometheus/client_golang/prometheus \
-	github.com/buger/jsonparser \
-	github.com/a8m/djson \
-	github.com/julienschmidt/httprouter \
 	github.com/davecgh/go-spew/spew \
 	golang.org/x/tools/cmd/goimports \
 	github.com/golang/lint/golint \
