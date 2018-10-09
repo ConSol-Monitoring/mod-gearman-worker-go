@@ -10,6 +10,17 @@ import (
 	daemon "github.com/sevlyar/go-daemon"
 )
 
+// Build contains the current git commit id
+// compile passing -ldflags "-X main.Build <build sha1>" to set the id.
+var Build string
+
+const (
+	// VERSION contains the actual lmd version
+	VERSION = "0.0.1"
+	// NAME defines the name of this project
+	NAME = "mod-gearman-worker-go"
+)
+
 var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 var key []byte
@@ -25,6 +36,9 @@ func main() {
 			if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
 				if os.Args[i] == "--help" || os.Args[i] == "-h" {
 					print_usage()
+				} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
+					printVersion()
+					os.Exit(3)
 				} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
 					config.daemon = true
 				} else {
@@ -77,12 +91,18 @@ func main() {
 		}
 
 	}
+
 	startMinWorkers()
 
 }
 
 func deletePidFile(f string) {
 	os.Remove(f)
+}
+
+// printVersion prints the version
+func printVersion() {
+	fmt.Printf("%s - version %s (Build: %s)\n", NAME, VERSION, Build)
 }
 
 func print_usage() {
@@ -133,6 +153,6 @@ func print_usage() {
 	fmt.Print("see README for a detailed explanation of all options.\n")
 	fmt.Print("\n")
 
-	os.Exit(0)
+	os.Exit(3)
 
 }
