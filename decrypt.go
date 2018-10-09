@@ -120,7 +120,7 @@ func createMap(input []byte) map[string]string {
 	for i := 0; i < len(splitted); i++ {
 
 		//split at = and store in map
-		access := strings.Split(splitted[i], "=")
+		access := strings.SplitN(splitted[i], "=", 2)
 
 		if len(access) > 1 {
 			access[0] = strings.Trim(access[0], " ")
