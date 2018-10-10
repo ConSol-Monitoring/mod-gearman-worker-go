@@ -59,6 +59,8 @@ func main() {
 		printUsage()
 	}
 
+	checkForReasonableConfig()
+
 	go startPrometheus()
 
 	startDaemonIfConfigured()
@@ -77,6 +79,21 @@ func main() {
 
 	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
 	startMinWorkers()
+
+}
+
+func checkForReasonableConfig() {
+	if len(config.server) == 0 {
+		logger.Panic("no server specified")
+	}
+	if !config.notifications && !config.services && !config.eventhandler && !config.hosts &&
+		len(config.hostgroups) == 0 && len(config.servicegroups) == 0 {
+
+		logger.Panic("no listen queues defined!")
+	}
+	if config.encryption && config.key == "" && config.keyfile == "" {
+		logger.Panic("encryption enabled but no keys defined")
+	}
 
 }
 
