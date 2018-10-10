@@ -22,7 +22,7 @@ var (
 	})
 
 	iddleWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "iddle_workers",
+		Name: "idle_workers",
 		Help: "workers waiting for new jobs",
 	})
 
