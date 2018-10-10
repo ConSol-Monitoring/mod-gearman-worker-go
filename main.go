@@ -63,8 +63,6 @@ func main() {
 
 	checkForReasonableConfig(&config)
 
-	go startPrometheus(config.prometheusServer)
-
 	if config.daemon {
 		cntxt := &daemon.Context{}
 		d, err := cntxt.Reborn()
@@ -78,7 +76,7 @@ func main() {
 		defer cntxt.Release()
 	}
 
-	// startDaemonIfConfigured(&config)
+	go startPrometheus(config.prometheusServer)
 
 	//set the key
 	key := getKey(&config)
