@@ -111,14 +111,19 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	worker.idleSince = time.Now()
 	worker.start <- 1
 
-	taskCounter.Inc()
 	idleWorkerCount.Dec()
 	workingWorkerCount.Inc()
 
 	received := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
+	taskCounter.WithLabelValues(received.typ).Inc()
+
 	logger.Tracef("job data: %s", received)
 
 	result := readAndExecute(received, worker.key, worker.config)
+
+	if result.returnCode != 0 {
+		errorCounter.WithLabelValues(received.typ).Inc()
+	}
 
 	if received.resultQueue != "" {
 

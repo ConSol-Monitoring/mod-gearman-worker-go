@@ -12,37 +12,46 @@ import (
 var run bool
 var (
 	workerCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "existing_workers",
-		Help: "Currently existing Workers",
-	})
-
-	taskCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "completed_tasks",
-		Help: "completed tasks since startup",
+		Name: "modgearmanworker_workers_total",
+		Help: "Total number of currently existing Workers",
 	})
 
 	idleWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "idle_workers",
-		Help: "workers waiting for new jobs",
+		Name: "modgearmanworker_workers_idle",
+		Help: "Total number of currently idling Workers",
 	})
 
 	workingWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "working_workers",
-		Help: "Currently busy Workers",
+		Name: "modgearmanworker_workers_busy",
+		Help: "Total number of busy Workers",
 	})
+
+	taskCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "modgearmanworker_tasks_completed_total",
+			Help: "total nuber of completed tasks since startup",
+		},
+		[]string{"type"})
+
+	errorCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "modgearmanworker_tasks_errors_total",
+			Help: "total nuber of errors in executed plugins",
+		},
+		[]string{"type"})
 
 	userTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name:       "user_times_of_worker_jobs",
-			Help:       "sum of the userTimes",
+			Name:       "modgearmanworker_plugin_user_cpu_time_seconds",
+			Help:       "sum of the userTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
 		[]string{"description"})
 
 	systemTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name:       "system_times_of_worker_jobs",
-			Help:       "sum of the systemTimes ",
+			Name:       "modgearmanworker_plugin_system_cpu_time_seconds",
+			Help:       "sum of the systemTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
 		[]string{"description"})
