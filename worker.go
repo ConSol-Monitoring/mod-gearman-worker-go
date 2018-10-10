@@ -42,6 +42,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	w.ErrorHandler = func(e error) {
 		logger.Errorf(e.Error())
 		logger.Errorf("%s", debug.Stack())
+		worker.closeOnConnectionLoss()
 	}
 
 	//listen to this servers
@@ -82,7 +83,9 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
-		logger.Fatal(err)
+		//logger.Fatal(err)
+		logger.Debug("worker not ready closing again")
+		worker.close()
 		return nil
 	}
 	//start the worker
@@ -169,6 +172,11 @@ func (worker *worker) timeout() {
 func (worker *worker) close() {
 	//close only if more than the minimum workers are available
 	worker.mainWorker.removeWorker(worker)
+}
+
+func (worker *worker) closeOnConnectionLoss() {
+	worker.mainWorker.removeFromSlice(worker)
+	worker.closeWorker()
 }
 
 func (worker *worker) closeWorker() {

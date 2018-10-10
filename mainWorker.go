@@ -49,7 +49,9 @@ func (w *mainWorker) startMinWorkers() {
 
 	for i := 0; i < w.config.minWorker; i++ {
 		worker := newWorker(w.activeChan, w.config, w.key, w)
-		w.workerSlice = append(w.workerSlice, worker)
+		if worker != nil {
+			w.workerSlice = append(w.workerSlice, worker)
+		}
 	}
 
 	//tick signal for starting new workers if needed
@@ -120,7 +122,9 @@ func (w *mainWorker) startNewWorkers() {
 		//start new workers at spawn speed from the configuration file
 		for i := 0; i < w.config.spawnRate; i++ {
 			worker := newWorker(w.activeChan, w.config, w.key, w)
-			w.workerSlice = append(w.workerSlice, worker)
+			if worker != nil {
+				w.workerSlice = append(w.workerSlice, worker)
+			}
 		}
 	}
 }
