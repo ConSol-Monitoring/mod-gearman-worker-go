@@ -8,6 +8,8 @@ import (
 
 func TestReadAndExecute(t *testing.T) {
 	config := configurationStruct{}
+	config.encryption = false
+	config.jobTimeout = 30
 	setDefaultValues(&config)
 	thisHostname, error := os.Hostname()
 	if error != nil {
@@ -20,6 +22,7 @@ func TestReadAndExecute(t *testing.T) {
 	testReceive.coreTime = 123
 	testReceive.hostName = "TestHost"
 	testReceive.serviceDescription = "TestDescription"
+	testReceive.commandLine = "sleep 1"
 
 	resultValue := readAndExecute(&testReceive, nil, &config)
 
@@ -47,6 +50,8 @@ func TestReadAndExecute(t *testing.T) {
 
 func TestExecuteCommandWithTimeout(t *testing.T) {
 	config := configurationStruct{}
+	setDefaultValues(&config)
+	config.encryption = false
 	//checks needed: timeout, right return,
 	returnValue, code := executeCommandWithTimeout("ls readAndExecute_test.go", 10, &config)
 	if returnValue != "readAndExecute_test.go" || code != 0 {

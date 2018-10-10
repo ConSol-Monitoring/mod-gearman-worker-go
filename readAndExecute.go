@@ -198,20 +198,14 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 		//we timed out!
 		logger.Debug("Timeout!!!")
 		cmd.Process.Kill()
+		// prometheusUserAndSystemTime(cmd, command)
 		return "timeout", 4 //return code 4 as identifier that we ran in an timeout
 	case err := <-done:
-		userTime := (float64(cmd.ProcessState.UserTime()/time.Nanosecond) / 1e9)
-		systemTime := (float64(cmd.ProcessState.SystemTime()/time.Nanosecond) / 1e9)
-
-		logger.Infof("Command: %s, userTime: %f, UserTime(): %s", command, userTime, (cmd.ProcessState.UserTime().String()))
-
-		userTimes.WithLabelValues(getCommand(command)).Observe(userTime)
-		systemTimes.WithLabelValues(getCommand(command)).Observe(systemTime)
-
+		prometheusUserAndSystemTime(cmd, command)
 		//command completed in time
 		result = outbuf.String()
 		if errbuff.String() != "" && config.showErrorOutput {
-			result += "[ " + errbuff.String() + " ]"
+			result = "[ " + errbuff.String() + " ]"
 		}
 		statusCode := 0
 		if err != nil {
@@ -233,6 +227,15 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 		result = strings.Replace(result, "\n", "", len(result))
 		return result, statusCode
 	}
+}
+
+func prometheusUserAndSystemTime(cmd *exec.Cmd, command string) {
+	userTime := (float64(cmd.ProcessState.UserTime().Seconds()))
+	systemTime := (float64(cmd.ProcessState.SystemTime().Seconds()))
+
+	userTimes.WithLabelValues(getCommand(command)).Observe(userTime)
+	systemTimes.WithLabelValues(getCommand(command)).Observe(systemTime)
+
 }
 
 func splitCommandArguments(input string) (string, []string) {

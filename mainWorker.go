@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"os"
 	"strings"
-	"time"
+	time "time"
 )
 
 /*
@@ -25,14 +25,6 @@ type mainWorker struct {
 	key           []byte
 }
 
-// var activeWorkers int
-
-// var workerSlice []*worker
-
-// var activeChan chan int
-
-// var min1, min5, min15 float32
-
 func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 	return &mainWorker{
 		activeWorkers: 0,
@@ -42,19 +34,7 @@ func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 	}
 }
 
-func (w *mainWorker) startMinWorkers() {
-	//channel for communication
-	// w.activeChan = make(chan int)
-	// key := getKey()
-
-	for i := 0; i < w.config.minWorker; i++ {
-		worker := newWorker(w.activeChan, w.config, w.key, w)
-		if worker != nil {
-			w.workerSlice = append(w.workerSlice, worker)
-		}
-	}
-
-	//tick signal for starting new workers if needed
+func (w *mainWorker) startWorker() {
 	tick := time.Tick(1 * time.Second)
 
 	//get first load avg
@@ -65,9 +45,34 @@ func (w *mainWorker) startMinWorkers() {
 		case x := <-w.activeChan:
 			w.activeWorkers += x
 		case <-tick:
-			w.startNewWorkers()
+			w.manageWorkers()
 		}
 
+	}
+}
+
+func (w *mainWorker) manageWorkers() {
+
+	//as long as there are to few workers start them without a limit
+
+	for i := w.config.minWorker - len(w.workerSlice); i > 0; i-- {
+		worker := newWorker(w.activeChan, w.config, w.key, w)
+		if worker != nil {
+			w.workerSlice = append(w.workerSlice, worker)
+		}
+	}
+
+	//check if we need more workers
+	w.getLoadAvg()
+	if w.activeWorkers == len(w.workerSlice) && len(w.workerSlice) < w.config.maxWorker &&
+		w.checkLoads() {
+		//start new workers at spawn speed from the configuration file
+		for i := 0; i < w.config.spawnRate; i++ {
+			worker := newWorker(w.activeChan, w.config, w.key, w)
+			if worker != nil {
+				w.workerSlice = append(w.workerSlice, worker)
+			}
+		}
 	}
 
 }
@@ -112,38 +117,14 @@ func (w *mainWorker) checkLoads() bool {
 	return true
 }
 
-//starts new workers if all workers are busy and the loads are not to high
-func (w *mainWorker) startNewWorkers() {
-	//get new load avg
-	w.getLoadAvg()
-	if (w.activeWorkers == len(w.workerSlice) && len(w.workerSlice) < w.config.maxWorker &&
-		w.checkLoads()) ||
-		len(w.workerSlice) < w.config.minWorker {
-		//start new workers at spawn speed from the configuration file
-		for i := 0; i < w.config.spawnRate; i++ {
-			worker := newWorker(w.activeChan, w.config, w.key, w)
-			if worker != nil {
-				w.workerSlice = append(w.workerSlice, worker)
-			}
-		}
-	}
-}
-
 /*
 * removes the connection to the server from the worker
 * then removes the worker from the slice
  */
 func (w *mainWorker) removeWorker(worker *worker) {
 	//first remove the worker from the list, only if there are enough workers left
-	if len(w.workerSlice) > w.config.minWorker {
-		worker.closeWorker()
-		w.removeFromSlice(worker)
-	} else {
-		//reset max jobs counter and idle time counter
-		worker.maxJobs = w.config.maxJobs
-		worker.idleSince = time.Now()
-		worker.startIdleTimer()
-	}
+	worker.closeWorker()
+	w.removeFromSlice(worker)
 }
 
 /*

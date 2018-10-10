@@ -42,7 +42,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	w.ErrorHandler = func(e error) {
 		logger.Errorf(e.Error())
 		logger.Errorf("%s", debug.Stack())
-		worker.closeOnConnectionLoss()
+		worker.close()
 	}
 
 	//listen to this servers
@@ -84,8 +84,9 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
 		//logger.Fatal(err)
-		logger.Debug("worker not ready closing again")
-		worker.close()
+		// logger.Debug("worker not ready closing again")
+		// worker.close()
+		worker.mainWorker.removeFromSlice(worker)
 		return nil
 	}
 	//start the worker
@@ -149,6 +150,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	worker.maxJobs--
 	if worker.maxJobs < 1 {
 		worker.closeWorker()
+		// worker.mainWorker.removeFromSlice(worker)
 	}
 
 	//start the timer again
@@ -162,9 +164,15 @@ func (worker *worker) startIdleTimer() {
 	worker.timer = time.AfterFunc(time.Duration(worker.config.idleTimeout)*time.Second, worker.timeout)
 }
 
-//after the max idle time has passed we try to remove the worker
+//after the max idle time has passed we check if we can remove the worker
 func (worker *worker) timeout() {
-	worker.mainWorker.removeWorker(worker)
+	if len(worker.mainWorker.workerSlice) < worker.config.minWorker {
+		worker.mainWorker.removeWorker(worker)
+	} else {
+		worker.maxJobs = worker.config.maxJobs
+		worker.idleSince = time.Now()
+		worker.startIdleTimer()
+	}
 }
 
 //everything needed to stop the worker without
@@ -174,13 +182,9 @@ func (worker *worker) close() {
 	worker.mainWorker.removeWorker(worker)
 }
 
-func (worker *worker) closeOnConnectionLoss() {
-	worker.mainWorker.removeFromSlice(worker)
-	worker.closeWorker()
-}
-
 func (worker *worker) closeWorker() {
 	worker.worker.Close()
+	worker.timer.Stop()
 	worker.worker = nil
 	workerCount.Desc()
 }
