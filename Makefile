@@ -147,7 +147,7 @@ cyclo:
 	# Any function with a score higher than 15 is bad.
 	# See https://github.com/fzipp/gocyclo for details.
 	#
-	gocyclo -over 15 .
+	gocyclo -over 15 . | ./t/filter_cyclo_exceptions.sh
 
 misspell:
 	#
