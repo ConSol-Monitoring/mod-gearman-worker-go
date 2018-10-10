@@ -121,7 +121,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 
 	result := readAndExecute(received, worker.key, worker.config)
 
-	if result.returnCode != 0 {
+	if result.returnCode > 0 {
 		errorCounter.WithLabelValues(received.typ).Inc()
 	}
 

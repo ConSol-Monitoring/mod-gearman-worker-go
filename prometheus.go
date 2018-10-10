@@ -36,7 +36,7 @@ var (
 	errorCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "modgearmanworker_tasks_errors_total",
-			Help: "total nuber of errors in executed plugins",
+			Help: "total nuber of errors in executed plugins (plugins with exit code > 0)",
 		},
 		[]string{"type"})
 
@@ -77,6 +77,10 @@ func registerMetrics() {
 	}
 
 	if err := prometheus.Register(taskCounter); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := prometheus.Register(errorCounter); err != nil {
 		fmt.Println(err)
 	}
 
