@@ -122,17 +122,12 @@ func readAndExecute(received *receivedStruct, key []byte) *answer {
 	return &result
 }
 
-//executes a command in the bash, returns whatever gets printed on the bash
-//and as second value a status Code between 0 and 3
-//after seconds in timeOut kills the process and returns status code 4
-func executeCommandWithTimeout(cmdString string, timeOut int) (string, int) {
-	var result string
-
+func containsBadPathOrChars(cmdString string) bool {
 	//check for restricted path
 	splittedString := strings.Split(cmdString, " ")
 	for _, v := range config.restrictPath {
 		if !strings.HasPrefix(splittedString[0], v) {
-			return "try to access forbidden path", 2
+			return true
 		}
 	}
 
@@ -140,24 +135,38 @@ func executeCommandWithTimeout(cmdString string, timeOut int) (string, int) {
 	if len(config.restrictPath) != 0 {
 		for _, v := range config.restrictCommandCharacters {
 			if strings.Contains(cmdString, v) {
-				return ("character " + v + " not allowed!!"), 2
+				return true
 			}
 		}
 	}
+	return false
+}
 
-	command, args := splitCommandArguments(cmdString)
-	runWithShell := true
-
+func executeInShell(command string, cmdString string) bool {
 	//if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
 	if strings.HasPrefix(command, "/") || strings.HasPrefix(command, ".") {
-		runWithShell = false
+		return false
 	}
 	for _, v := range []string{"!", "$", "^", "&", "*", "(", ")", "~", "[", "]", "\\", "|", "{", "\"", "}", ";", "<", ">", "?", "`", "\\", "'"} {
 		if strings.Contains(cmdString, v) {
-			runWithShell = true
-			break
+			return true
 		}
 	}
+	return true
+}
+
+//executes a command in the bash, returns whatever gets printed on the bash
+//and as second value a status Code between 0 and 3
+//after seconds in timeOut kills the process and returns status code 4
+func executeCommandWithTimeout(cmdString string, timeOut int) (string, int) {
+	var result string
+
+	if containsBadPathOrChars(cmdString) {
+		return "command contains bad path or characters", 2
+	}
+
+	command, args := splitCommandArguments(cmdString)
+	runWithShell := executeInShell(command, cmdString)
 
 	var cmd *exec.Cmd
 	if runWithShell {
