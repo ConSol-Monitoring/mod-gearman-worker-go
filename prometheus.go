@@ -21,7 +21,7 @@ var (
 		Help: "completed tasks since startup",
 	})
 
-	iddleWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
+	idleWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "idle_workers",
 		Help: "workers waiting for new jobs",
 	})
@@ -71,7 +71,7 @@ func registerMetrics() {
 		fmt.Println(err)
 	}
 
-	if err := prometheus.Register(iddleWorkerCount); err != nil {
+	if err := prometheus.Register(idleWorkerCount); err != nil {
 		fmt.Println(err)
 	}
 	if err := prometheus.Register(workingWorkerCount); err != nil {
