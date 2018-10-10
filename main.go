@@ -61,6 +61,23 @@ func main() {
 
 	go startPrometheus()
 
+	startDaemonIfConfigured()
+
+	//set the key
+	key = getKey()
+
+	//create the PidFile
+	createPidFile()
+
+	//create the logger, everything logged until here gets printed to stdOut
+	createLogger()
+
+	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
+	startMinWorkers()
+
+}
+
+func startDaemonIfConfigured() {
 	if config.daemon {
 		cntxt := &daemon.Context{}
 		d, err := cntxt.Reborn()
@@ -74,12 +91,9 @@ func main() {
 		defer cntxt.Release()
 	}
 
-	//set the key
-	key = getKey()
+}
 
-	//create the logger, everything logged until here gets printed to stdOut
-	createLogger()
-
+func createPidFile() {
 	//write the pid id if file path is defined
 	if config.pidfile != "" && config.pidfile != "%PIDFILE%" {
 		f, err := os.Create(config.pidfile)
@@ -91,10 +105,6 @@ func main() {
 		}
 
 	}
-
-	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
-	startMinWorkers()
-
 }
 
 func deletePidFile(f string) {
