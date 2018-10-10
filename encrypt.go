@@ -1,13 +1,12 @@
 package main
 
 import (
-	"crypto/aes"
 	b64 "encoding/base64"
 )
 
-func createAnswer(value *answer, key []byte) string {
+func createAnswer(value *answer, key []byte, withEncrypt bool) string {
 	byteVal := value.String()
-	encrypted := encrypt(byteVal, key)
+	encrypted := encrypt(byteVal, key, withEncrypt)
 	return encodeBase64(encrypted)
 }
 
@@ -15,9 +14,9 @@ func createAnswer(value *answer, key []byte) string {
 * encrypts a given string with a given key, returns the encrypted string
 *
  */
-func encrypt(sData string, key []byte) string {
+func encrypt(sData string, key []byte, encrypt bool) string {
 
-	if !config.encryption {
+	if !encrypt {
 		return sData
 	}
 	data := []byte(sData)
@@ -30,12 +29,13 @@ func encrypt(sData string, key []byte) string {
 		}
 	}
 
-	cipher, _ := aes.NewCipher([]byte(key))
+	//cipher, _ := aes.NewCipher([]byte(key))
+
 	encrypted := make([]byte, len(data))
 	size := 16
 
 	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
-		cipher.Encrypt(encrypted[bs:be], data[bs:be])
+		myCipher.Encrypt(encrypted[bs:be], data[bs:be])
 	}
 
 	return string(encrypted)

@@ -10,7 +10,7 @@ import (
 *@input key: the key for the aes encryption
 *@input server: the server:port address where to send the data
  */
-func sendAnswer(answer *answer, key []byte, server string) bool {
+func sendAnswer(answer *answer, key []byte, server string, encrypted bool) bool {
 	c, err := client.New("tcp4", server)
 	if err != nil {
 		logger.Error("client: sendanswer: %s \n", err.Error())
@@ -19,7 +19,7 @@ func sendAnswer(answer *answer, key []byte, server string) bool {
 	defer c.Close()
 	logger.Debug("\n", answer, "\n")
 
-	byteAnswer := []byte(createAnswer(answer, key))
+	byteAnswer := []byte(createAnswer(answer, key, encrypted))
 	logger.Debug("sending to server String: " + string(byteAnswer))
 
 	echomsg, err := c.Echo(byteAnswer)

@@ -21,12 +21,14 @@ const (
 	NAME = "mod-gearman-worker-go"
 )
 
-var config configurationStruct
+// var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
-var key []byte
+
+//var key []byte
 
 func main() {
 
+	var config configurationStruct
 	setDefaultValues(&config)
 
 	//reads the args, check if they are params, if so sends them to the configuration reader
@@ -59,30 +61,31 @@ func main() {
 		printUsage()
 	}
 
-	checkForReasonableConfig()
+	checkForReasonableConfig(&config)
 
-	go startPrometheus()
+	go startPrometheus(config.prometheusServer)
 
-	startDaemonIfConfigured()
+	startDaemonIfConfigured(&config)
 
 	//set the key
-	key = getKey()
+	key := getKey(&config)
 
 	//create the PidFile
-	createPidFile()
+	createPidFile(config.pidfile)
 
 	//create the logger, everything logged until here gets printed to stdOut
-	createLogger()
+	createLogger(&config)
 
 	//create de cipher
-	myCipher = createCipher()
+	myCipher = createCipher(key, config.encryption)
 
 	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
-	startMinWorkers()
+	mainworker := newMainWorker(&config, key)
+	mainworker.startMinWorkers()
 
 }
 
-func checkForReasonableConfig() {
+func checkForReasonableConfig(config *configurationStruct) {
 	if len(config.server) == 0 {
 		logger.Panic("no server specified")
 	}
@@ -97,7 +100,7 @@ func checkForReasonableConfig() {
 
 }
 
-func startDaemonIfConfigured() {
+func startDaemonIfConfigured(config *configurationStruct) {
 	if config.daemon {
 		cntxt := &daemon.Context{}
 		d, err := cntxt.Reborn()
@@ -113,15 +116,15 @@ func startDaemonIfConfigured() {
 
 }
 
-func createPidFile() {
+func createPidFile(path string) {
 	//write the pid id if file path is defined
-	if config.pidfile != "" && config.pidfile != "%PIDFILE%" {
-		f, err := os.Create(config.pidfile)
+	if path != "" && path != "%PIDFILE%" {
+		f, err := os.Create(path)
 		if err != nil {
 			logger.Error("Could not open/create Pidfile!!")
 		} else {
 			f.WriteString(strconv.Itoa(os.Getpid()))
-			defer deletePidFile(config.pidfile)
+			defer deletePidFile(path)
 		}
 
 	}

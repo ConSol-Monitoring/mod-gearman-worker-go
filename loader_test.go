@@ -7,9 +7,10 @@ import (
 
 func TestGetKey(t *testing.T) {
 	//set the key in the config struct
-	config.key = "MeinTestKey"
+	config := configurationStruct{key: "MeinTestKey", encryption: true}
+	//config.key = "MeinTestKey"
 	//get the key from the method
-	result := getKey()
+	result := getKey(&config)
 
 	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("expected: %s, got:%s", "MeinTestKey", result)
@@ -35,7 +36,7 @@ func TestGetKey(t *testing.T) {
 		t.Errorf("could not write to testFile %s", err.Error())
 	}
 
-	result = getKey()
+	result = getKey(&config)
 
 	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("getkey from file expected: %s, got:%s", "MeinTestKey", result)

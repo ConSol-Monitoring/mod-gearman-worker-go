@@ -45,8 +45,8 @@ func (r *receivedStruct) String() string {
 		r.commandLine)
 }
 
-func createCipher() cipher.Block {
-	if config.encryption {
+func createCipher(key []byte, encrypt bool) cipher.Block {
+	if encrypt {
 		newCipher, err := aes.NewCipher([]byte(key))
 		if err != nil {
 			logger.Panic(err)
@@ -70,8 +70,8 @@ func decodeBase64(data string) []byte {
 *  Decodes the bytes from data with the given key
 *  returns a received struct
  */
-func decrypt(data []byte, key []byte) *receivedStruct {
-	if !config.encryption {
+func decrypt(data []byte, key []byte, encryption bool) *receivedStruct {
+	if !encryption {
 		return createReceived(data)
 	}
 

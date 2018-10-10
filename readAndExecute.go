@@ -63,7 +63,7 @@ func (a *answer) String() string {
 * @return: answer, struct containing al information to be sent back to the server
 *
  */
-func readAndExecute(received *receivedStruct, key []byte) *answer {
+func readAndExecute(received *receivedStruct, key []byte, config *configurationStruct) *answer {
 	var result answer
 	//first set the start time
 	result.startTime = float64(time.Now().UnixNano()) / 1e9
@@ -91,7 +91,7 @@ func readAndExecute(received *receivedStruct, key []byte) *answer {
 	if timeout == 0 {
 		timeout = config.jobTimeout
 	}
-	commandOutput, statusCode := executeCommandWithTimeout(received.commandLine, timeout)
+	commandOutput, statusCode := executeCommandWithTimeout(received.commandLine, timeout, config)
 
 	// if this is a host call, no service_description is needed, else set the description
 	// so the server recognizes the answer
@@ -122,18 +122,18 @@ func readAndExecute(received *receivedStruct, key []byte) *answer {
 	return &result
 }
 
-func containsBadPathOrChars(cmdString string) bool {
+func containsBadPathOrChars(cmdString string, restrictPath []string, restrictChars []string) bool {
 	//check for restricted path
 	splittedString := strings.Split(cmdString, " ")
-	for _, v := range config.restrictPath {
+	for _, v := range restrictPath {
 		if !strings.HasPrefix(splittedString[0], v) {
 			return true
 		}
 	}
 
 	//check for forbidden characters, only if
-	if len(config.restrictPath) != 0 {
-		for _, v := range config.restrictCommandCharacters {
+	if len(restrictPath) != 0 {
+		for _, v := range restrictChars {
 			if strings.Contains(cmdString, v) {
 				return true
 			}
@@ -157,10 +157,10 @@ func executeInShell(command string, cmdString string) bool {
 //executes a command in the bash, returns whatever gets printed on the bash
 //and as second value a status Code between 0 and 3
 //after seconds in timeOut kills the process and returns status code 4
-func executeCommandWithTimeout(cmdString string, timeOut int) (string, int) {
+func executeCommandWithTimeout(cmdString string, timeOut int, config *configurationStruct) (string, int) {
 	var result string
 
-	if containsBadPathOrChars(cmdString) {
+	if containsBadPathOrChars(cmdString, config.restrictPath, config.restrictCommandCharacters) {
 		return "command contains bad path or characters", 2
 	}
 

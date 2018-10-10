@@ -8,7 +8,7 @@ import (
 	"github.com/kdar/factorlog"
 )
 
-func createLogger() {
+func createLogger(config *configurationStruct) {
 
 	//logging format
 	frmt := `%{Color \"yellow\" \"WARN\"}%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}[%{Date} %{Time}][%{Severity}][%{File}:%{Line}] %{Message}`

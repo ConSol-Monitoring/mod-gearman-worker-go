@@ -48,15 +48,15 @@ var (
 		[]string{"description"})
 )
 
-func startPrometheus() {
+func startPrometheus(server string) {
 	run = false
-	if config.prometheusServer == "" {
+	if server == "" {
 		return
 	}
 	http.Handle("/metrics", promhttp.Handler())
 	registerMetrics()
 
-	logger.Error(http.ListenAndServe(config.prometheusServer, nil))
+	logger.Error(http.ListenAndServe(server, nil))
 
 }
 

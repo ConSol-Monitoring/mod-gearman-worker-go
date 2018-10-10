@@ -8,7 +8,7 @@ import (
 )
 
 //returns the secret_key as byte array from the location in the worker.cfg
-func getKey() []byte {
+func getKey(config *configurationStruct) []byte {
 	if config.encryption {
 		if config.key != "" {
 			return fixKeySize([]byte(config.key))
