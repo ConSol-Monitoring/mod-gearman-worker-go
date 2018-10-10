@@ -148,11 +148,8 @@ func executeInShell(command string, cmdString string) bool {
 	if strings.HasPrefix(command, "/") || strings.HasPrefix(command, ".") {
 		returnvalue = false
 	}
-	for _, v := range []string{"!", "$", "^", "&", "*", "(", ")", "~", "[", "]", "\\", "|", "{", "\"", "}", ";", "<", ">", "?", "`", "\\", "'"} {
-		if strings.Contains(cmdString, v) {
-			returnvalue = true
-			break
-		}
+	if strings.ContainsAny(cmdString, "!$^&*()~[]\\|{\"};<>?`\\'") {
+		returnvalue = true
 	}
 	return returnvalue
 }
