@@ -9,15 +9,15 @@ import (
 )
 
 type receivedStruct struct {
-	typ                 string
-	result_queue        string
-	host_name           string
-	service_description string
-	start_time          float64
-	next_check          float64
-	core_time           float64
-	timeout             int
-	command_line        string
+	typ                string
+	resultQueue        string
+	hostName           string
+	serviceDescription string
+	startTime          float64
+	nextCheck          float64
+	coreTime           float64
+	timeout            int
+	commandLine        string
 }
 
 func (r *receivedStruct) String() string {
@@ -32,14 +32,14 @@ func (r *receivedStruct) String() string {
 			"\t timeout: %d\n"+
 			"\t command_line: %s\n\n",
 		r.typ,
-		r.result_queue,
-		r.host_name,
-		r.service_description,
-		r.start_time,
-		r.next_check,
-		r.core_time,
+		r.resultQueue,
+		r.hostName,
+		r.serviceDescription,
+		r.startTime,
+		r.nextCheck,
+		r.coreTime,
 		r.timeout,
-		r.command_line)
+		r.commandLine)
 }
 
 /**
@@ -86,13 +86,13 @@ func createReceived(input []byte) *receivedStruct {
 
 	//then extract them and store them
 	result.typ = stringMap["type"]
-	result.result_queue = stringMap["result_queue"]
-	result.host_name = stringMap["host_name"]
-	result.service_description = stringMap["service_description"]
-	result.command_line = stringMap["command_line"]
-	result.start_time = parseTimeStringToFloat64(stringMap["start_time"])
-	result.core_time = parseTimeStringToFloat64(stringMap["core_time"])
-	result.next_check = parseTimeStringToFloat64(stringMap["next_check"])
+	result.resultQueue = stringMap["result_queue"]
+	result.hostName = stringMap["host_name"]
+	result.serviceDescription = stringMap["service_description"]
+	result.commandLine = stringMap["command_line"]
+	result.startTime = parseTimeStringToFloat64(stringMap["start_time"])
+	result.coreTime = parseTimeStringToFloat64(stringMap["core_time"])
+	result.nextCheck = parseTimeStringToFloat64(stringMap["next_check"])
 	result.timeout = getInt(stringMap["timeout"])
 
 	return &result

@@ -26,7 +26,7 @@ func startMinWorkers() {
 	//channel for communication
 	activeChan = make(chan int)
 
-	for i := 0; i < config.min_worker; i++ {
+	for i := 0; i < config.minWorker; i++ {
 		worker := newWorker(activeChan)
 		workerSlice = append(workerSlice, worker)
 	}
@@ -68,20 +68,20 @@ func getLoadAvg() {
 
 //checks if all the loadlimits get checked, when values are set
 func checkLoads() bool {
-	if config.load_limit1 != 0 && min1 != 0 {
-		if config.load_limit1 < min1 {
+	if config.loadLimit1 != 0 && min1 != 0 {
+		if config.loadLimit1 < min1 {
 			return false
 		}
 	}
 
-	if config.load_limit5 != 0 && min5 != 0 {
-		if config.load_limit5 < min5 {
+	if config.loadLimit5 != 0 && min5 != 0 {
+		if config.loadLimit5 < min5 {
 			return false
 		}
 	}
 
-	if config.load_limit15 != 0 && min15 != 0 {
-		if config.load_limit15 < min15 {
+	if config.loadLimit15 != 0 && min15 != 0 {
+		if config.loadLimit15 < min15 {
 			return false
 		}
 	}
@@ -93,11 +93,11 @@ func checkLoads() bool {
 func startNewWorkers() {
 	//get new load avg
 	getLoadAvg()
-	if (activeWorkers == len(workerSlice) && len(workerSlice) < config.max_worker &&
+	if (activeWorkers == len(workerSlice) && len(workerSlice) < config.maxWorker &&
 		checkLoads()) ||
-		len(workerSlice) < config.min_worker {
+		len(workerSlice) < config.minWorker {
 		//start new workers at spawn speed from the configuration file
-		for i := 0; i < config.spawn_rate; i++ {
+		for i := 0; i < config.spawnRate; i++ {
 			worker := newWorker(activeChan)
 			workerSlice = append(workerSlice, worker)
 		}
@@ -110,12 +110,12 @@ func startNewWorkers() {
  */
 func removeWorker(worker *worker) {
 	//first remove the worker from the list, only if there are enough workers left
-	if len(workerSlice) > config.min_worker {
+	if len(workerSlice) > config.minWorker {
 		worker.closeWorker()
 		removeFromSlice(worker)
 	} else {
 		//reset max jobs counter and idle time counter
-		worker.maxJobs = config.max_jobs
+		worker.maxJobs = config.maxJobs
 		worker.idleSince = time.Now()
 		worker.startIdleTimer()
 	}

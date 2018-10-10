@@ -15,15 +15,15 @@ func TestReadAndExecute(t *testing.T) {
 	//create the test received only with needed values
 	var testReceive receivedStruct
 	//result_queue, core_start_time, hostname should always stay the same
-	testReceive.result_queue = "TestQueue"
-	testReceive.core_time = 123
-	testReceive.host_name = "TestHost"
-	testReceive.service_description = "TestDescription"
+	testReceive.resultQueue = "TestQueue"
+	testReceive.coreTime = 123
+	testReceive.hostName = "TestHost"
+	testReceive.serviceDescription = "TestDescription"
 
 	resultValue := readAndExecute(&testReceive, nil)
 
-	if resultValue.source != "Mod-Gearman Worker @ "+thisHostname || resultValue.result_queue != "TestQueue" || resultValue.core_start_time != 123 ||
-		resultValue.host_name != "TestHost" || resultValue.service_description != "TestDescription" {
+	if resultValue.source != "Mod-Gearman Worker @ "+thisHostname || resultValue.resultQueue != "TestQueue" || resultValue.coreStartTime != 123 ||
+		resultValue.hostName != "TestHost" || resultValue.serviceDescription != "TestDescription" {
 		t.Errorf("got %s but expected: %s", resultValue, "Mod-Gearman Worker @ "+thisHostname+"result_queue = TestQueue, core_start_time = 123, service_description = TestDescription")
 	}
 
@@ -35,8 +35,8 @@ func TestReadAndExecute(t *testing.T) {
 	}
 
 	//check for max age
-	config.max_age = 1
-	testReceive.core_time = float64(time.Now().UnixNano())/1e9 - 2
+	config.maxAge = 1
+	testReceive.coreTime = float64(time.Now().UnixNano())/1e9 - 2
 	resultValue = readAndExecute(&testReceive, nil)
 	if resultValue.output != "Could not Start Check In Time" {
 		t.Errorf("got %s but expected: %s", resultValue, "Could not Start Check In Time")
@@ -53,7 +53,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	//check for timeout:
 	//set return value in config
-	config.timeout_return = 3
+	config.timeoutReturn = 3
 	returnValue, code = executeCommandWithTimeout("/bin/sleep 2", 1)
 	if returnValue != "timeout" || code != 4 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", returnValue, code, "timeout", 4)

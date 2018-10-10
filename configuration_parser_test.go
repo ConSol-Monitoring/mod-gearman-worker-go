@@ -28,8 +28,8 @@ func TestReadSettingsFile(t *testing.T) {
 		t.Errorf("servicegroups len false expected 4 got %d", len(testConfig.servicegroups))
 	}
 
-	if testConfig.idle_timeout != 200 {
-		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idle_timeout)
+	if testConfig.idleTimeout != 200 {
+		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idleTimeout)
 	}
 
 	os.Remove("testConfigFile")

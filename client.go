@@ -29,7 +29,7 @@ func sendAnswer(answer *answer, key []byte, server string) bool {
 	}
 
 	//send the data in the background to the right queue
-	c.DoBg(answer.result_queue, echomsg, runtime.JobNormal)
+	c.DoBg(answer.resultQueue, echomsg, runtime.JobNormal)
 
 	return true
 }

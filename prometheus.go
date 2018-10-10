@@ -50,13 +50,13 @@ var (
 
 func startPrometheus() {
 	run = false
-	if config.prometheus_server == "" {
+	if config.prometheusServer == "" {
 		return
 	}
 	http.Handle("/metrics", promhttp.Handler())
 	registerMetrics()
 
-	logger.Error(http.ListenAndServe(config.prometheus_server, nil))
+	logger.Error(http.ListenAndServe(config.prometheusServer, nil))
 
 }
 

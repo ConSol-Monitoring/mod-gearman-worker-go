@@ -25,7 +25,7 @@ func newWorker(counterChanel chan int) *worker {
 	workerCount.Inc()
 	iddleWorkerCount.Inc()
 	worker := &worker{
-		maxJobs:   config.max_jobs,
+		maxJobs:   config.maxJobs,
 		idle:      true,
 		idleSince: time.Now(),
 		start:     counterChanel}
@@ -111,7 +111,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 
 	result := readAndExecute(received, key)
 
-	if received.result_queue != "" {
+	if received.resultQueue != "" {
 
 		var sendSuccess bool
 		//send to all servers
@@ -123,7 +123,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 		//send to al servers
 		if !sendSuccess {
 			for _, dupAddress := range config.dupserver {
-				if config.dup_results_are_passive {
+				if config.dupResultsArePassive {
 					result.active = "passive"
 				}
 				sendSuccess = sendAnswer(result, key, dupAddress)
@@ -151,7 +151,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 //starts the idle timer, after the time from the config file timeout() gets called
 //if a job is received the stop call on worker.time stops the timer
 func (worker *worker) startIdleTimer() {
-	worker.timer = time.AfterFunc(time.Duration(config.idle_timeout)*time.Second, worker.timeout)
+	worker.timer = time.AfterFunc(time.Duration(config.idleTimeout)*time.Second, worker.timeout)
 }
 
 //after the max idle time has passed we try to remove the worker

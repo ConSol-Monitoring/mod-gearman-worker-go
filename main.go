@@ -35,7 +35,7 @@ func main() {
 			//is it a param?
 			if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
 				if os.Args[i] == "--help" || os.Args[i] == "-h" {
-					print_usage()
+					printUsage()
 				} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
 					printVersion()
 					os.Exit(3)
@@ -56,7 +56,7 @@ func main() {
 		}
 	} else {
 		fmt.Println("Missing Parameters")
-		print_usage()
+		printUsage()
 	}
 
 	go startPrometheus()
@@ -92,7 +92,7 @@ func main() {
 
 	}
 
-	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.min_worker, config.max_worker)
+	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
 	startMinWorkers()
 
 }
@@ -106,7 +106,7 @@ func printVersion() {
 	fmt.Printf("%s - version %s (Build: %s)\n", NAME, VERSION, Build)
 }
 
-func print_usage() {
+func printUsage() {
 	fmt.Print("Usage: worker [OPTION]...\n")
 	fmt.Print("\n")
 	fmt.Print("Mod-Gearman worker executes host- and servicechecks.\n")
