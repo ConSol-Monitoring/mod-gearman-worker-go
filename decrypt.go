@@ -2,11 +2,14 @@ package main
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	b64 "encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
 )
+
+var myCipher cipher.Block
 
 type receivedStruct struct {
 	typ                string
@@ -42,6 +45,17 @@ func (r *receivedStruct) String() string {
 		r.commandLine)
 }
 
+func createCipher() cipher.Block {
+	if config.encryption {
+		newCipher, err := aes.NewCipher([]byte(key))
+		if err != nil {
+			logger.Panic(err)
+		}
+		return newCipher
+	}
+	return nil
+}
+
 /**
 *
 *@input: string to be converted to base64
@@ -60,15 +74,17 @@ func decrypt(data []byte, key []byte) *receivedStruct {
 	if !config.encryption {
 		return createReceived(data)
 	}
-	cipher, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		logger.Panic(err)
-	}
+
+	// cipher, err := aes.NewCipher([]byte(key))
+	// if err != nil {
+	// 	logger.Panic(err)
+	// }
+
 	decrypted := make([]byte, len(data))
 	size := 16
 
 	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
-		cipher.Decrypt(decrypted[bs:be], data[bs:be])
+		myCipher.Decrypt(decrypted[bs:be], data[bs:be])
 	}
 
 	return createReceived(decrypted)

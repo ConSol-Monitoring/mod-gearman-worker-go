@@ -24,9 +24,11 @@ func TestCreateMap(t *testing.T) {
 
 func TestDecrypt(t *testing.T) {
 	config.encryption = true
-
-	encrypted := encrypt("type=test123", []byte("LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"))
-	result := decrypt([]byte(encrypted), []byte("LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"))
+	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
+	key = getKey()
+	myCipher = createCipher()
+	encrypted := encrypt("type=test123", []byte(config.key))
+	result := decrypt([]byte(encrypted), []byte(config.key))
 	if result.typ != "test123" {
 		t.Errorf("expected: %s, got:%s", "test123", result.typ)
 	}

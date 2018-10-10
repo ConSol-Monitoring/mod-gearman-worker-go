@@ -72,6 +72,9 @@ func main() {
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger()
 
+	//create de cipher
+	myCipher = createCipher()
+
 	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
 	startMinWorkers()
 
