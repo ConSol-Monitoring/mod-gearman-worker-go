@@ -65,7 +65,20 @@ func main() {
 
 	go startPrometheus(config.prometheusServer)
 
-	startDaemonIfConfigured(&config)
+	if config.daemon {
+		cntxt := &daemon.Context{}
+		d, err := cntxt.Reborn()
+
+		if err != nil {
+			logger.Error("unable to start daemon mode")
+		}
+		if d != nil {
+			return
+		}
+		defer cntxt.Release()
+	}
+
+	// startDaemonIfConfigured(&config)
 
 	//set the key
 	key := getKey(&config)
@@ -96,22 +109,6 @@ func checkForReasonableConfig(config *configurationStruct) {
 	}
 	if config.encryption && config.key == "" && config.keyfile == "" {
 		logger.Panic("encryption enabled but no keys defined")
-	}
-
-}
-
-func startDaemonIfConfigured(config *configurationStruct) {
-	if config.daemon {
-		cntxt := &daemon.Context{}
-		d, err := cntxt.Reborn()
-
-		if err != nil {
-			logger.Error("unable to start daemon mode")
-		}
-		if d != nil {
-			return
-		}
-		defer cntxt.Release()
 	}
 
 }
