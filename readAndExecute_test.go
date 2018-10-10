@@ -103,3 +103,14 @@ func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 		executeCommandWithTimeout("/bin/true", 100, &config)
 	}
 }
+
+func BenchmarkReadAndExecute(b *testing.B) {
+	config := configurationStruct{}
+	//set the default timeout time
+	config.debug = 0
+	createLogger(&config)
+	received := &receivedStruct{commandLine: "/bin/true", timeout: 10}
+	for n := 0; n < b.N; n++ {
+		readAndExecute(received, nil, &config)
+	}
+}
