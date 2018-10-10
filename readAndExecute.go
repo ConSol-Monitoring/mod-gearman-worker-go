@@ -143,16 +143,18 @@ func containsBadPathOrChars(cmdString string) bool {
 }
 
 func executeInShell(command string, cmdString string) bool {
+	returnvalue := true
 	//if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
 	if strings.HasPrefix(command, "/") || strings.HasPrefix(command, ".") {
-		return false
+		returnvalue = false
 	}
 	for _, v := range []string{"!", "$", "^", "&", "*", "(", ")", "~", "[", "]", "\\", "|", "{", "\"", "}", ";", "<", ">", "?", "`", "\\", "'"} {
 		if strings.Contains(cmdString, v) {
-			return true
+			returnvalue = true
+			break
 		}
 	}
-	return true
+	return returnvalue
 }
 
 //executes a command in the bash, returns whatever gets printed on the bash
