@@ -13,7 +13,7 @@ import (
 func sendAnswer(answer *answer, key []byte, server string, encrypted bool) bool {
 	c, err := client.New("tcp4", server)
 	if err != nil {
-		logger.Error("client: sendanswer: %s \n", err.Error())
+		logger.Errorf("client: sendanswer: %s", err.Error())
 		return false
 	}
 	defer c.Close()

@@ -119,7 +119,7 @@ func createPidFile(path string) {
 	if path != "" && path != "%PIDFILE%" {
 		f, err := os.Create(path)
 		if err != nil {
-			logger.Error("Could not open/create pidfile: %s", err.Error())
+			logger.Errorf("Could not open/create pidfile: %s", err.Error())
 		} else {
 			f.WriteString(strconv.Itoa(os.Getpid()))
 		}

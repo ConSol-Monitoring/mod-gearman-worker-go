@@ -55,7 +55,7 @@ func openFileOrCreate(path string) (os.File, error) {
 		//open the file
 		file, err := os.Open(path)
 		if err != nil {
-			logger.Error("could not open file %s", path)
+			logger.Errorf("could not open file %s: %s", path, err.Error())
 			return *file, err
 		}
 		return *file, nil
@@ -63,7 +63,7 @@ func openFileOrCreate(path string) (os.File, error) {
 	//open the file
 	file, err := os.Open(path)
 	if err != nil {
-		logger.Error("could not open file %s", path)
+		logger.Errorf("could not open file %s: %s", path, err.Error())
 	}
 	return *file, nil
 

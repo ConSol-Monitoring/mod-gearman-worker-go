@@ -23,7 +23,7 @@ func createLogger(config *configurationStruct) {
 	if logpath != "" && (config.logmode == "automatic" || config.logmode == "file") && config.debug != 3 {
 		_, err = openFileOrCreate(logpath)
 		if err != nil {
-			logger.Error("could not create or open file %s", logpath)
+			logger.Errorf("could not create or open file %s: %s", logpath, err.Error())
 		}
 		logfile, err = os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
