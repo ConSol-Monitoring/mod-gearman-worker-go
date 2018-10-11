@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/kdar/factorlog"
 	daemon "github.com/sevlyar/go-daemon"
@@ -24,38 +28,15 @@ const (
 // var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 
-//var key []byte
-
 func main() {
+	defer logPanicExit()
 
 	var config configurationStruct
 	setDefaultValues(&config)
 
 	//reads the args, check if they are params, if so sends them to the configuration reader
 	if len(os.Args) > 1 {
-		for i := 1; i < len(os.Args); i++ {
-			//is it a param?
-			if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
-				if os.Args[i] == "--help" || os.Args[i] == "-h" {
-					printUsage()
-				} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
-					printVersion()
-					os.Exit(3)
-				} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
-					config.daemon = true
-				} else {
-					s := strings.Trim(os.Args[i], "--")
-					sa := strings.Split(s, "=")
-					if len(sa) == 1 {
-						sa = append(sa, "yes")
-					}
-					//give the param and the value to readSetting
-					readSetting(sa, &config)
-				}
-			} else {
-				fmt.Println(os.Args[i] + " is not a param!, ignoring")
-			}
-		}
+		initConfiguration(&config)
 	} else {
 		fmt.Println("Missing Parameters")
 		printUsage()
@@ -76,27 +57,87 @@ func main() {
 		defer cntxt.Release()
 	}
 
-	defer logPanicExit()
+	for {
+		exitCode := mainLoop(&config)
+		defer logger.Debugf("mod-gearman-worker-go shutdown complete")
+		if exitCode > 0 {
+			os.Exit(exitCode)
+		}
+		// make it possible to call main() from tests without exiting the tests
+		if exitCode == 0 {
+			break
+		}
+	}
+}
 
-	go startPrometheus(config.prometheusServer)
+func mainLoop(config *configurationStruct) (exitCode int) {
+	osSignalChannel := make(chan os.Signal, 1)
+	signal.Notify(osSignalChannel, syscall.SIGHUP)
+	signal.Notify(osSignalChannel, syscall.SIGTERM)
+	signal.Notify(osSignalChannel, os.Interrupt)
+	signal.Notify(osSignalChannel, syscall.SIGINT)
 
-	//set the key
-	key := getKey(&config)
+	osSignalUsrChannel := make(chan os.Signal, 1)
+	signal.Notify(osSignalUsrChannel, syscall.SIGUSR1)
+
+	shutdownChannel := make(chan bool)
 
 	//create the PidFile
 	createPidFile(config.pidfile)
 	defer deletePidFile(config.pidfile)
 
 	//create the logger, everything logged until here gets printed to stdOut
-	createLogger(&config)
+	createLogger(config)
 
-	//create de cipher
+	// initialize prometheus
+	prometheusListener := startPrometheus(config.prometheusServer)
+
+	//create the cipher
+	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
 	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
-	mainworker := newMainWorker(&config, key)
-	mainworker.startWorker()
+	mainworker := newMainWorker(config, key)
+	go func() {
+		defer logPanicExit()
+		mainworker.startWorker(shutdownChannel)
+	}()
 
+	// just wait till someone hits ctrl+c or we have to reload
+	for {
+		select {
+		case sig := <-osSignalChannel:
+			return mainSignalHandler(sig, shutdownChannel, prometheusListener)
+		case sig := <-osSignalUsrChannel:
+			mainSignalHandler(sig, shutdownChannel, prometheusListener)
+		}
+	}
+}
+
+func initConfiguration(config *configurationStruct) {
+	for i := 1; i < len(os.Args); i++ {
+		//is it a param?
+		if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
+			if os.Args[i] == "--help" || os.Args[i] == "-h" {
+				printUsage()
+			} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
+				printVersion()
+				os.Exit(3)
+			} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
+				config.daemon = true
+			} else {
+				s := strings.Trim(os.Args[i], "--")
+				sa := strings.Split(s, "=")
+				if len(sa) == 1 {
+					sa = append(sa, "yes")
+				}
+				//give the param and the value to readSetting
+				readSetting(sa, config)
+			}
+		} else {
+			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
+		}
+	}
 }
 
 func checkForReasonableConfig(config *configurationStruct) {
@@ -129,6 +170,48 @@ func createPidFile(path string) {
 
 func deletePidFile(f string) {
 	os.Remove(f)
+}
+
+func mainSignalHandler(sig os.Signal, shutdownChannel chan bool, prometheusListener *net.Listener) (exitCode int) {
+	switch sig {
+	case syscall.SIGTERM:
+		logger.Infof("got sigterm, quiting gracefully")
+		shutdownChannel <- true
+		close(shutdownChannel)
+		if prometheusListener != nil {
+			(*prometheusListener).Close()
+		}
+		return (0)
+	case syscall.SIGINT:
+		fallthrough
+	case os.Interrupt:
+		logger.Infof("got sigint, quitting")
+		shutdownChannel <- true
+		close(shutdownChannel)
+		if prometheusListener != nil {
+			(*prometheusListener).Close()
+		}
+		return (1)
+	case syscall.SIGHUP:
+		logger.Infof("got sighup, reloading configuration...")
+		if prometheusListener != nil {
+			(*prometheusListener).Close()
+		}
+		return (-1)
+	case syscall.SIGUSR1:
+		logger.Errorf("requested thread dump via signal %s", sig)
+		logThreaddump()
+		return 0
+	default:
+		logger.Warnf("Signal not handled: %v", sig)
+	}
+	return 1
+}
+
+func logThreaddump() {
+	buf := make([]byte, 1<<16)
+	runtime.Stack(buf, true)
+	logger.Errorf("%s", buf)
 }
 
 // printVersion prints the version

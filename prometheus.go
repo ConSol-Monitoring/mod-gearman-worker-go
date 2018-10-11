@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var run bool
@@ -57,20 +56,37 @@ var (
 		[]string{"description"})
 )
 
-func startPrometheus(server string) {
+func startPrometheus(server string) (prometheusListener *net.Listener) {
 	defer logPanicExit()
-	run = false
-	if server == "" {
-		return
+	if server != "" {
+		l, err := net.Listen("tcp", server)
+		prometheusListener = &l
+		go func() {
+			// make sure we log panics properly
+			defer logPanicExit()
+
+			if err != nil {
+				logger.Fatalf("starting prometheus exporter failed: %s", err)
+			}
+			mux := http.NewServeMux()
+			mux.Handle("/metrics", prometheus.Handler())
+			http.Serve(l, mux)
+		}()
+		logger.Debugf("serving prometheus metrics at %s/metrics", server)
 	}
-	http.Handle("/metrics", promhttp.Handler())
 	registerMetrics()
-
-	logger.Error(http.ListenAndServe(server, nil))
-
+	return
 }
 
+var prometheusRegistered bool
+
 func registerMetrics() {
+
+	// registering twice will throw lots of errors
+	if prometheusRegistered {
+		return
+	}
+	prometheusRegistered = true
 
 	//register the metrics
 	if err := prometheus.Register(workerCount); err != nil {

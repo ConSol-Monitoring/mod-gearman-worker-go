@@ -36,16 +36,30 @@ func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 	}
 }
 
-func (w *mainWorker) startWorker() {
-	tick := time.Tick(1 * time.Second)
+func (w *mainWorker) startWorker(shutdownChannel chan bool) {
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case x := <-w.activeChan:
 			w.activeWorkers += x
-		case <-tick:
+		case <-ticker.C:
 			w.manageWorkers()
+		case <-shutdownChannel:
+			logger.Errorf("startWorker ending...")
+			ticker.Stop()
+			var workerSliceCopy []*worker
+			copy(w.workerSlice, workerSliceCopy)
+			for _, worker := range workerSliceCopy {
+				logger.Errorf("worker removed...")
+				worker.Shutdown()
+			}
+			if w.statusWorker != nil {
+				logger.Errorf("statusworker removed...")
+				w.statusWorker.Shutdown()
+				w.statusWorker = nil
+			}
+			return
 		}
-
 	}
 }
 
