@@ -13,6 +13,7 @@ EXTERNAL_DEPS = \
 	github.com/appscode/g2 \
 	github.com/appscode/g2/worker \
 	github.com/appscode/g2/client \
+	github.com/appscode/g2/pkg/runtime \
 	github.com/kdar/factorlog \
 	github.com/sevlyar/go-daemon \
 	github.com/prometheus/client_golang/prometheus \
