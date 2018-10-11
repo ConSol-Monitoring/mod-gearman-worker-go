@@ -126,21 +126,23 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	}
 
 	if received.resultQueue != "" {
-
 		var sendSuccess bool
-		//send to all servers
+		// send result back to any server
 		for _, address := range worker.config.server {
 			sendSuccess = sendAnswer(result, worker.key, address, worker.config.encryption)
+			if sendSuccess {
+				break
+			}
 		}
 
-		//if failed send to al duplicate servers
-		//send to al servers
-		if !sendSuccess {
-			for _, dupAddress := range worker.config.dupserver {
-				if worker.config.dupResultsArePassive {
-					result.active = "passive"
-				}
-				sendSuccess = sendAnswer(result, worker.key, dupAddress, worker.config.encryption)
+		// send to duplicate servers as well
+		for _, dupAddress := range worker.config.dupserver {
+			if worker.config.dupResultsArePassive {
+				result.active = "passive"
+			}
+			sendSuccess = sendAnswer(result, worker.key, dupAddress, worker.config.encryption)
+			if sendSuccess {
+				break
 			}
 		}
 	}
