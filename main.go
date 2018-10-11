@@ -85,6 +85,7 @@ func main() {
 
 	//create the PidFile
 	createPidFile(config.pidfile)
+	defer deletePidFile(config.pidfile)
 
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger(&config)
@@ -118,10 +119,9 @@ func createPidFile(path string) {
 	if path != "" && path != "%PIDFILE%" {
 		f, err := os.Create(path)
 		if err != nil {
-			logger.Error("Could not open/create Pidfile!!")
+			logger.Error("Could not open/create pidfile: %s", err.Error())
 		} else {
 			f.WriteString(strconv.Itoa(os.Getpid()))
-			defer deletePidFile(path)
 		}
 
 	}
