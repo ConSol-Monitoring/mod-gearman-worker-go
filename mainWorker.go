@@ -123,17 +123,6 @@ func (w *mainWorker) checkLoads() bool {
 }
 
 /*
-* removes the connection to the server from the worker
-* then removes the worker from the slice
- */
-func (w *mainWorker) removeWorker(worker *worker) {
-	//first remove the worker from the list, only if there are enough workers left
-	logger.Tracef("stopping worker")
-	worker.closeWorker()
-	w.removeFromSlice(worker)
-}
-
-/*
 * Helper to remove the worker from the
 * slice of workers
  */
@@ -141,7 +130,7 @@ func (w *mainWorker) removeFromSlice(worker *worker) {
 	for i, v := range w.workerSlice {
 		if v == worker {
 			//copy everything after found one to the left
-			//nill the last value so no memory leaks appear
+			//nil the last value so no memory leaks appear
 			copy(w.workerSlice[i:], w.workerSlice[i+1:])
 			w.workerSlice[len(w.workerSlice)-1] = nil
 			w.workerSlice = w.workerSlice[:len(w.workerSlice)-1]

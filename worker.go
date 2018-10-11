@@ -39,14 +39,11 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 
 	w := libworker.New(libworker.OneByOne)
 	worker.worker = w
-	defer w.Close()
 
 	w.ErrorHandler = func(e error) {
-		if e.Error() != "EOF" {
-			logger.Errorf(e.Error())
-			logger.Errorf("%s", debug.Stack())
-		}
-		worker.close()
+		logger.Errorf(e.Error())
+		logger.Errorf("%s", debug.Stack())
+		worker.Shutdown()
 	}
 
 	//listen to this servers
@@ -158,8 +155,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 
 	worker.maxJobs--
 	if worker.maxJobs < 1 {
-		worker.closeWorker()
-		// worker.mainWorker.removeFromSlice(worker)
+		worker.Shutdown()
 	}
 
 	//start the timer again
@@ -176,7 +172,7 @@ func (worker *worker) startIdleTimer() {
 //after the max idle time has passed we check if we can remove the worker
 func (worker *worker) timeout() {
 	if len(worker.mainWorker.workerSlice) < worker.config.minWorker {
-		worker.mainWorker.removeWorker(worker)
+		worker.Shutdown()
 	} else {
 		worker.maxJobs = worker.config.maxJobs
 		worker.idleSince = time.Now()
@@ -186,16 +182,13 @@ func (worker *worker) timeout() {
 
 //everything needed to stop the worker without
 //creating any memory leaks
-func (worker *worker) close() {
-	//close only if more than the minimum workers are available
-	worker.mainWorker.removeWorker(worker)
-}
-
-func (worker *worker) closeWorker() {
-	if worker.worker != nil {
-		worker.worker.Close()
-	}
+func (worker *worker) Shutdown() {
+	logger.Debugf("shutting down")
 	worker.timer.Stop()
+	if worker.worker != nil {
+		worker.worker.Shutdown()
+	}
 	worker.worker = nil
 	workerCount.Desc()
+	worker.mainWorker.removeFromSlice(worker)
 }
