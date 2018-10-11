@@ -28,7 +28,6 @@ type configurationStruct struct {
 	minWorker                 int //special
 	maxWorker                 int //special
 	idleTimeout               int //special
-	maxJobs                   int //special
 	maxAge                    int //special
 	spawnRate                 int //special
 	forkOnExec                bool
@@ -65,7 +64,6 @@ func setDefaultValues(result *configurationStruct) {
 	result.minWorker = 1
 	result.maxWorker = 20
 	result.spawnRate = 1
-	result.maxJobs = 1000
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
 	if result.identifier == "" {
@@ -163,9 +161,6 @@ func readSetting(values []string, result *configurationStruct) {
 	}
 	if values[0] == "idle-timeout" {
 		result.idleTimeout = getInt(values[1])
-	}
-	if values[0] == "max-jobs" {
-		result.maxJobs = getInt(values[1])
 	}
 	if values[0] == "max-age" {
 		result.maxAge = getInt(values[1])

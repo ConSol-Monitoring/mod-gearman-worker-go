@@ -11,7 +11,6 @@ type worker struct {
 	worker     *libworker.Worker
 	idle       bool
 	idleSince  time.Time
-	maxJobs    int
 	start      chan int
 	timer      *time.Timer
 	config     *configurationStruct
@@ -28,7 +27,6 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	workerCount.Inc()
 	idleWorkerCount.Inc()
 	worker := &worker{
-		maxJobs:    configuration.maxJobs,
 		idle:       true,
 		idleSince:  time.Now(),
 		start:      counterChanel,
@@ -154,11 +152,6 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	worker.idle = true
 	worker.idleSince = time.Now()
 
-	worker.maxJobs--
-	if worker.maxJobs < 1 {
-		worker.Shutdown()
-	}
-
 	//start the timer again
 	worker.startIdleTimer()
 	return nil, nil
@@ -185,7 +178,6 @@ func (worker *worker) timeout() {
 	if len(worker.mainWorker.workerSlice) < worker.config.minWorker {
 		worker.Shutdown()
 	} else {
-		worker.maxJobs = worker.config.maxJobs
 		worker.idleSince = time.Now()
 		worker.startIdleTimer()
 	}
