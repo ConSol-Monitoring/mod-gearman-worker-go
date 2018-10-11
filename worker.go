@@ -103,7 +103,8 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	logger.Debugf("worker got a job: %s", job.Handle())
 
 	//stop the idle timeout timer
-	worker.timer.Stop()
+	worker.stopIdleTimer()
+
 	//set worker to idle and idleSince back to zero
 	worker.idle = false
 	worker.idleSince = time.Now()
@@ -166,7 +167,17 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 //starts the idle timer, after the time from the config file timeout() gets called
 //if a job is received the stop call on worker.time stops the timer
 func (worker *worker) startIdleTimer() {
-	worker.timer = time.AfterFunc(time.Duration(worker.config.idleTimeout)*time.Second, worker.timeout)
+	if worker.config.idleTimeout > 0 {
+		worker.timer = time.AfterFunc(time.Duration(worker.config.idleTimeout)*time.Second, worker.timeout)
+	}
+}
+
+//stop the idle timer
+func (worker *worker) stopIdleTimer() {
+	if worker.timer != nil {
+		worker.timer.Stop()
+		worker.timer = nil
+	}
 }
 
 //after the max idle time has passed we check if we can remove the worker
@@ -184,7 +195,7 @@ func (worker *worker) timeout() {
 //creating any memory leaks
 func (worker *worker) Shutdown() {
 	logger.Debugf("shutting down")
-	worker.timer.Stop()
+	worker.stopIdleTimer()
 	if worker.worker != nil {
 		worker.worker.Shutdown()
 	}
