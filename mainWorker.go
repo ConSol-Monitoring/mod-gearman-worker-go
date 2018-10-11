@@ -119,6 +119,7 @@ func (w *mainWorker) checkLoads() bool {
  */
 func (w *mainWorker) removeWorker(worker *worker) {
 	//first remove the worker from the list, only if there are enough workers left
+	logger.Tracef("stopping worker")
 	worker.closeWorker()
 	w.removeFromSlice(worker)
 }

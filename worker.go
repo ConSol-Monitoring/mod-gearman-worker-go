@@ -23,7 +23,7 @@ type worker struct {
 // counterChanel will receive +1 if a job is received and started
 // and -1 if a job is completed
 func newWorker(counterChanel chan int, configuration *configurationStruct, key []byte, mainWorker *mainWorker) *worker {
-	logger.Debugf("starting new worker")
+	logger.Tracef("starting new worker")
 	workerCount.Inc()
 	idleWorkerCount.Inc()
 	worker := &worker{
@@ -33,15 +33,18 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 		start:      counterChanel,
 		config:     configuration,
 		key:        key,
-		mainWorker: mainWorker}
-	//create the libWorker
+		mainWorker: mainWorker,
+	}
 
 	w := libworker.New(libworker.OneByOne)
+	worker.worker = w
 	defer w.Close()
 
 	w.ErrorHandler = func(e error) {
-		logger.Errorf(e.Error())
-		logger.Errorf("%s", debug.Stack())
+		if e.Error() != "EOF" {
+			logger.Errorf(e.Error())
+			logger.Errorf("%s", debug.Stack())
+		}
 		worker.close()
 	}
 
@@ -83,9 +86,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
-		//logger.Fatal(err)
-		// logger.Debug("worker not ready closing again")
-		// worker.close()
+		logger.Debug("worker not ready closing again")
 		worker.mainWorker.removeFromSlice(worker)
 		return nil
 	}
@@ -97,7 +98,6 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	//start the idle
 	worker.startIdleTimer()
 
-	worker.worker = w
 	return worker
 }
 
@@ -188,7 +188,9 @@ func (worker *worker) close() {
 }
 
 func (worker *worker) closeWorker() {
-	worker.worker.Close()
+	if worker.worker != nil {
+		worker.worker.Close()
+	}
 	worker.timer.Stop()
 	worker.worker = nil
 	workerCount.Desc()
