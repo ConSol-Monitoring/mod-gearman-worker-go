@@ -247,19 +247,25 @@ func readSettingsFile(path string, result *configurationStruct) {
 }
 
 func getInt(input string) int {
+	if input == "" {
+		return 0
+	}
 	result, err := strconv.Atoi(input)
 	if err != nil {
 		//check if it is an float value
+		logger.Debugf("Error converting %s to int, try with float", input)
 		result = int(getFloat(input))
-		logger.Error("Error converting " + input + " to int, try with float")
 	}
 	return result
 }
 
 func getFloat(input string) float32 {
+	if input == "" {
+		return float32(0)
+	}
 	result, err := strconv.ParseFloat(input, 32)
 	if err != nil {
-		logger.Error("error Converting ", input)
+		logger.Errorf("error Converting %s to float", input)
 		result = 0
 	}
 	return float32(result)
