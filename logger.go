@@ -61,3 +61,12 @@ func logPanicExit() {
 		os.Exit(1)
 	}
 }
+
+func setLogLevel(lvl int) {
+	verbosity := getSeverity(lvl)
+	logger.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))
+}
+
+func disableLogging() {
+	logger.SetMinMaxSeverity(factorlog.StringToSeverity("PANIC"), factorlog.StringToSeverity("PANIC"))
+}

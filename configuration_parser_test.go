@@ -37,6 +37,8 @@ func TestReadSettingsFile(t *testing.T) {
 }
 
 func TestGetFloat(t *testing.T) {
+	disableLogging()
+
 	//int value, float value, string value
 	value := getFloat("1")
 	if value != 1 {
@@ -52,9 +54,14 @@ func TestGetFloat(t *testing.T) {
 	if value != 0 {
 		t.Errorf("wrong value expected 0 got %f", value)
 	}
+
+	// restore error loglevel
+	setLogLevel(0)
 }
 
 func TestGetInt(t *testing.T) {
+	disableLogging()
+
 	//int value, float value, string value
 	value := getInt("1")
 	if value != 1 {
@@ -70,6 +77,9 @@ func TestGetInt(t *testing.T) {
 	if value != 0 {
 		t.Errorf("wrong value expected 0 got %d", value)
 	}
+
+	// restore error loglevel
+	setLogLevel(0)
 }
 
 func TestGetBool(t *testing.T) {
