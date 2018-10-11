@@ -92,9 +92,11 @@ func (w *mainWorker) getLoadAvg() {
 
 //checks if all the loadlimits get checked, when values are set
 func (w *mainWorker) checkLoads() bool {
-	if w.config.loadLimit1 > 0 || w.config.loadLimit5 > 0 || w.config.loadLimit15 > 0 {
-		w.getLoadAvg()
+	if w.config.loadLimit1 <= 0 && w.config.loadLimit5 <= 0 && w.config.loadLimit15 <= 0 {
+		return true
 	}
+
+	w.getLoadAvg()
 	if w.config.loadLimit1 > 0 && w.min1 > 0 && w.config.loadLimit1 < w.min1 {
 		logger.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.config.loadLimit1)
 		return false
