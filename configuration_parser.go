@@ -55,7 +55,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.logmode = "automatic"
 	result.encryption = true
 	result.showErrorOutput = true
-	result.debug = 1
+	result.debug = 0
 	result.logmode = "automatic"
 	result.dupResultsArePassive = true
 	result.gearmanConnectionTimeout = -1
