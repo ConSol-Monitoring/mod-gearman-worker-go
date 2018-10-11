@@ -36,10 +36,6 @@ func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 
 func (w *mainWorker) startWorker() {
 	tick := time.Tick(1 * time.Second)
-
-	//get first load avg
-	w.getLoadAvg()
-
 	for {
 		select {
 		case x := <-w.activeChan:
@@ -54,7 +50,6 @@ func (w *mainWorker) startWorker() {
 func (w *mainWorker) manageWorkers() {
 
 	//as long as there are to few workers start them without a limit
-
 	for i := w.config.minWorker - len(w.workerSlice); i > 0; i-- {
 		worker := newWorker(w.activeChan, w.config, w.key, w)
 		if worker != nil {
@@ -63,9 +58,10 @@ func (w *mainWorker) manageWorkers() {
 	}
 
 	//check if we need more workers
-	w.getLoadAvg()
-	if w.activeWorkers == len(w.workerSlice) && len(w.workerSlice) < w.config.maxWorker &&
-		w.checkLoads() {
+	if w.activeWorkers == len(w.workerSlice) && len(w.workerSlice) < w.config.maxWorker {
+		if !w.checkLoads() {
+			return
+		}
 		//start new workers at spawn speed from the configuration file
 		for i := 0; i < w.config.spawnRate; i++ {
 			worker := newWorker(w.activeChan, w.config, w.key, w)
@@ -80,38 +76,38 @@ func (w *mainWorker) manageWorkers() {
 // reads the avg loads from /procs/loadavg
 func (w *mainWorker) getLoadAvg() {
 	file, err := os.Open("/proc/loadavg")
-	if err == nil {
-		scanner := bufio.NewScanner(file)
-		//read first line:
-		scanner.Scan()
-		firstline := scanner.Text()
-		values := strings.Split(firstline, " ")
-
-		w.min1 = getFloat(values[0])
-		w.min5 = getFloat(values[1])
-		w.min15 = getFloat(values[2])
-
+	if err != nil {
+		return
 	}
+	scanner := bufio.NewScanner(file)
+	//read first line:
+	scanner.Scan()
+	firstline := scanner.Text()
+	values := strings.Split(firstline, " ")
+
+	w.min1 = getFloat(values[0])
+	w.min5 = getFloat(values[1])
+	w.min15 = getFloat(values[2])
 }
 
 //checks if all the loadlimits get checked, when values are set
 func (w *mainWorker) checkLoads() bool {
-	if w.config.loadLimit1 != 0 && w.min1 != 0 {
-		if w.config.loadLimit1 < w.min1 {
-			return false
-		}
+	if w.config.loadLimit1 > 0 || w.config.loadLimit5 > 0 || w.config.loadLimit15 > 0 {
+		w.getLoadAvg()
+	}
+	if w.config.loadLimit1 > 0 && w.min1 > 0 && w.config.loadLimit1 < w.min1 {
+		logger.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.config.loadLimit1)
+		return false
 	}
 
-	if w.config.loadLimit5 != 0 && w.min5 != 0 {
-		if w.config.loadLimit5 < w.min5 {
-			return false
-		}
+	if w.config.loadLimit5 > 0 && w.min5 > 0 && w.config.loadLimit5 < w.min5 {
+		logger.Debugf("not starting any more worker, load5 is too high: %f > %f", w.min5, w.config.loadLimit5)
+		return false
 	}
 
-	if w.config.loadLimit15 != 0 && w.min15 != 0 {
-		if w.config.loadLimit15 < w.min15 {
-			return false
-		}
+	if w.config.loadLimit15 > 0 && w.min15 > 0 && w.config.loadLimit15 < w.min15 {
+		logger.Debugf("not starting any more worker, load15 is too high: %f > %f", w.min15, w.config.loadLimit15)
+		return false
 	}
 
 	return true
