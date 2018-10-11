@@ -58,6 +58,7 @@ var (
 )
 
 func startPrometheus(server string) {
+	defer logPanicExit()
 	run = false
 	if server == "" {
 		return

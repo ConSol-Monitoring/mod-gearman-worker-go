@@ -76,6 +76,8 @@ func main() {
 		defer cntxt.Release()
 	}
 
+	defer logPanicExit()
+
 	go startPrometheus(config.prometheusServer)
 
 	//set the key
@@ -99,15 +101,15 @@ func main() {
 
 func checkForReasonableConfig(config *configurationStruct) {
 	if len(config.server) == 0 {
-		logger.Panic("no server specified")
+		logger.Fatal("no server specified")
 	}
 	if !config.notifications && !config.services && !config.eventhandler && !config.hosts &&
 		len(config.hostgroups) == 0 && len(config.servicegroups) == 0 {
 
-		logger.Panic("no listen queues defined!")
+		logger.Fatal("no listen queues defined!")
 	}
 	if config.encryption && config.key == "" && config.keyfile == "" {
-		logger.Panic("encryption enabled but no keys defined")
+		logger.Fatal("encryption enabled but no keys defined")
 	}
 
 }

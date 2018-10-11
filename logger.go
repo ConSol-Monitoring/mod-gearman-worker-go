@@ -53,8 +53,11 @@ func getSeverity(input int) string {
 
 func logPanicExit() {
 	if r := recover(); r != nil {
+		logger.Errorf("********* PANIC *********")
 		logger.Errorf("Panic: %s", r)
+		logger.Errorf("**** Stack:")
 		logger.Errorf("%s", debug.Stack())
+		logger.Errorf("*************************")
 		os.Exit(1)
 	}
 }

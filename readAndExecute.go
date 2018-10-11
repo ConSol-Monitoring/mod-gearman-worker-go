@@ -189,7 +189,10 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 
 	done := make(chan error)
 	//go routine listening for the exit of the command, then writes the status to chanel done
-	go func() { done <- cmd.Wait() }()
+	go func() {
+		defer logPanicExit()
+		done <- cmd.Wait()
+	}()
 
 	timeoutTimer := time.After(time.Duration(timeOut) * time.Second)
 
