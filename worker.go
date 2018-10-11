@@ -17,6 +17,7 @@ type worker struct {
 	config     *configurationStruct
 	key        []byte
 	mainWorker *mainWorker
+	tasks      int
 }
 
 //creates a new worker and returns a pointer to it
@@ -116,6 +117,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 
 	received := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
 	taskCounter.WithLabelValues(received.typ).Inc()
+	worker.mainWorker.tasks++
 
 	logger.Tracef("job data: %s", received)
 

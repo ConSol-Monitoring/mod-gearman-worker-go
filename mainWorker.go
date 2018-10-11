@@ -17,12 +17,14 @@ import (
 type mainWorker struct {
 	activeWorkers int
 	workerSlice   []*worker
+	statusWorker  *worker
 	activeChan    chan int
 	min1          float32
 	min5          float32
 	min15         float32
 	config        *configurationStruct
 	key           []byte
+	tasks         int
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
@@ -48,6 +50,11 @@ func (w *mainWorker) startWorker() {
 }
 
 func (w *mainWorker) manageWorkers() {
+
+	// start status worker
+	if w.statusWorker == nil {
+		w.statusWorker = newStatusWorker(w.config, w)
+	}
 
 	//as long as there are to few workers start them without a limit
 	for i := w.config.minWorker - len(w.workerSlice); i > 0; i-- {
