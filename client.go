@@ -20,11 +20,11 @@ func sendAnswer(answer *answer, key []byte, server string, encrypted bool) bool 
 	logger.Debug("\n", answer, "\n")
 
 	byteAnswer := []byte(createAnswer(answer, key, encrypted))
-	logger.Debug("sending to server String: " + string(byteAnswer))
+	logger.Tracef("sending to server String: %s", byteAnswer)
 
 	echomsg, err := c.Echo(byteAnswer)
 	if err != nil {
-		logger.Error("client: sendAnswer: %s \n", err.Error())
+		logger.Errorf("client: sendAnswer: %s", err.Error())
 		return false
 	}
 
