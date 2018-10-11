@@ -11,6 +11,8 @@ MINGOVERSIONSTR:=1.7
 
 EXTERNAL_DEPS = \
 	github.com/appscode/g2 \
+	github.com/appscode/g2/worker \
+	github.com/appscode/g2/client \
 	github.com/kdar/factorlog \
 	github.com/sevlyar/go-daemon \
 	github.com/prometheus/client_golang/prometheus \
