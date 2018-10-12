@@ -45,7 +45,7 @@ func (w *mainWorker) startWorker(shutdownChannel chan bool) {
 		case <-ticker.C:
 			w.manageWorkers()
 		case <-shutdownChannel:
-			logger.Errorf("startWorker ending...")
+			logger.Debugf("startWorker ending...")
 			ticker.Stop()
 			var workerSliceCopy []*worker
 			copy(w.workerSlice, workerSliceCopy)
@@ -64,7 +64,6 @@ func (w *mainWorker) startWorker(shutdownChannel chan bool) {
 }
 
 func (w *mainWorker) manageWorkers() {
-
 	// start status worker
 	if w.statusWorker == nil {
 		w.statusWorker = newStatusWorker(w.config, w)
