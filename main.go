@@ -59,7 +59,7 @@ func main() {
 
 	for {
 		exitCode := mainLoop(&config, nil)
-		defer logger.Debugf("mod-gearman-worker-go shutdown complete")
+		defer logger.Infof("mod-gearman-worker-go shutdown complete")
 		if exitCode > 0 {
 			os.Exit(exitCode)
 		}
@@ -98,7 +98,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
-	logger.Debugf("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
+	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
 	mainworker := newMainWorker(config, key)
 	go func() {
 		defer logPanicExit()
