@@ -82,7 +82,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
-		logger.Debug("worker not ready closing again")
+		logger.Debugf("worker not ready closing again: %s", err.Error())
 		worker.mainWorker.removeFromSlice(worker)
 		return nil
 	}
@@ -108,10 +108,22 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	worker.idleSince = time.Now()
 	worker.start <- 1
 
+	//set back to idling
+	defer func() {
+		worker.start <- -1
+		worker.idle = true
+		worker.idleSince = time.Now()
+		worker.startIdleTimer()
+	}()
+
 	idleWorkerCount.Dec()
 	workingWorkerCount.Inc()
 
-	received := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
+	received, err := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
+	if err != nil {
+		logger.Errorf("decrypt failed: %s", err.Error())
+		return nil, nil
+	}
 	taskCounter.WithLabelValues(received.typ).Inc()
 	worker.mainWorker.tasks++
 
@@ -147,13 +159,6 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	idleWorkerCount.Inc()
 	workingWorkerCount.Dec()
 
-	//set back to idling
-	worker.start <- -1
-	worker.idle = true
-	worker.idleSince = time.Now()
-
-	//start the timer again
-	worker.startIdleTimer()
 	return nil, nil
 }
 

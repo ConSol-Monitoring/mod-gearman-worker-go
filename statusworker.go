@@ -40,7 +40,7 @@ func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker)
 
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
-		logger.Debug("worker not ready closing again")
+		logger.Debugf("worker not ready closing again: %s", err.Error())
 		return nil
 	}
 	//start the worker

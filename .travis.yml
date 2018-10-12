@@ -5,5 +5,10 @@ go:
   - "1.9"
   - "1.10"
 
+addons:
+  apt:
+    packages:
+    - gearman-job-server
+
 script:
   -  make citest
