@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"runtime/debug"
+	"time"
 
+	"github.com/appscode/g2/client"
 	libworker "github.com/appscode/g2/worker"
 )
 
@@ -16,6 +18,8 @@ type worker struct {
 	key        []byte
 	mainWorker *mainWorker
 	tasks      int
+	client     *client.Client
+	dupclient  *client.Client
 }
 
 //creates a new worker and returns a pointer to it
@@ -29,6 +33,8 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 		config:     configuration,
 		key:        key,
 		mainWorker: mainWorker,
+		client:     nil,
+		dupclient:  nil,
 	}
 	worker.id = fmt.Sprintf("%p", worker)
 
@@ -121,27 +127,75 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	}
 
 	if received.resultQueue != "" {
-		var sendSuccess bool
-		// send result back to any server
+		worker.SendResult(result)
+		worker.SendResultDup(result)
+	}
+	return nil, nil
+}
+
+//SendResult sends the result back to the result queue
+func (worker *worker) SendResult(result *answer) {
+	// send result back to any server
+	sendSuccess := false
+	retries := 0
+	for {
+		var err error
+		var c *client.Client
 		for _, address := range worker.config.server {
-			sendSuccess = sendAnswer(result, worker.key, address, worker.config.encryption)
-			if sendSuccess {
+			c, err = sendAnswer(worker.client, result, worker.key, address, worker.config.encryption)
+			if err == nil {
+				worker.client = c
+				sendSuccess = true
 				break
 			}
+			if c != nil {
+				c.Close()
+			}
 		}
+		if sendSuccess || retries > 120 {
+			break
+		}
+		if retries == 0 && err != nil {
+			logger.Errorf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
+		}
+		time.Sleep(1 * time.Second)
+		retries++
+	}
+}
 
-		// send to duplicate servers as well
+func (worker *worker) SendResultDup(result *answer) {
+	if len(worker.config.dupserver) == 0 {
+		return
+	}
+	// send to duplicate servers as well
+	sendSuccess := false
+	retries := 0
+	for {
+		var err error
+		var c *client.Client
 		for _, dupAddress := range worker.config.dupserver {
 			if worker.config.dupResultsArePassive {
 				result.active = "passive"
 			}
-			sendSuccess = sendAnswer(result, worker.key, dupAddress, worker.config.encryption)
-			if sendSuccess {
+			c, err = sendAnswer(worker.dupclient, result, worker.key, dupAddress, worker.config.encryption)
+			if err == nil {
+				worker.dupclient = c
+				sendSuccess = true
 				break
 			}
+			if c != nil {
+				c.Close()
+			}
 		}
+		if sendSuccess || retries > 120 {
+			break
+		}
+		if retries == 0 && err != nil {
+			logger.Errorf("failed to send back result (to dupserver), will continue to retry for 2 minutes: %s", err.Error())
+		}
+		time.Sleep(1 * time.Second)
+		retries++
 	}
-	return nil, nil
 }
 
 //Shutdown and unregister this worker
