@@ -40,7 +40,7 @@ func createLogger(config *configurationStruct) {
 func getSeverity(input int) string {
 	switch input {
 	case 0:
-		return "ERROR"
+		return "INFO"
 	case 1:
 		return "DEBUG"
 	case 2:

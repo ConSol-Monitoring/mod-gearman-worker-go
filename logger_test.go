@@ -71,8 +71,8 @@ func TestCreateLogger(t *testing.T) {
 		t.Errorf("TestDebug is in File but should not be!")
 	}
 
-	if strings.Contains(string(content), "TestInfo") {
-		t.Errorf("TestInfo is in File but should not be!")
+	if !strings.Contains(string(content), "TestInfo") {
+		t.Errorf("TestInfo is not in File but should be!")
 	}
 
 	err = os.Remove("loggertest")
