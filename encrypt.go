@@ -29,8 +29,6 @@ func encrypt(sData string, key []byte, encrypt bool) string {
 		}
 	}
 
-	//cipher, _ := aes.NewCipher([]byte(key))
-
 	encrypted := make([]byte, len(data))
 	size := 16
 
