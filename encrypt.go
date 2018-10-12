@@ -4,9 +4,8 @@ import (
 	b64 "encoding/base64"
 )
 
-func createAnswer(value *answer, key []byte, withEncrypt bool) string {
-	byteVal := value.String()
-	encrypted := encrypt(byteVal, key, withEncrypt)
+func createAnswer(value *answer, key []byte, withEncrypt bool) []byte {
+	encrypted := encrypt([]byte(value.String()), key, withEncrypt)
 	return encodeBase64(encrypted)
 }
 
@@ -14,12 +13,11 @@ func createAnswer(value *answer, key []byte, withEncrypt bool) string {
 * encrypts a given string with a given key, returns the encrypted string
 *
  */
-func encrypt(sData string, key []byte, encrypt bool) string {
+func encrypt(data []byte, key []byte, encrypt bool) []byte {
 
 	if !encrypt {
-		return sData
+		return data
 	}
-	data := []byte(sData)
 	//len(data) needs to be multiple of 16
 	if (len(data) % 16) != 0 {
 		times := 15 - (len(data) % 16)
@@ -36,14 +34,14 @@ func encrypt(sData string, key []byte, encrypt bool) string {
 		myCipher.Encrypt(encrypted[bs:be], data[bs:be])
 	}
 
-	return string(encrypted)
+	return encrypted
 }
 
 /**
 * encodes the given string with base64
 * returns the base64 encoded string
  */
-func encodeBase64(data string) string {
+func encodeBase64(data []byte) []byte {
 	encodedBase := b64.StdEncoding.EncodeToString([]byte(data))
-	return encodedBase
+	return []byte(encodedBase)
 }

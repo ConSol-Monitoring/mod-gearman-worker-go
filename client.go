@@ -17,19 +17,12 @@ func sendAnswer(answer *answer, key []byte, server string, encrypted bool) bool 
 		return false
 	}
 	defer c.Close()
-	logger.Debug("\n", answer, "\n")
+	logger.Trace(answer)
 
-	byteAnswer := []byte(createAnswer(answer, key, encrypted))
-	logger.Tracef("sending to server String: %s", byteAnswer)
-
-	echomsg, err := c.Echo(byteAnswer)
-	if err != nil {
-		logger.Errorf("client: sendAnswer: %s", err.Error())
-		return false
-	}
+	byteAnswer := createAnswer(answer, key, encrypted)
 
 	//send the data in the background to the right queue
-	c.DoBg(answer.resultQueue, echomsg, runtime.JobNormal)
+	c.DoBg(answer.resultQueue, byteAnswer, runtime.JobNormal)
 
 	return true
 }

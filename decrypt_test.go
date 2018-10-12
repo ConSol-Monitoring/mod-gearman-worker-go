@@ -28,7 +28,7 @@ func TestDecrypt(t *testing.T) {
 	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
 	key := getKey(&config)
 	myCipher = createCipher(key, true)
-	encrypted := encrypt("type=test123", []byte(config.key), true)
+	encrypted := encrypt([]byte("type=test123"), []byte(config.key), true)
 	result, _ := decrypt([]byte(encrypted), []byte(config.key), true)
 	if result.typ != "test123" {
 		t.Errorf("expected: %s, got:%s", "test123", result.typ)
