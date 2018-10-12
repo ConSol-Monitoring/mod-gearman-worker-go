@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"strings"
+	"sync"
 	time "time"
 )
 
@@ -16,7 +17,8 @@ import (
 
 type mainWorker struct {
 	activeWorkers int
-	workerSlice   []*worker
+	workerMap     map[string]*worker
+	workerMapLock *sync.RWMutex
 	statusWorker  *worker
 	activeChan    chan int
 	min1          float32
@@ -25,18 +27,22 @@ type mainWorker struct {
 	config        *configurationStruct
 	key           []byte
 	tasks         int
+	idleSince     time.Time
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 	return &mainWorker{
 		activeWorkers: 0,
-		activeChan:    make(chan int),
+		activeChan:    make(chan int, 100),
 		key:           key,
 		config:        configuration,
+		workerMap:     make(map[string]*worker),
+		workerMapLock: new(sync.RWMutex),
+		idleSince:     time.Now(),
 	}
 }
 
-func (w *mainWorker) startWorker(shutdownChannel chan bool) {
+func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
@@ -45,16 +51,14 @@ func (w *mainWorker) startWorker(shutdownChannel chan bool) {
 		case <-ticker.C:
 			w.manageWorkers()
 		case <-shutdownChannel:
-			logger.Debugf("startWorker ending...")
+			logger.Debugf("managerWorkerLoop ending...")
 			ticker.Stop()
-			var workerSliceCopy []*worker
-			copy(w.workerSlice, workerSliceCopy)
-			for _, worker := range workerSliceCopy {
-				logger.Errorf("worker removed...")
+			for _, worker := range w.workerMap {
+				logger.Debugf("worker removed...")
 				worker.Shutdown()
 			}
 			if w.statusWorker != nil {
-				logger.Errorf("statusworker removed...")
+				logger.Debugf("statusworker removed...")
 				w.statusWorker.Shutdown()
 				w.statusWorker = nil
 			}
@@ -69,28 +73,54 @@ func (w *mainWorker) manageWorkers() {
 		w.statusWorker = newStatusWorker(w.config, w)
 	}
 
+	totalWorker := len(w.workerMap)
+	logger.Debugf("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, w.activeWorkers, w.config.minWorker, w.config.maxWorker)
+	workerCount.Set(float64(totalWorker))
+	workingWorkerCount.Set(float64(w.activeWorkers))
+	idleWorkerCount.Set(float64(totalWorker - w.activeWorkers))
+
 	//as long as there are to few workers start them without a limit
-	for i := w.config.minWorker - len(w.workerSlice); i > 0; i-- {
+	for i := w.config.minWorker - len(w.workerMap); i > 0; i-- {
+		logger.Debugf("manageWorkers: starting minworker: %d, %d", w.config.minWorker-len(w.workerMap), i)
 		worker := newWorker(w.activeChan, w.config, w.key, w)
-		if worker != nil {
-			w.workerSlice = append(w.workerSlice, worker)
+		w.registerWorker(worker)
+		w.idleSince = time.Now()
+	}
+
+	//check if we have too many workers (less than 90% active and above minWorker)
+	if (w.activeWorkers/len(w.workerMap)*100) < 90 && len(w.workerMap) > w.config.minWorker && (time.Now().Unix()-w.idleSince.Unix() > w.config.idleTimeout) {
+		//reduce workers at spawnrate
+		for i := 0; i < w.config.spawnRate; i++ {
+			if len(w.workerMap) <= w.config.minWorker {
+				break
+			}
+			// stop first idle worker
+			logger.Debugf("manageWorkers: stopping one...")
+			for _, worker := range w.workerMap {
+				if worker.idle {
+					worker.Shutdown()
+					break
+				}
+			}
 		}
 	}
 
 	//check if we need more workers
-	if w.activeWorkers == len(w.workerSlice) && len(w.workerSlice) < w.config.maxWorker {
+	if w.activeWorkers == len(w.workerMap) && len(w.workerMap) < w.config.maxWorker {
 		if !w.checkLoads() {
 			return
 		}
 		//start new workers at spawn speed from the configuration file
 		for i := 0; i < w.config.spawnRate; i++ {
-			worker := newWorker(w.activeChan, w.config, w.key, w)
-			if worker != nil {
-				w.workerSlice = append(w.workerSlice, worker)
+			if len(w.workerMap) >= w.config.maxWorker {
+				break
 			}
+			logger.Debugf("manageWorkers: starting one...")
+			worker := newWorker(w.activeChan, w.config, w.key, w)
+			w.registerWorker(worker)
+			w.idleSince = time.Now()
 		}
 	}
-
 }
 
 // reads the avg loads from /procs/loadavg
@@ -135,19 +165,17 @@ func (w *mainWorker) checkLoads() bool {
 	return true
 }
 
-/*
-* Helper to remove the worker from the
-* slice of workers
- */
-func (w *mainWorker) removeFromSlice(worker *worker) {
-	for i, v := range w.workerSlice {
-		if v == worker {
-			//copy everything after found one to the left
-			//nil the last value so no memory leaks appear
-			copy(w.workerSlice[i:], w.workerSlice[i+1:])
-			w.workerSlice[len(w.workerSlice)-1] = nil
-			w.workerSlice = w.workerSlice[:len(w.workerSlice)-1]
-			return
-		}
+func (w *mainWorker) unregisterWorker(worker *worker) {
+	w.workerMapLock.Lock()
+	delete(w.workerMap, worker.id)
+	w.workerMapLock.Unlock()
+}
+
+func (w *mainWorker) registerWorker(worker *worker) {
+	if worker == nil {
+		return
 	}
+	w.workerMapLock.Lock()
+	w.workerMap[worker.id] = worker
+	w.workerMapLock.Unlock()
 }

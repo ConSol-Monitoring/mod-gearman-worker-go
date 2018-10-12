@@ -25,11 +25,11 @@ type configurationStruct struct {
 	keyfile                   string
 	pidfile                   string
 	jobTimeout                int
-	minWorker                 int //special
-	maxWorker                 int //special
-	idleTimeout               int //special
-	maxAge                    int //special
-	spawnRate                 int //special
+	minWorker                 int   //special
+	maxWorker                 int   //special
+	idleTimeout               int64 //special
+	maxAge                    int   //special
+	spawnRate                 int   //special
 	forkOnExec                bool
 	loadLimit1                float32
 	loadLimit5                float32
@@ -59,7 +59,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.dupResultsArePassive = true
 	result.gearmanConnectionTimeout = -1
 	result.timeoutReturn = 2
-	result.idleTimeout = 10
+	result.idleTimeout = int64(10)
 	result.daemon = false
 	result.minWorker = 1
 	result.maxWorker = 20
@@ -160,7 +160,7 @@ func readSetting(values []string, result *configurationStruct) {
 		result.maxWorker = getInt(values[1])
 	}
 	if values[0] == "idle-timeout" {
-		result.idleTimeout = getInt(values[1])
+		result.idleTimeout = int64(getInt(values[1]))
 	}
 	if values[0] == "max-age" {
 		result.maxAge = getInt(values[1])

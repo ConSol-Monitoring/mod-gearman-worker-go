@@ -60,10 +60,10 @@ func (worker *worker) returnStatus(job libworker.Job) (result []byte, err error)
 
 	result = []byte(fmt.Sprintf("%s has %d worker and is working on %d jobs. Version: %s|worker=%d;;;%d;%d jobs=%dc",
 		worker.config.identifier,
-		len(worker.mainWorker.workerSlice),
+		len(worker.mainWorker.workerMap),
 		worker.mainWorker.activeWorkers,
 		VERSION,
-		len(worker.mainWorker.workerSlice),
+		len(worker.mainWorker.workerMap),
 		worker.config.minWorker,
 		worker.config.maxWorker,
 		worker.mainWorker.tasks,

@@ -1,18 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"runtime/debug"
-	time "time"
 
 	libworker "github.com/appscode/g2/worker"
 )
 
 type worker struct {
+	id         string
 	worker     *libworker.Worker
 	idle       bool
-	idleSince  time.Time
 	start      chan int
-	timer      *time.Timer
 	config     *configurationStruct
 	key        []byte
 	mainWorker *mainWorker
@@ -24,16 +23,14 @@ type worker struct {
 // and -1 if a job is completed
 func newWorker(counterChanel chan int, configuration *configurationStruct, key []byte, mainWorker *mainWorker) *worker {
 	logger.Tracef("starting new worker")
-	workerCount.Inc()
-	idleWorkerCount.Inc()
 	worker := &worker{
 		idle:       true,
-		idleSince:  time.Now(),
 		start:      counterChanel,
 		config:     configuration,
 		key:        key,
 		mainWorker: mainWorker,
 	}
+	worker.id = fmt.Sprintf("%p", worker)
 
 	w := libworker.New(libworker.OneByOne)
 	worker.worker = w
@@ -83,7 +80,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	//check if worker is ready
 	if err := w.Ready(); err != nil {
 		logger.Debugf("worker not ready closing again: %s", err.Error())
-		worker.mainWorker.removeFromSlice(worker)
+		worker.Shutdown()
 		return nil
 	}
 	//start the worker
@@ -91,8 +88,6 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 		defer logPanicExit()
 		w.Work()
 	}()
-	//start the idle
-	worker.startIdleTimer()
 
 	return worker
 }
@@ -100,24 +95,14 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 	logger.Debugf("worker got a job: %s", job.Handle())
 
-	//stop the idle timeout timer
-	worker.stopIdleTimer()
-
-	//set worker to idle and idleSince back to zero
+	//set worker to idle
 	worker.idle = false
-	worker.idleSince = time.Now()
 	worker.start <- 1
 
-	//set back to idling
 	defer func() {
 		worker.start <- -1
 		worker.idle = true
-		worker.idleSince = time.Now()
-		worker.startIdleTimer()
 	}()
-
-	idleWorkerCount.Dec()
-	workingWorkerCount.Inc()
 
 	received, err := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
 	if err != nil {
@@ -156,47 +141,16 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 			}
 		}
 	}
-	idleWorkerCount.Inc()
-	workingWorkerCount.Dec()
-
 	return nil, nil
 }
 
-//starts the idle timer, after the time from the config file timeout() gets called
-//if a job is received the stop call on worker.time stops the timer
-func (worker *worker) startIdleTimer() {
-	if worker.config.idleTimeout > 0 {
-		worker.timer = time.AfterFunc(time.Duration(worker.config.idleTimeout)*time.Second, worker.timeout)
-	}
-}
-
-//stop the idle timer
-func (worker *worker) stopIdleTimer() {
-	if worker.timer != nil {
-		worker.timer.Stop()
-		worker.timer = nil
-	}
-}
-
-//after the max idle time has passed we check if we can remove the worker
-func (worker *worker) timeout() {
-	if len(worker.mainWorker.workerSlice) < worker.config.minWorker {
-		worker.Shutdown()
-	} else {
-		worker.idleSince = time.Now()
-		worker.startIdleTimer()
-	}
-}
-
-//everything needed to stop the worker without
-//creating any memory leaks
+//Shutdown and unregister this worker
 func (worker *worker) Shutdown() {
 	logger.Debugf("shutting down")
-	worker.stopIdleTimer()
 	if worker.worker != nil {
+		worker.worker.ErrorHandler = nil
 		worker.worker.Shutdown()
 	}
 	worker.worker = nil
-	workerCount.Desc()
-	worker.mainWorker.removeFromSlice(worker)
+	worker.mainWorker.unregisterWorker(worker)
 }

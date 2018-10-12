@@ -17,7 +17,7 @@ var resultChannel chan bool
 func BenchmarkJobs(b *testing.B) {
 	// prepare benchmark
 	b.StopTimer()
-	resultChannel = make(chan bool)
+	resultChannel = make(chan bool, 100)
 	config := configurationStruct{
 		server:     []string{"127.0.0.1:54730"},
 		key:        "testkey",
@@ -85,7 +85,7 @@ func BenchmarkJobs(b *testing.B) {
 	shutdownChannel := make(chan bool)
 	mainworker := newMainWorker(&config, getKey(&config))
 	go func() {
-		mainworker.startWorker(shutdownChannel)
+		mainworker.managerWorkerLoop(shutdownChannel)
 	}()
 	defer func() {
 		shutdownChannel <- true

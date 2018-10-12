@@ -172,7 +172,6 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 		cmd = exec.Command("/bin/sh", "-c", cmdString)
 	} else {
 		cmd = exec.Command(command, args...)
-		// logger.Info(args)
 	}
 
 	//byte buffer for output
@@ -199,7 +198,7 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 	select {
 	case <-timeoutTimer:
 		//we timed out!
-		logger.Debug("Timeout!!!")
+		logger.Infof("command: %s run into timeout after %d seconds", cmdString, timeOut)
 		cmd.Process.Kill()
 		// prometheusUserAndSystemTime(cmd, command)
 		return "timeout", 4 //return code 4 as identifier that we ran in an timeout
@@ -254,5 +253,4 @@ func getCommand(input string) string {
 		return input
 	}
 	return splitted[len(splitted)-1]
-
 }

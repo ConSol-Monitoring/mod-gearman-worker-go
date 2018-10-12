@@ -102,7 +102,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	mainworker := newMainWorker(config, key)
 	go func() {
 		defer logPanicExit()
-		mainworker.startWorker(shutdownChannel)
+		mainworker.managerWorkerLoop(shutdownChannel)
 	}()
 
 	// just wait till someone hits ctrl+c or we have to reload
