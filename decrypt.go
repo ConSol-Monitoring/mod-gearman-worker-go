@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	b64 "encoding/base64"
@@ -70,15 +71,10 @@ func decodeBase64(data string) []byte {
 *  Decodes the bytes from data with the given key
 *  returns a received struct
  */
-func decrypt(data []byte, key []byte, encryption bool) *receivedStruct {
+func decrypt(data []byte, key []byte, encryption bool) (*receivedStruct, error) {
 	if !encryption {
 		return createReceived(data)
 	}
-
-	// cipher, err := aes.NewCipher([]byte(key))
-	// if err != nil {
-	// 	logger.Panic(err)
-	// }
 
 	decrypted := make([]byte, len(data))
 	size := 16
@@ -94,8 +90,12 @@ func decrypt(data []byte, key []byte, encryption bool) *receivedStruct {
 *@input: the bytes received from the gearman
 *@return: a received struct conating the values received
  */
-func createReceived(input []byte) *receivedStruct {
+func createReceived(input []byte) (*receivedStruct, error) {
 	var result receivedStruct
+
+	if !bytes.HasPrefix(input, []byte("type=")) {
+		return nil, fmt.Errorf("decrypt error, invalid data package received, check encryption key")
+	}
 
 	//create a map with the values
 	stringMap := createMap(input)
@@ -111,7 +111,7 @@ func createReceived(input []byte) *receivedStruct {
 	result.nextCheck = parseTimeStringToFloat64(stringMap["next_check"])
 	result.timeout = getInt(stringMap["timeout"])
 
-	return &result
+	return &result, nil
 }
 
 func parseTimeStringToFloat64(input string) float64 {
