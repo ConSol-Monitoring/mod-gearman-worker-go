@@ -17,10 +17,9 @@ EXTERNAL_DEPS = \
 	github.com/kdar/factorlog \
 	github.com/sevlyar/go-daemon \
 	github.com/prometheus/client_golang/prometheus \
-	github.com/prometheus/client_golang/prometheus/promhttp \
 	github.com/davecgh/go-spew/spew \
 	golang.org/x/tools/cmd/goimports \
-	github.com/golang/lint/golint \
+	golang.org/x/lint/golint \
 	github.com/fzipp/gocyclo \
 	github.com/client9/misspell/cmd/misspell \
 	github.com/jmhodges/copyfighter \
