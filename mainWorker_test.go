@@ -1,10 +1,14 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
 func TestCheckLoads(t *testing.T) {
+	if _, err := os.Stat("/proc"); os.IsNotExist(err) {
+		t.Skip("skipping test without /proc/")
+	}
 	disableLogging()
 	config := configurationStruct{}
 	config.loadLimit1 = 999
