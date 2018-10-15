@@ -239,6 +239,13 @@ func readSettingsFile(path string, result *configurationStruct) {
 			readSetting(values, result)
 		}
 	}
+
+	for i, s := range result.server {
+		result.server[i] = fixGearmandServerAddress(s)
+	}
+	for i, s := range result.dupserver {
+		result.dupserver[i] = fixGearmandServerAddress(s)
+	}
 }
 
 func getInt(input string) int {
@@ -271,4 +278,17 @@ func getBool(input string) bool {
 		return true
 	}
 	return false
+}
+
+func fixGearmandServerAddress(address string) string {
+	parts := strings.SplitN(address, ":", 2)
+	// if no port is given, use default gearmand port
+	if len(parts) == 1 {
+		return address + ":4730"
+	}
+	// if no hostname is given, use all interfaces
+	if len(parts) == 2 && parts[0] == "" {
+		return "0.0.0.0:" + parts[1]
+	}
+	return address
 }

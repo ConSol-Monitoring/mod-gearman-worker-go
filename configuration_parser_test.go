@@ -16,7 +16,15 @@ func TestReadSettingsFile(t *testing.T) {
 		t.Errorf("could not create config testfile")
 	}
 
-	f.Write([]byte("#ich bin ein kommentar also werde ich ignoriert \n debug=2\nservicegroups=a,b,c\nservicegroups=d \n idle-timeout=200"))
+	f.Write([]byte(`#ich bin ein kommentar also werde ich ignoriert
+debug=2
+servicegroups=a,b,c
+servicegroups=d
+idle-timeout=200
+server=hostname:4730
+server=:4730
+server=hostname
+`))
 
 	readSettingsFile("testConfigFile", &testConfig)
 
@@ -30,6 +38,18 @@ func TestReadSettingsFile(t *testing.T) {
 
 	if testConfig.idleTimeout != 200 {
 		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idleTimeout)
+	}
+
+	if testConfig.server[0] != "hostname:4730" {
+		t.Errorf("server 1 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[0])
+	}
+
+	if testConfig.server[1] != "0.0.0.0:4730" {
+		t.Errorf("server 2 parsed incorrect: '%s' vs. '0.0.0.0:4730'", testConfig.server[1])
+	}
+
+	if testConfig.server[2] != "hostname:4730" {
+		t.Errorf("server 3 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[2])
 	}
 
 	os.Remove("testConfigFile")

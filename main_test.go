@@ -12,12 +12,33 @@ import (
 	libworker "github.com/appscode/g2/worker"
 )
 
+/*
+func init() {
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGUSR1)
+		for {
+			<-sigs
+			setLogLevel(0)
+			logThreaddump()
+		}
+	}()
+}
+*/
+
 var resultChannel chan bool
 
 func BenchmarkJobs(b *testing.B) {
 	// prepare benchmark
 	b.StopTimer()
 	resultChannel = make(chan bool, 100)
+	resultsTotal := 0
+	/*
+			timer := time.AfterFunc(30*time.Second, func() {
+				b.Fatalf("timeout while waiting for results, got %d/%d so far", resultsTotal, b.N)
+			})
+		defer timer.Stop()
+	*/
 	config := configurationStruct{
 		server:     []string{"127.0.0.1:54730"},
 		key:        "testkey",
@@ -103,7 +124,6 @@ func BenchmarkJobs(b *testing.B) {
 			}
 		}
 	}()
-	resultsTotal := 0
 	for n := 0; n < b.N; n++ {
 		<-resultChannel
 		resultsTotal++

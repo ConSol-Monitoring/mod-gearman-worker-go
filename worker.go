@@ -200,10 +200,18 @@ func (worker *worker) SendResultDup(result *answer) {
 
 //Shutdown and unregister this worker
 func (worker *worker) Shutdown() {
-	logger.Debugf("shutting down")
+	logger.Debugf("worker shutting down")
 	if worker.worker != nil {
 		worker.worker.ErrorHandler = nil
-		worker.worker.Shutdown()
+		worker.worker.Close()
+	}
+	if worker.client != nil {
+		worker.client.Close()
+		worker.client = nil
+	}
+	if worker.dupclient != nil {
+		worker.dupclient.Close()
+		worker.dupclient = nil
 	}
 	worker.worker = nil
 	worker.mainWorker.unregisterWorker(worker)
