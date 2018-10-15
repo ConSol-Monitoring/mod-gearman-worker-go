@@ -203,6 +203,10 @@ func (worker *worker) Shutdown() {
 	logger.Debugf("worker shutting down")
 	if worker.worker != nil {
 		worker.worker.ErrorHandler = nil
+		if !worker.idle {
+			// try to stop gracefully
+			worker.worker.Shutdown()
+		}
 		worker.worker.Close()
 	}
 	if worker.client != nil {
