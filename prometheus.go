@@ -10,6 +10,13 @@ import (
 
 var run bool
 var (
+	infoCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "modgearmanworker_info",
+			Help: "information about this worker",
+		},
+		[]string{"version", "identifier"})
+
 	workerCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "modgearmanworker_workers_total",
 		Help: "Total number of currently existing Workers",
@@ -56,10 +63,10 @@ var (
 		[]string{"description"})
 )
 
-func startPrometheus(server string) (prometheusListener *net.Listener) {
+func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {
 	defer logPanicExit()
-	if server != "" {
-		l, err := net.Listen("tcp", server)
+	if config.prometheusServer != "" {
+		l, err := net.Listen("tcp", config.prometheusServer)
 		prometheusListener = &l
 		go func() {
 			// make sure we log panics properly
@@ -72,9 +79,10 @@ func startPrometheus(server string) (prometheusListener *net.Listener) {
 			mux.Handle("/metrics", prometheus.Handler())
 			http.Serve(l, mux)
 		}()
-		logger.Debugf("serving prometheus metrics at %s/metrics", server)
+		logger.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
 	}
 	registerMetrics()
+	infoCount.WithLabelValues(VERSION, config.identifier).Set(1)
 	return
 }
 
@@ -89,6 +97,10 @@ func registerMetrics() {
 	prometheusRegistered = true
 
 	//register the metrics
+	if err := prometheus.Register(infoCount); err != nil {
+		fmt.Println(err)
+	}
+
 	if err := prometheus.Register(workerCount); err != nil {
 		fmt.Println(err)
 	}

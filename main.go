@@ -92,7 +92,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	createLogger(config)
 
 	// initialize prometheus
-	prometheusListener := startPrometheus(config.prometheusServer)
+	prometheusListener := startPrometheus(config)
 
 	//create the cipher
 	key := getKey(config)
