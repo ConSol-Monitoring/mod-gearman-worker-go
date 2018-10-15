@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -241,8 +242,9 @@ func prometheusUserAndSystemTime(cmd *exec.Cmd, command string) {
 	userTime := (float64(cmd.ProcessState.UserTime().Seconds()))
 	systemTime := (float64(cmd.ProcessState.SystemTime().Seconds()))
 
-	userTimes.WithLabelValues(getCommand(command)).Observe(userTime)
-	systemTimes.WithLabelValues(getCommand(command)).Observe(systemTime)
+	basename := getCommandBasename(command)
+	userTimes.WithLabelValues(basename).Observe(userTime)
+	systemTimes.WithLabelValues(basename).Observe(systemTime)
 
 }
 
@@ -253,10 +255,18 @@ func splitCommandArguments(input string) (string, []string) {
 	return command, args
 }
 
-func getCommand(input string) string {
-	splitted := strings.Split(input, "/")
-	if len(splitted) <= 1 {
-		return input
+var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)
+
+func getCommandBasename(input string) string {
+	l := len(input)
+	for {
+		input = reCmdEnvVar.ReplaceAllString(input, "")
+		if len(input) == l {
+			break
+		}
+		l = len(input)
 	}
-	return splitted[len(splitted)-1]
+	args := strings.SplitN(input, " ", 2)
+	paths := strings.Split(args[0], "/")
+	return paths[len(paths)-1]
 }

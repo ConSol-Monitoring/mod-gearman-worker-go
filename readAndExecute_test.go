@@ -98,6 +98,34 @@ func TestSplitCommandArguments(t *testing.T) {
 
 }
 
+func TestGetCommandBasename(t *testing.T) {
+	tests := []struct {
+		command string
+		expect  string
+	}{
+		{"test", "test"},
+		{"test arg1 arg2", "test"},
+		{"./test", "test"},
+		{"./blah/test", "test"},
+		{"/test", "test"},
+		{"/blah/test", "test"},
+		{"/blah/test arg1 arg2", "test"},
+		{"./test arg1 arg2", "test"},
+		{"ENV1=1 ENV2=2 /blah/test", "test"},
+		{"ENV1=1 ENV2=2 ./test", "test"},
+		{"ENV1=1 ENV2=2 ./test arg1 arg2", "test"},
+		{`ENV1="1 2 3" ENV2='2' ./test arg1 arg2`, "test"},
+		{`PATH=test:$PATH LD_LIB=... $(pwd)/test`, "test"},
+	}
+
+	for _, test := range tests {
+		base := getCommandBasename(test.command)
+		if base != test.expect {
+			t.Errorf("getCommandBasename was incorrect, got: %s, want: %s", base, test.expect)
+		}
+	}
+}
+
 //Benchmark
 func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 	config := configurationStruct{}
