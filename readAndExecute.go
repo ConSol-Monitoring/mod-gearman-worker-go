@@ -181,6 +181,12 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 	cmd.Stderr = &errbuff
 	cmd.Env = append(os.Environ())
 
+	// prevent child from receiving signals meant for the worker only
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+		Pgid:    0,
+	}
+
 	if err := cmd.Start(); err != nil {
 		logger.Error("Error starting command: ", err)
 		return "ERROR CMD Start: " + err.Error(), 3
