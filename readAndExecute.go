@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -87,34 +88,18 @@ func readAndExecute(received *receivedStruct, key []byte, config *configurationS
 		}
 	}
 
-	//get the timeout time, and execute the command
-	timeout := received.timeout
-	if timeout == 0 {
-		timeout = config.jobTimeout
+	if received.timeout == 0 {
+		received.timeout = config.jobTimeout
 	}
-	commandOutput, statusCode := executeCommandWithTimeout(received.commandLine, timeout, config)
+
+	//run the command
+	executeCommand(&result, received, config)
 
 	// if this is a host call, no service_description is needed, else set the description
 	// so the server recognizes the answer
 	if received.serviceDescription != "" {
 		result.serviceDescription = received.serviceDescription
 	}
-
-	// if the statuscode is 4 we ran into a timeout,
-	// status 4 is invalid and needs to be 3, but after timeout we set
-	// the exited to false
-	if statusCode == 4 {
-		result.exitedOk = false
-		result.returnCode = config.timeoutReturn
-	} else if statusCode == 25 && config.workaroundRc25 {
-		return &answer{}
-	} else {
-		result.returnCode = statusCode
-		result.exitedOk = true
-	}
-
-	//set the output of the command
-	result.output = commandOutput
 
 	//last set the finish time
 	result.finishTime = float64(time.Now().UnixNano()) / 1e9
@@ -139,43 +124,44 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 	return false
 }
 
-func executeInShell(command string, cmdString string) bool {
-	returnvalue := true
+func executeInShell(cmdString string) bool {
 	//if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
-	if strings.HasPrefix(command, "/") || strings.HasPrefix(command, ".") {
-		returnvalue = false
+	if !strings.HasPrefix(cmdString, "/") && !strings.HasPrefix(cmdString, "./") {
+		return true
 	}
 	if strings.ContainsAny(cmdString, "!$^&*()~[]\\|{\"};<>?`\\'") {
-		returnvalue = true
+		return true
 	}
-	return returnvalue
+	return false
 }
 
 //executes a command in the bash, returns whatever gets printed on the bash
 //and as second value a status Code between 0 and 3
-//after seconds in timeOut kills the process and returns status code 4
-func executeCommandWithTimeout(cmdString string, timeOut int, config *configurationStruct) (string, int) {
-	var result string
+func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
 
-	if !checkRestrictPath(cmdString, config.restrictPath) {
-		return "command contains bad path", 2
+	result.returnCode = 3
+	result.exitedOk = false
+	if !checkRestrictPath(received.commandLine, config.restrictPath) {
+		result.output = "command contains bad path"
+		return
 	}
 
-	command, args := splitCommandArguments(cmdString)
-	runWithShell := executeInShell(command, cmdString)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(received.timeout)*time.Second)
+	defer cancel()
 
 	var cmd *exec.Cmd
-	if runWithShell {
-		cmd = exec.Command("/bin/sh", "-c", cmdString)
+	if executeInShell(received.commandLine) {
+		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", received.commandLine)
 	} else {
-		cmd = exec.Command(command, args...)
+		splitted := strings.Split(received.commandLine, " ")
+		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
 	}
 
 	//byte buffer for output
-	var errbuff bytes.Buffer
+	var errbuf bytes.Buffer
 	var outbuf bytes.Buffer
 	cmd.Stdout = &outbuf
-	cmd.Stderr = &errbuff
+	cmd.Stderr = &errbuf
 	cmd.Env = append(os.Environ())
 
 	// prevent child from receiving signals meant for the worker only
@@ -184,77 +170,79 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 		Pgid:    0,
 	}
 
-	if err := cmd.Start(); err != nil {
-		logger.Error("Error starting command: ", err)
-		return "ERROR CMD Start: " + err.Error(), 3
+	err := cmd.Run()
+	if err != nil && cmd.ProcessState == nil {
+		logger.Errorf("Error in cmd.Run(): %s", err.Error())
+		result.output = "UNKNOWN - cmd.Run(): " + err.Error()
+		return
+	}
+	state := cmd.ProcessState
+	if config.prometheusServer != "" {
+		prometheusUserAndSystemTime(received.commandLine, state)
 	}
 
-	done := make(chan error)
-	//go routine listening for the exit of the command, then writes the status to chanel done
-	go func() {
-		defer logPanicExit()
-		done <- cmd.Wait()
-	}()
-
-	timeoutTimer := time.After(time.Duration(timeOut) * time.Second)
-
-	select {
-	case <-timeoutTimer:
-		//we timed out!
-		logger.Infof("command: %s run into timeout after %d seconds", cmdString, timeOut)
-		cmd.Process.Signal(syscall.SIGKILL)
-		state, _ := cmd.Process.Wait()
-		prometheusUserAndSystemTime(cmd, command, state)
-		cmd.Process.Kill()
-		return "timeout", 4 //return code 4 as identifier that we ran in an timeout
-	case err := <-done:
-		prometheusUserAndSystemTime(cmd, command, nil)
-		//command completed in time
-		result = outbuf.String()
-		if errbuff.String() != "" && config.showErrorOutput {
-			result = "[ " + errbuff.String() + " ]"
+	if ctx.Err() == context.DeadlineExceeded {
+		result.returnCode = config.timeoutReturn
+		if received.typ == "service" {
+			logger.Infof("service check: %s - %s run into timeout after %d seconds", received.hostName, received.serviceDescription, received.timeout)
+			result.output = fmt.Sprintf("(Service Check Timed Out On Worker: %s)", config.identifier)
+		} else if received.typ == "host" {
+			logger.Infof("host check: %s run into timeout after %d seconds", received.hostName, received.timeout)
+			result.output = fmt.Sprintf("(Host Check Timed Out On Worker: %s)", config.identifier)
+		} else {
+			logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
+			result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
 		}
-		statusCode := 0
-		if err != nil {
-			//get the status code via exec:
-			if exiterr, ok := err.(*exec.ExitError); ok {
-				if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-					statusCode = status.ExitStatus()
-				}
-			} else {
-				logger.Error("cmd.Wait: ", err)
-				fmt.Println("exitTime: ", exiterr.UserTime())
-			}
-
-			result = err.Error() + " " + result
-			if statusCode > 4 || statusCode < 0 {
-				statusCode = 3
-			}
-		}
-		result = strings.Replace(result, "\n", "", len(result))
-		return result, statusCode
-	}
-}
-
-func prometheusUserAndSystemTime(cmd *exec.Cmd, command string, state *os.ProcessState) {
-	if state == nil && cmd.ProcessState != nil {
-		state = cmd.ProcessState
-	}
-	if state == nil {
 		return
 	}
 
+	if waitStatus, ok := state.Sys().(syscall.WaitStatus); ok {
+		result.returnCode = waitStatus.ExitStatus()
+		result.exitedOk = true
+	}
+
+	// extract stdout and stderr
+	result.output = string(bytes.TrimSpace((bytes.Trim(outbuf.Bytes(), "\x00"))))
+	if config.showErrorOutput && result.returnCode != 0 {
+		error := string(bytes.TrimSpace((bytes.Trim(errbuf.Bytes(), "\x00"))))
+		if error != "" {
+			result.output += "\n[" + error + "]"
+		}
+	}
+	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
+
+	if result.returnCode > 3 || result.returnCode < 0 {
+		fixReturnCodes(result, config, state)
+	}
+}
+
+func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
+	if result.returnCode == 126 {
+		result.output = fmt.Sprintf("CRITICAL: Return code of 126 is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", config.identifier) + "\n" + result.output
+		result.returnCode = 2
+		return
+	}
+	if result.returnCode == 127 {
+		result.output = fmt.Sprintf("CRITICAL: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier) + "\n" + result.output
+		result.returnCode = 2
+		return
+	}
+	if waitStatus, ok := state.Sys().(syscall.WaitStatus); ok {
+		if waitStatus.Signaled() {
+			result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Plugin exited by signal: %s. (worker: %s)", waitStatus.Signal(), waitStatus.Signal(), config.identifier) + "\n" + result.output
+			result.returnCode = 2
+			return
+		}
+	}
+	result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
+	result.returnCode = 3
+}
+
+func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
 	basename := getCommandBasename(command)
 	userTimes.WithLabelValues(basename).Observe(state.UserTime().Seconds())
 	systemTimes.WithLabelValues(basename).Observe(state.SystemTime().Seconds())
 
-}
-
-func splitCommandArguments(input string) (string, []string) {
-	splitted := strings.Split(input, " ")
-	command := splitted[0]
-	args := splitted[1:]
-	return command, args
 }
 
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)

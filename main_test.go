@@ -12,20 +12,6 @@ import (
 	libworker "github.com/appscode/g2/worker"
 )
 
-/*
-func init() {
-	go func() {
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1)
-		for {
-			<-sigs
-			setLogLevel(0)
-			logThreaddump()
-		}
-	}()
-}
-*/
-
 var resultChannel chan bool
 
 func BenchmarkJobs(b *testing.B) {
@@ -33,12 +19,6 @@ func BenchmarkJobs(b *testing.B) {
 	b.StopTimer()
 	resultChannel = make(chan bool, 100)
 	resultsTotal := 0
-	/*
-			timer := time.AfterFunc(30*time.Second, func() {
-				b.Fatalf("timeout while waiting for results, got %d/%d so far", resultsTotal, b.N)
-			})
-		defer timer.Stop()
-	*/
 	config := configurationStruct{
 		server:     []string{"127.0.0.1:54730"},
 		key:        "testkey",
@@ -58,9 +38,7 @@ func BenchmarkJobs(b *testing.B) {
 	if err := cmd.Start(); err != nil {
 		b.Skip(fmt.Sprintf("skipping test, could not start gearmand: %s.", err.Error()))
 	}
-	defer func() {
-		cmd.Process.Kill()
-	}()
+	defer cmd.Process.Kill()
 
 	key := getKey(&config)
 	myCipher = createCipher(key, config.encryption)
