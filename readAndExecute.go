@@ -123,23 +123,19 @@ func readAndExecute(received *receivedStruct, key []byte, config *configurationS
 	return &result
 }
 
-func containsBadPathOrChars(cmdString string, restrictPath []string, restrictChars []string) bool {
+func checkRestrictPath(cmdString string, restrictPath []string) bool {
+	if len(restrictPath) == 0 {
+		return true
+	}
+
 	//check for restricted path
 	splittedString := strings.Split(cmdString, " ")
 	for _, v := range restrictPath {
-		if !strings.HasPrefix(splittedString[0], v) {
+		if strings.HasPrefix(splittedString[0], v) {
 			return true
 		}
 	}
 
-	//check for forbidden characters, only if
-	if len(restrictPath) != 0 {
-		for _, v := range restrictChars {
-			if strings.Contains(cmdString, v) {
-				return true
-			}
-		}
-	}
 	return false
 }
 
@@ -161,8 +157,8 @@ func executeInShell(command string, cmdString string) bool {
 func executeCommandWithTimeout(cmdString string, timeOut int, config *configurationStruct) (string, int) {
 	var result string
 
-	if containsBadPathOrChars(cmdString, config.restrictPath, config.restrictCommandCharacters) {
-		return "command contains bad path or characters", 2
+	if !checkRestrictPath(cmdString, config.restrictPath) {
+		return "command contains bad path", 2
 	}
 
 	command, args := splitCommandArguments(cmdString)

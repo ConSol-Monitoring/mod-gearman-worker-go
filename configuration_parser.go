@@ -42,7 +42,6 @@ type configurationStruct struct {
 	p1File                    string
 	gearmanConnectionTimeout  int
 	restrictPath              []string
-	restrictCommandCharacters []string
 	workaroundRc25            bool
 	server                    []string
 	timeoutReturn             int
@@ -203,12 +202,6 @@ func readSetting(values []string, result *configurationStruct) {
 	}
 	if values[0] == "restrict_path" {
 		result.restrictPath = append(result.restrictPath, values[1])
-	}
-	if values[0] == "restrict_command_characters" {
-		// result.restrict_command_characters = values[1]
-		for _, v := range values[1] {
-			result.restrictCommandCharacters = append(result.restrictCommandCharacters, string(v))
-		}
 	}
 	if values[0] == "workaround_rc_25" {
 		result.workaroundRc25 = getBool(values[1])
