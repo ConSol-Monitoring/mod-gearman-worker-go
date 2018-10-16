@@ -206,11 +206,13 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 	case <-timeoutTimer:
 		//we timed out!
 		logger.Infof("command: %s run into timeout after %d seconds", cmdString, timeOut)
+		cmd.Process.Signal(syscall.SIGKILL)
+		state, _ := cmd.Process.Wait()
+		prometheusUserAndSystemTime(cmd, command, state)
 		cmd.Process.Kill()
-		// prometheusUserAndSystemTime(cmd, command)
 		return "timeout", 4 //return code 4 as identifier that we ran in an timeout
 	case err := <-done:
-		prometheusUserAndSystemTime(cmd, command)
+		prometheusUserAndSystemTime(cmd, command, nil)
 		//command completed in time
 		result = outbuf.String()
 		if errbuff.String() != "" && config.showErrorOutput {
@@ -238,13 +240,17 @@ func executeCommandWithTimeout(cmdString string, timeOut int, config *configurat
 	}
 }
 
-func prometheusUserAndSystemTime(cmd *exec.Cmd, command string) {
-	userTime := (float64(cmd.ProcessState.UserTime().Seconds()))
-	systemTime := (float64(cmd.ProcessState.SystemTime().Seconds()))
+func prometheusUserAndSystemTime(cmd *exec.Cmd, command string, state *os.ProcessState) {
+	if state == nil && cmd.ProcessState != nil {
+		state = cmd.ProcessState
+	}
+	if state == nil {
+		return
+	}
 
 	basename := getCommandBasename(command)
-	userTimes.WithLabelValues(basename).Observe(userTime)
-	systemTimes.WithLabelValues(basename).Observe(systemTime)
+	userTimes.WithLabelValues(basename).Observe(state.UserTime().Seconds())
+	systemTimes.WithLabelValues(basename).Observe(state.SystemTime().Seconds())
 
 }
 
