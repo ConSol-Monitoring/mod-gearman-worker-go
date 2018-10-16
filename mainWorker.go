@@ -21,9 +21,9 @@ type mainWorker struct {
 	workerMapLock *sync.RWMutex
 	statusWorker  *worker
 	activeChan    chan int
-	min1          float32
-	min5          float32
-	min15         float32
+	min1          float64
+	min5          float64
+	min15         float64
 	config        *configurationStruct
 	key           []byte
 	tasks         int

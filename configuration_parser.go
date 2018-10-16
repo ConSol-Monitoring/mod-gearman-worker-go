@@ -31,9 +31,9 @@ type configurationStruct struct {
 	maxAge                    int   //special
 	spawnRate                 int   //special
 	forkOnExec                bool
-	loadLimit1                float32
-	loadLimit5                float32
-	loadLimit15               float32
+	loadLimit1                float64
+	loadLimit5                float64
+	loadLimit15               float64
 	showErrorOutput           bool
 	dupResultsArePassive      bool
 	enableEmbeddedPerl        bool
@@ -261,16 +261,16 @@ func getInt(input string) int {
 	return result
 }
 
-func getFloat(input string) float32 {
+func getFloat(input string) float64 {
 	if input == "" {
-		return float32(0)
+		return float64(0)
 	}
-	result, err := strconv.ParseFloat(input, 32)
+	result, err := strconv.ParseFloat(input, 64)
 	if err != nil {
 		logger.Errorf("error Converting %s to float", input)
 		result = 0
 	}
-	return float32(result)
+	return float64(result)
 }
 
 func getBool(input string) bool {
