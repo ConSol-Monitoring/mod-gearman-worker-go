@@ -20,7 +20,7 @@ var Build string
 
 const (
 	// VERSION contains the actual lmd version
-	VERSION = "0.0.1"
+	VERSION = "1.0.0"
 	// NAME defines the name of this project
 	NAME = "mod-gearman-worker-go"
 )
