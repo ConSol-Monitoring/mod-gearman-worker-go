@@ -88,7 +88,7 @@ func (w *mainWorker) manageWorkers() {
 	}
 
 	//check if we have too many workers (less than 90% active and above minWorker)
-	if (w.activeWorkers/len(w.workerMap)*100) < 90 && len(w.workerMap) > w.config.minWorker && (time.Now().Unix()-w.idleSince.Unix() > w.config.idleTimeout) {
+	if (w.activeWorkers/len(w.workerMap)*100) < 90 && len(w.workerMap) > w.config.minWorker && (time.Now().Unix()-w.idleSince.Unix() > int64(w.config.idleTimeout)) {
 		//reduce workers at spawnrate
 		for i := 0; i < w.config.spawnRate; i++ {
 			if len(w.workerMap) <= w.config.minWorker {

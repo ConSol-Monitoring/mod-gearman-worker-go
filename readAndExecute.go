@@ -88,7 +88,7 @@ func readAndExecute(received *receivedStruct, key []byte, config *configurationS
 		}
 	}
 
-	if received.timeout == 0 {
+	if received.timeout <= 0 {
 		received.timeout = config.jobTimeout
 	}
 
