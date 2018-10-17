@@ -91,6 +91,9 @@ func readAndExecute(received *receivedStruct, key []byte, config *configurationS
 	if received.timeout <= 0 {
 		received.timeout = config.jobTimeout
 	}
+	if received.timeout <= 0 {
+		received.timeout = 60
+	}
 
 	//run the command
 	executeCommand(&result, received, config)
