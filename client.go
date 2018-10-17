@@ -12,7 +12,7 @@ import (
  */
 func sendAnswer(c *client.Client, answer *answer, key []byte, server string, encrypted bool) (*client.Client, error) {
 	if c == nil {
-		cl, err := client.New("tcp4", server)
+		cl, err := client.New("tcp", server)
 		if err != nil {
 			return nil, err
 		}

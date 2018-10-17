@@ -49,7 +49,7 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 
 	//listen to this servers
 	for _, address := range worker.config.server {
-		err := w.AddServer("tcp4", address)
+		err := w.AddServer("tcp", address)
 		if err != nil {
 			logger.Error(err)
 		}
