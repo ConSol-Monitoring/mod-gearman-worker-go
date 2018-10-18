@@ -1,4 +1,4 @@
-package main
+package modgearman
 
 import (
 	"fmt"
@@ -22,13 +22,14 @@ const (
 	// VERSION contains the actual lmd version
 	VERSION = "1.0.0"
 	// NAME defines the name of this project
-	NAME = "mod-gearman-worker-go"
+	NAME = "mod_gearman_worker"
 )
 
 // var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 
-func main() {
+// Worker starts the mod_gearman_worker program
+func Worker() {
 	defer logPanicExit()
 
 	var config configurationStruct

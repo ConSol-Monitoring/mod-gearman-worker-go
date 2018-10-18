@@ -16,4 +16,17 @@ like any other plugin.
 
 Prometheus metrics will get exported when started with the `prometheus-server` option.
 
-    %> .../mod-gearman-worker-go --prometheus_server=127.0.0.1:8001
+    %> .../mod_gearman_worker --prometheus_server=127.0.0.1:8001
+
+
+## Build Instructions / Installation
+
+Either use `go install` like:
+
+    %> go install github.com/ConSol/mod-gearman-worker-go/cmd/mod_gearman_worker
+
+Or clone the repository and build it manually:
+
+    %> go get github.com/ConSol/mod-gearman-worker-go
+    %> cd $GOPATH/src/ConSol/mod-gearman-worker-go
+    %> make

@@ -25,6 +25,7 @@ EXTERNAL_DEPS = \
 	github.com/jmhodges/copyfighter \
 	honnef.co/go/tools/cmd/gosimple \
 
+CMDS = $(shell cd ./cmd && ls -1)
 
 all: deps fmt build
 
@@ -39,7 +40,7 @@ updatedeps: versioncheck
 	done
 
 dump:
-	if [ $(shell grep -rc Dump *.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
+	if [ $(shell grep -rc Dump *.go ./cmd/*/*.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
 		sed -i.bak 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
 	else \
 		sed -i.bak 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
@@ -47,18 +48,25 @@ dump:
 	rm -f dump.go.bak
 
 build: dump
-	go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)"
+	set -e; for CMD in $(CMDS); do \
+		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD; \
+	done
 
 build-linux-amd64: dump
-	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o mod-gearman-worker-go.linux.amd64
+	set -e; for CMD in $(CMDS); do \
+		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; \
+	done
 
 debugbuild: deps fmt
 	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
+	set -e; for CMD in $(CMDS); do \
+		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"; \
+	done
 
 test: fmt dump
 	go test -short -v
-	if grep -rn TODO: *.go; then exit 1; fi
-	if grep -rn Dump *.go | grep -v dump.go; then exit 1; fi
+	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
+	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 
 longtest: fmt dump
 	go test -v
@@ -67,7 +75,7 @@ citest: deps
 	#
 	# Checking gofmt errors
 	#
-	if [ $$(gofmt -s -l . | wc -l) -gt 0 ]; then \
+	if [ $$(gofmt -s -l . ./cmd/ | wc -l) -gt 0 ]; then \
 		echo "found format errors in these files:"; \
 		gofmt -s -l .; \
 		exit 1; \
@@ -75,11 +83,11 @@ citest: deps
 	#
 	# Checking TODO items
 	#
-	if grep -rn TODO: *.go; then exit 1; fi
+	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
 	#
 	# Checking remaining debug calls
 	#
-	if grep -rn Dump *.go | grep -v dump.go; then exit 1; fi
+	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 	#
 	# Run other subtests
 	#
@@ -121,13 +129,19 @@ coverweb: fmt
 	go tool cover -html=cover.out
 
 clean:
-	rm -f mod-gearman-worker-go
+	set -e; for CMD in $(CMDS); do \
+		rm -f ./cmd/$$CMD/$$CMD; \
+	done
+	rm -f $(CMDS)
 	rm -f cover.out
 	rm -f coverage.html
 
 fmt:
 	goimports -w .
-	go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
+	go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable *.go
+	set -e; for CMD in $(CMDS); do \
+		go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
+	done
 	gofmt -w -s .
 
 versioncheck:
@@ -174,8 +188,8 @@ gosimple:
 	gosimple
 
 version:
-	OLDVERSION="$(shell grep "VERSION =" ./main.go | awk '{print $$3}' | tr -d '"')"; \
+	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
 	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "v$$OLDVERSION") && \
 		NEWVERSION=$$(echo $$NEWVERSION | sed "s/^v//g"); \
 		if [ "v$$OLDVERSION" = "v$$NEWVERSION" -o "x$$NEWVERSION" = "x" ]; then echo "no changes"; exit 1; fi; \
-		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' ./main.go
+		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' *.go cmd/*/*.go

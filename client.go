@@ -1,4 +1,4 @@
-package main
+package modgearman
 
 import (
 	"github.com/appscode/g2/client"
