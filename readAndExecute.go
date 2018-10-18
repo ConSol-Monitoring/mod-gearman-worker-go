@@ -61,7 +61,7 @@ func (a *answer) String() string {
 * @return: answer, struct containing al information to be sent back to the server
 *
  */
-func readAndExecute(received *receivedStruct, key []byte, config *configurationStruct) *answer {
+func readAndExecute(received *receivedStruct, config *configurationStruct) *answer {
 	var result answer
 	//first set the start time
 	result.startTime = float64(time.Now().UnixNano()) / 1e9

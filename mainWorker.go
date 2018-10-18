@@ -82,7 +82,7 @@ func (w *mainWorker) manageWorkers() {
 	//as long as there are to few workers start them without a limit
 	for i := w.config.minWorker - len(w.workerMap); i > 0; i-- {
 		logger.Debugf("manageWorkers: starting minworker: %d, %d", w.config.minWorker-len(w.workerMap), i)
-		worker := newWorker(w.activeChan, w.config, w.key, w)
+		worker := newWorker(w.activeChan, w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
@@ -116,7 +116,7 @@ func (w *mainWorker) manageWorkers() {
 				break
 			}
 			logger.Debugf("manageWorkers: starting one...")
-			worker := newWorker(w.activeChan, w.config, w.key, w)
+			worker := newWorker(w.activeChan, w.config, w)
 			w.registerWorker(worker)
 			w.idleSince = time.Now()
 		}

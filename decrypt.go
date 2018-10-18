@@ -71,7 +71,7 @@ func decodeBase64(data string) []byte {
 *  Decodes the bytes from data with the given key
 *  returns a received struct
  */
-func decrypt(data []byte, key []byte, encryption bool) (*receivedStruct, error) {
+func decrypt(data []byte, encryption bool) (*receivedStruct, error) {
 	if !encryption {
 		return createReceived(data)
 	}

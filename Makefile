@@ -24,6 +24,7 @@ EXTERNAL_DEPS = \
 	github.com/client9/misspell/cmd/misspell \
 	github.com/jmhodges/copyfighter \
 	honnef.co/go/tools/cmd/gosimple \
+	github.com/mvdan/unparam \
 
 CMDS = $(shell cd ./cmd && ls -1)
 
@@ -112,6 +113,7 @@ citest: deps
 	$(MAKE) misspell
 	$(MAKE) copyfighter
 	$(MAKE) gosimple
+	$(MAKE) unparam
 	$(MAKE) fmt
 	#
 	# Normal test cases
@@ -215,6 +217,17 @@ gosimple:
 	# See https://github.com/dominikh/go-tools/tree/master/cmd/gosimple
 	#
 	gosimple
+
+unparam:
+	#
+	# Check if all function parameters are actually used
+	# See https://github.com/mvdan/unparam
+	#
+	if [ $$(unparam -exported . 2>&1 | wc -l) -gt 0 ]; then \
+		echo "found unparam errors:"; \
+		unparam -exported .; \
+		exit 1; \
+	fi
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \

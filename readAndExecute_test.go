@@ -25,7 +25,7 @@ func TestReadAndExecute(t *testing.T) {
 	testReceive.serviceDescription = "TestDescription"
 	testReceive.commandLine = "sleep 1"
 
-	resultValue := readAndExecute(&testReceive, nil, &config)
+	resultValue := readAndExecute(&testReceive, &config)
 
 	if resultValue.source != "Mod-Gearman Worker @ "+thisHostname || resultValue.resultQueue != "TestQueue" || resultValue.coreStartTime != 123 ||
 		resultValue.hostName != "TestHost" || resultValue.serviceDescription != "TestDescription" {
@@ -34,7 +34,7 @@ func TestReadAndExecute(t *testing.T) {
 
 	//same but with identifier in config file
 	config.identifier = "TestIdentifier"
-	resultValue = readAndExecute(&testReceive, nil, &config)
+	resultValue = readAndExecute(&testReceive, &config)
 	if resultValue.source != "Mod-Gearman Worker @ TestIdentifier" {
 		t.Errorf("got %s but expected: %s", resultValue.source, "Mod-Gearman Worker @ TestIdentifier")
 	}
@@ -42,7 +42,7 @@ func TestReadAndExecute(t *testing.T) {
 	//check for max age
 	config.maxAge = 1
 	testReceive.coreTime = float64(time.Now().UnixNano())/1e9 - 2
-	resultValue = readAndExecute(&testReceive, nil, &config)
+	resultValue = readAndExecute(&testReceive, &config)
 	if resultValue.output != "Could not Start Check In Time" {
 		t.Errorf("got %s but expected: %s", resultValue, "Could not Start Check In Time")
 	}
@@ -157,7 +157,7 @@ func BenchmarkReadAndExecuteShell(b *testing.B) {
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd \"\"", timeout: 10}
 	for n := 0; n < b.N; n++ {
-		readAndExecute(received, nil, &config)
+		readAndExecute(received, &config)
 	}
 }
 
@@ -168,6 +168,6 @@ func BenchmarkReadAndExecuteExec(b *testing.B) {
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd", timeout: 10}
 	for n := 0; n < b.N; n++ {
-		readAndExecute(received, nil, &config)
+		readAndExecute(received, &config)
 	}
 }

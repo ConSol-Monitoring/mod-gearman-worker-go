@@ -15,7 +15,6 @@ type worker struct {
 	idle       bool
 	start      chan int
 	config     *configurationStruct
-	key        []byte
 	mainWorker *mainWorker
 	tasks      int
 	client     *client.Client
@@ -25,13 +24,12 @@ type worker struct {
 //creates a new worker and returns a pointer to it
 // counterChanel will receive +1 if a job is received and started
 // and -1 if a job is completed
-func newWorker(counterChanel chan int, configuration *configurationStruct, key []byte, mainWorker *mainWorker) *worker {
+func newWorker(counterChanel chan int, configuration *configurationStruct, mainWorker *mainWorker) *worker {
 	logger.Tracef("starting new worker")
 	worker := &worker{
 		idle:       true,
 		start:      counterChanel,
 		config:     configuration,
-		key:        key,
 		mainWorker: mainWorker,
 		client:     nil,
 		dupclient:  nil,
@@ -98,7 +96,8 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, key [
 	return worker
 }
 
-func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
+func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
+	res = []byte("")
 	logger.Debugf("worker got a job: %s", job.Handle())
 
 	//set worker to idle
@@ -110,17 +109,17 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 		worker.idle = true
 	}()
 
-	received, err := decrypt((decodeBase64(string(job.Data()))), worker.key, worker.config.encryption)
+	received, err := decrypt((decodeBase64(string(job.Data()))), worker.config.encryption)
 	if err != nil {
 		logger.Errorf("decrypt failed: %s", err.Error())
-		return nil, nil
+		return
 	}
 	taskCounter.WithLabelValues(received.typ).Inc()
 	worker.mainWorker.tasks++
 
 	logger.Tracef("job data: %s", received)
 
-	result := readAndExecute(received, worker.key, worker.config)
+	result := readAndExecute(received, worker.config)
 
 	if result.returnCode > 0 {
 		errorCounter.WithLabelValues(received.typ).Inc()
@@ -130,7 +129,7 @@ func (worker *worker) doWork(job libworker.Job) ([]byte, error) {
 		worker.SendResult(result)
 		worker.SendResultDup(result)
 	}
-	return nil, nil
+	return
 }
 
 //SendResult sends the result back to the result queue

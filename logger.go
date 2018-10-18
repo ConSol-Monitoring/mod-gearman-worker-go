@@ -1,7 +1,6 @@
 package modgearman
 
 import (
-	"io"
 	"os"
 	"runtime/debug"
 
@@ -15,24 +14,25 @@ func createLogger(config *configurationStruct) {
 
 	//check in config file if file is specified
 	verbosity := getSeverity(config.debug)
-	logpath := config.logfile
-	var logfile io.Writer
-	var err error
-	logfile = os.Stdout
 
-	if logpath != "" && (config.logmode == "automatic" || config.logmode == "file") && config.debug != 3 {
-		_, err = openFileOrCreate(logpath)
+	if config.debug >= 3 {
+		logger.SetOutput(os.Stderr)
+	} else if config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file") {
+		file, err := openFileOrCreate(config.logfile)
 		if err != nil {
-			logger.Errorf("could not create or open file %s: %s", logpath, err.Error())
+			logger.Errorf("could not create or open file %s: %s", config.logfile, err.Error())
 		}
-		logfile, err = os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		file.Close()
+		logfile, err := os.OpenFile(config.logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
-			logger.Error("could not open/create logfile")
+			logger.Errorf("could not open/create logfile: %s", err.Error())
 		}
+		logger.SetOutput(logfile)
+	} else {
+		logger.SetOutput(os.Stdout)
 	}
 
 	logger.SetFormatter(factorlog.NewStdFormatter(frmt))
-	logger.SetOutput(logfile)
 	logger.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))
 
 }

@@ -17,7 +17,7 @@ var resultChannel chan bool
 func BenchmarkJobs(b *testing.B) {
 	// prepare benchmark
 	b.StopTimer()
-	resultChannel = make(chan bool, 100)
+	resultChannel = make(chan bool, b.N)
 	resultsTotal := 0
 	config := configurationStruct{
 		server:     []string{"127.0.0.1:54730"},
@@ -39,6 +39,7 @@ func BenchmarkJobs(b *testing.B) {
 		b.Skip(fmt.Sprintf("skipping test, could not start gearmand: %s.", err.Error()))
 	}
 	defer cmd.Process.Kill()
+	time.Sleep(1 * time.Second)
 
 	key := getKey(&config)
 	myCipher = createCipher(key, config.encryption)
@@ -51,32 +52,13 @@ func BenchmarkJobs(b *testing.B) {
 	)
 	testJob := encodeBase64(encrypt([]byte(testData), true))
 
-	var sender *client.Client
-	for i := 0; i < 200; i++ {
-		c, err := client.New("tcp4", "127.0.0.1:54730")
-		if err == nil {
-			sender = c
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	// wait up to 10 seconds till gearmand is alive
-	gearmandReady := false
-	for i := 0; i < 200; i++ {
-		_, err := sender.DoBg("test", testJob, runtime.JobNormal)
-		if err == nil {
-			gearmandReady = true
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	if !gearmandReady {
-		b.Fatalf("failed to start gearmand within 10 seconds: %s\n%s", stdout.String(), stderr.String())
+	sender, err := client.New("tcp", "127.0.0.1:54730")
+	if err != nil {
+		b.Fatalf("failed to create client: %s", err.Error())
 	}
 
 	resultWorker := libworker.New(libworker.OneByOne)
-	resultWorker.AddServer("tcp4", "127.0.0.1:54730")
+	resultWorker.AddServer("tcp", "127.0.0.1:54730")
 	resultWorker.AddFunc("results", countResults, libworker.Unlimited)
 	go resultWorker.Work()
 	defer resultWorker.Close()
@@ -110,6 +92,9 @@ func BenchmarkJobs(b *testing.B) {
 }
 
 func countResults(job libworker.Job) ([]byte, error) {
+	if job.Err() != nil {
+		return nil, job.Err()
+	}
 	resultChannel <- true
-	return nil, nil
+	return []byte(""), nil
 }
