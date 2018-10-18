@@ -12,9 +12,11 @@ func TestEncodeBase64(t *testing.T) {
 
 func TestEncrypt(t *testing.T) {
 	config := configurationStruct{}
+	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
 	config.encryption = true
+	myCipher = createCipher(getKey(&config), config.encryption)
 	input := "encrypt me please"
-	result := encrypt([]byte(input), []byte("LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"), true)
+	result := encrypt([]byte(input), true)
 	//base64 encoded so the error message gets readable
 	expectedResult := "xzJEkKA+e/nBusozXOuPBz9hzIgUsEpHrZT0yo+HaPw="
 

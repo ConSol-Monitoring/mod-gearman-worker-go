@@ -4,8 +4,8 @@ import (
 	b64 "encoding/base64"
 )
 
-func createAnswer(value *answer, key []byte, withEncrypt bool) []byte {
-	encrypted := encrypt([]byte(value.String()), key, withEncrypt)
+func createAnswer(value *answer, withEncrypt bool) []byte {
+	encrypted := encrypt([]byte(value.String()), withEncrypt)
 	return encodeBase64(encrypted)
 }
 
@@ -13,7 +13,7 @@ func createAnswer(value *answer, key []byte, withEncrypt bool) []byte {
 * encrypts a given string with a given key, returns the encrypted string
 *
  */
-func encrypt(data []byte, key []byte, encrypt bool) []byte {
+func encrypt(data []byte, encrypt bool) []byte {
 
 	if !encrypt {
 		return data

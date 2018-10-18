@@ -49,7 +49,7 @@ func BenchmarkJobs(b *testing.B) {
 		float64(time.Now().Unix()),
 		"/bin/pwd",
 	)
-	testJob := encodeBase64(encrypt([]byte(testData), key, true))
+	testJob := encodeBase64(encrypt([]byte(testData), true))
 
 	var sender *client.Client
 	for i := 0; i < 200; i++ {

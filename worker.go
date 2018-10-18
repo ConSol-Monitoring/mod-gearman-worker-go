@@ -142,7 +142,7 @@ func (worker *worker) SendResult(result *answer) {
 		var err error
 		var c *client.Client
 		for _, address := range worker.config.server {
-			c, err = sendAnswer(worker.client, result, worker.key, address, worker.config.encryption)
+			c, err = sendAnswer(worker.client, result, address, worker.config.encryption)
 			if err == nil {
 				worker.client = c
 				sendSuccess = true
@@ -177,7 +177,7 @@ func (worker *worker) SendResultDup(result *answer) {
 			if worker.config.dupResultsArePassive {
 				result.active = "passive"
 			}
-			c, err = sendAnswer(worker.dupclient, result, worker.key, dupAddress, worker.config.encryption)
+			c, err = sendAnswer(worker.dupclient, result, dupAddress, worker.config.encryption)
 			if err == nil {
 				worker.dupclient = c
 				sendSuccess = true
