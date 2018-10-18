@@ -80,12 +80,12 @@ debugbuild: deps fmt
 	done
 
 test: fmt dump
-	go test -short -v
+	go test -short -v -timeout=1m
 	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
 	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 
 longtest: fmt dump
-	go test -v
+	go test -v -timeout=1m
 
 citest: deps
 	#
@@ -116,11 +116,11 @@ citest: deps
 	#
 	# Normal test cases
 	#
-	go test -v
+	go test -v -timeout=1m
 	#
 	# Benchmark tests
 	#
-	go test -v -bench=B\* -run=^$$ . -benchmem
+	go test -v -timeout=1m -bench=B\* -run=^$$ . -benchmem
 	#
 	# Race rondition tests
 	#
@@ -136,18 +136,18 @@ citest: deps
 	#
 
 benchmark: fmt
-	go test -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
+	go test -timeout=1m -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
 
 racetest: fmt
-	go test -race -v
+	go test -race -v -timeout=1m
 
 covertest: fmt
-	go test -v -coverprofile=cover.out
+	go test -v -coverprofile=cover.out -timeout=1m
 	go tool cover -func=cover.out
 	go tool cover -html=cover.out -o coverage.html
 
 coverweb: fmt
-	go test -v -coverprofile=cover.out
+	go test -v -coverprofile=cover.out -timeout=1m
 	go tool cover -html=cover.out
 
 clean:
