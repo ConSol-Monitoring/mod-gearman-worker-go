@@ -25,11 +25,11 @@ type configurationStruct struct {
 	keyfile                   string
 	pidfile                   string
 	jobTimeout                int
-	minWorker                 int //special
-	maxWorker                 int //special
-	idleTimeout               int //special
-	maxAge                    int //special
-	spawnRate                 int //special
+	minWorker                 int
+	maxWorker                 int
+	idleTimeout               int
+	maxAge                    int
+	spawnRate                 int
 	forkOnExec                bool
 	loadLimit1                float64
 	loadLimit5                float64
@@ -47,6 +47,18 @@ type configurationStruct struct {
 	timeoutReturn             int
 	daemon                    bool
 	prometheusServer          string
+	// send_gearman specific
+	timeout     int
+	delimiter   string
+	host        string
+	service     string
+	resultQueue string
+	returnCode  int
+	message     string
+	active      bool
+	startTime   float64
+	finishTime  float64
+	latency     float64
 }
 
 func setDefaultValues(result *configurationStruct) {
@@ -69,6 +81,7 @@ func setDefaultValues(result *configurationStruct) {
 	if result.identifier == "" {
 		result.identifier = "unknown"
 	}
+	result.delimiter = "\t"
 }
 
 /**
@@ -102,6 +115,9 @@ func readSetting(values []string, result *configurationStruct) {
 		list := strings.Split(values[1], ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
+		}
+		for i, s := range list {
+			list[i] = fixGearmandServerAddress(s)
 		}
 		result.server = append(result.server, list...)
 	}
@@ -207,6 +223,39 @@ func readSetting(values []string, result *configurationStruct) {
 	if values[0] == "workaround_rc_25" {
 		result.workaroundRc25 = getBool(values[1])
 	}
+	if values[0] == "timeout" || values[0] == "t" {
+		result.timeout = getInt(values[1])
+	}
+	if values[0] == "delimiter" || values[0] == "d" {
+		result.delimiter = values[1]
+	}
+	if values[0] == "host" {
+		result.host = values[1]
+	}
+	if values[0] == "service" {
+		result.service = values[1]
+	}
+	if values[0] == "result_queue" {
+		result.resultQueue = values[1]
+	}
+	if values[0] == "message" || values[0] == "m" {
+		result.message = values[1]
+	}
+	if values[0] == "return_code" || values[0] == "r" {
+		result.returnCode = getInt(values[1])
+	}
+	if values[0] == "active" {
+		result.active = getBool(values[1])
+	}
+	if values[0] == "starttime" {
+		result.startTime = getFloat(values[1])
+	}
+	if values[0] == "finishtime" {
+		result.finishTime = getFloat(values[1])
+	}
+	if values[0] == "latency" {
+		result.latency = getFloat(values[1])
+	}
 }
 
 //opens the config file and reads all key value pairs, separated through = and commented out with #
@@ -232,13 +281,6 @@ func readSettingsFile(path string, result *configurationStruct) {
 			values := strings.Split(line, "=")
 			readSetting(values, result)
 		}
-	}
-
-	for i, s := range result.server {
-		result.server[i] = fixGearmandServerAddress(s)
-	}
-	for i, s := range result.dupserver {
-		result.dupserver[i] = fixGearmandServerAddress(s)
 	}
 }
 
@@ -272,6 +314,13 @@ func getBool(input string) bool {
 		return true
 	}
 	return false
+}
+
+func bool2int(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func fixGearmandServerAddress(address string) string {

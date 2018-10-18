@@ -1,0 +1,3 @@
+mod_gearman_worker
+send_gearman
+*.exe

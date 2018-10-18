@@ -49,28 +49,34 @@ dump:
 
 build: dump
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD; \
+		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD; cd ../..; \
 	done
 
 build-linux-amd64: dump
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; \
+		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; cd ../..; \
 	done
 
 build-windows-i386: dump
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
 	done
 
 build-windows-amd64: dump
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
 	done
+
+send_gearman: *.go cmd/send_gearman/*.go
+	cd ./cmd/send_gearman && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../send_gearman
+
+send_gearman.exe: *.go cmd/send_gearman/*.go
+	cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../send_gearman.exe
 
 debugbuild: deps fmt
 	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"; \
+		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"; cd ../..; \
 	done
 
 test: fmt dump

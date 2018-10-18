@@ -24,39 +24,35 @@ type answer struct {
 	output             string
 	resultQueue        string
 	active             string
+	latency            float64
 }
 
 func (a *answer) String() string {
-	//service description is not available for hosts -> must not appear in answer
-	serviceDescription := "service_description=" + a.serviceDescription + "\n"
-	if a.serviceDescription == "" {
-		serviceDescription = ""
-	}
-	//exited_ok is bool but we need the int representation here
-	var exited int
-	if a.exitedOk {
-		exited = 1
-	}
-	return fmt.Sprintf(
-		"host_name=%s\n"+
-			serviceDescription+
-			"core_start_time=%f\n"+
+	result := fmt.Sprintf(
+		"type=%s\n"+
+			"host_name=%s\n"+
 			"start_time=%f\n"+
 			"finish_time=%f\n"+
 			"return_code=%d\n"+
 			"exited_ok=%d\n"+
 			"source=%s\n"+
-			"output=%s\n"+
-			"type=%s\n",
+			"output=%s\n",
+		a.active,
 		a.hostName,
-		a.coreStartTime,
 		a.startTime,
 		a.finishTime,
 		a.returnCode,
-		exited,
+		bool2int(a.exitedOk),
 		a.source,
 		a.output,
-		a.active)
+	)
+	if a.coreStartTime > 0 {
+		result += fmt.Sprintf("core_start_time=%f\n", a.coreStartTime)
+	}
+	if a.serviceDescription != "" {
+		result += fmt.Sprintf("service_description=%s\n", a.serviceDescription)
+	}
+	return result
 }
 
 /**

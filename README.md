@@ -24,6 +24,7 @@ Prometheus metrics will get exported when started with the `prometheus-server` o
 Either use `go install` like:
 
     %> go install github.com/ConSol/mod-gearman-worker-go/cmd/mod_gearman_worker
+    %> go install github.com/ConSol/mod-gearman-worker-go/cmd/send_gearman
 
 Or clone the repository and build it manually:
 

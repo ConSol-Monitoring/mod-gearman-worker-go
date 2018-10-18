@@ -36,7 +36,9 @@ func Worker() {
 
 	//reads the args, check if they are params, if so sends them to the configuration reader
 	if len(os.Args) > 1 {
-		initConfiguration(&config)
+		if !initConfiguration(&config) {
+			printUsage()
+		}
 	} else {
 		fmt.Println("Missing Parameters")
 		printUsage()
@@ -116,17 +118,28 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	}
 }
 
-func initConfiguration(config *configurationStruct) {
+func initConfiguration(config *configurationStruct) bool {
 	for i := 1; i < len(os.Args); i++ {
 		//is it a param?
 		if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
 			if os.Args[i] == "--help" || os.Args[i] == "-h" {
-				printUsage()
+				return false
 			} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
-				printVersion()
-				os.Exit(3)
+				return false
 			} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
 				config.daemon = true
+			} else if os.Args[i] == "-r" {
+				if len(os.Args) < i+1 {
+					return false
+				}
+				config.returnCode = getInt(os.Args[i+1])
+				i++
+			} else if os.Args[i] == "-m" {
+				if len(os.Args) < i+1 {
+					return false
+				}
+				config.message = os.Args[i+1]
+				i++
 			} else {
 				s := strings.Trim(os.Args[i], "--")
 				sa := strings.Split(s, "=")
@@ -140,6 +153,7 @@ func initConfiguration(config *configurationStruct) {
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
 		}
 	}
+	return true
 }
 
 func checkForReasonableConfig(config *configurationStruct) {
