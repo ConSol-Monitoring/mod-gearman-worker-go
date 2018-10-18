@@ -196,9 +196,12 @@ copyfighter:
 	# Check if there are values better passed as pointer
 	# See https://github.com/jmhodges/copyfighter
 	#
-	mv mod_gearman_worker_windows.go mod_gearman_worker_windows.off
-	copyfighter .
-	mv mod_gearman_worker_windows.off mod_gearman_worker_windows.go
+	mv mod_gearman_worker_windows.go mod_gearman_worker_windows.off; \
+	mv mod_gearman_worker_darwin.go mod_gearman_worker_darwin.off; \
+	copyfighter .; rc=$$?; \
+	mv mod_gearman_worker_windows.off mod_gearman_worker_windows.go; \
+	mv mod_gearman_worker_darwin.off mod_gearman_worker_darwin.go; \
+	exit $$rc
 
 gosimple:
 	#
