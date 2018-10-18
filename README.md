@@ -30,3 +30,14 @@ Or clone the repository and build it manually:
     %> go get github.com/ConSol/mod-gearman-worker-go
     %> cd $GOPATH/src/ConSol/mod-gearman-worker-go
     %> make
+
+### Windows Builds
+
+Windows builds, for example a `send_gearman.exe` can be created by cloning the
+repository and running:
+
+    # 64bit windows builds
+    %> make build-windows-amd64
+
+    # 32bit windows builds
+    %> make build-windows-i386

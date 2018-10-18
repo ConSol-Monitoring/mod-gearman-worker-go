@@ -57,6 +57,16 @@ build-linux-amd64: dump
 		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; \
 	done
 
+build-windows-i386: dump
+	set -e; for CMD in $(CMDS); do \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; \
+	done
+
+build-windows-amd64: dump
+	set -e; for CMD in $(CMDS); do \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; \
+	done
+
 debugbuild: deps fmt
 	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
 	set -e; for CMD in $(CMDS); do \
@@ -110,6 +120,12 @@ citest: deps
 	#
 	$(MAKE) racetest
 	#
+	# Test cross compilation
+	#
+	$(MAKE) build-linux-amd64
+	$(MAKE) build-windows-amd64
+	$(MAKE) build-windows-i386
+	#
 	# All CI tests successful
 	#
 
@@ -133,6 +149,8 @@ clean:
 		rm -f ./cmd/$$CMD/$$CMD; \
 	done
 	rm -f $(CMDS)
+	rm -f *.windows.*.exe
+	rm -f *.linux.*
 	rm -f cover.out
 	rm -f coverage.html
 
@@ -178,7 +196,9 @@ copyfighter:
 	# Check if there are values better passed as pointer
 	# See https://github.com/jmhodges/copyfighter
 	#
+	mv mod_gearman_worker_windows.go mod_gearman_worker_windows.off
 	copyfighter .
+	mv mod_gearman_worker_windows.off mod_gearman_worker_windows.go
 
 gosimple:
 	#

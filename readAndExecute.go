@@ -168,10 +168,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	cmd.Env = append(os.Environ())
 
 	// prevent child from receiving signals meant for the worker only
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		Pgid:    0,
-	}
+	setSysProcAttr(cmd)
 
 	err := cmd.Run()
 	if err != nil && cmd.ProcessState == nil {
