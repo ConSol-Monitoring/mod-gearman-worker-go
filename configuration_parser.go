@@ -9,6 +9,7 @@ import (
 
 type configurationStruct struct {
 	name                      string
+	build                     string
 	identifier                string
 	debug                     int
 	logfile                   string

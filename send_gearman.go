@@ -12,10 +12,10 @@ import (
 )
 
 // Sendgearman starts the mod_gearman_worker program
-func Sendgearman() {
+func Sendgearman(build string) {
 	defer logPanicExit()
 
-	config := sendgearmanInit()
+	config := sendgearmanInit(build)
 
 	result := createResultFromArgs(config)
 	if config.timeout <= 0 {
@@ -32,8 +32,8 @@ func Sendgearman() {
 	os.Exit(2)
 }
 
-func sendgearmanInit() *configurationStruct {
-	config := configurationStruct{name: "send_gearman"}
+func sendgearmanInit(build string) *configurationStruct {
+	config := configurationStruct{name: "send_gearman", build: build}
 	setDefaultValues(&config)
 
 	//reads the args, check if they are params, if so sends them to the configuration reader

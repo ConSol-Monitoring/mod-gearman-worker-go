@@ -13,25 +13,19 @@ import (
 	daemon "github.com/sevlyar/go-daemon"
 )
 
-// Build contains the current git commit id
-// compile passing -ldflags "-X modgearman.Build <build sha1>" to set the id.
-var Build string
-
 const (
 	// VERSION contains the actual lmd version
 	VERSION = "1.0.1"
-	// NAME defines the name of this project
-	NAME = "mod_gearman_worker"
 )
 
 // var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 
 // Worker starts the mod_gearman_worker program
-func Worker() {
+func Worker(build string) {
 	defer logPanicExit()
 
-	var config configurationStruct
+	config := configurationStruct{name: "mod_gearman_worker", build: build}
 	setDefaultValues(&config)
 
 	//reads the args, check if they are params, if so sends them to the configuration reader
@@ -100,7 +94,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
-	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d)\n", NAME, VERSION, Build, config.minWorker, config.maxWorker)
+	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker)
 	mainworker := newMainWorker(config, key)
 	go func() {
 		defer logPanicExit()
@@ -198,11 +192,7 @@ func logThreaddump() {
 
 // printVersion prints the version
 func printVersion(config *configurationStruct) {
-	name := config.name
-	if name == "" {
-		name = NAME
-	}
-	fmt.Printf("%s - version %s (Build: %s)\n", name, VERSION, Build)
+	fmt.Printf("%s - version %s (Build: %s)\n", config.name, VERSION, config.build)
 }
 
 func printUsage() {
