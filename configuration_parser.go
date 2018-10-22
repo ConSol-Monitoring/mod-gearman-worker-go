@@ -280,7 +280,7 @@ func readSettingsFile(path string, result *configurationStruct) {
 		if len(line) > 0 && line[0] != '#' {
 
 			//get both values
-			values := strings.Split(line, "=")
+			values := strings.SplitN(line, "=", 2)
 			readSetting(values, result)
 		}
 	}

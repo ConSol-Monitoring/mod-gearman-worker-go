@@ -138,7 +138,7 @@ func initConfiguration(config *configurationStruct) bool {
 				i++
 			} else {
 				s := strings.Trim(os.Args[i], "--")
-				sa := strings.Split(s, "=")
+				sa := strings.SplitN(s, "=", 2)
 				if len(sa) == 1 {
 					sa = append(sa, "yes")
 				}
