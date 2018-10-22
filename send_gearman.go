@@ -33,7 +33,7 @@ func Sendgearman() {
 }
 
 func sendgearmanInit() *configurationStruct {
-	var config configurationStruct
+	config := configurationStruct{name: "send_gearman"}
 	setDefaultValues(&config)
 
 	//reads the args, check if they are params, if so sends them to the configuration reader

@@ -14,12 +14,12 @@ import (
 )
 
 // Build contains the current git commit id
-// compile passing -ldflags "-X main.Build <build sha1>" to set the id.
+// compile passing -ldflags "-X modgearman.Build <build sha1>" to set the id.
 var Build string
 
 const (
 	// VERSION contains the actual lmd version
-	VERSION = "1.0.0"
+	VERSION = "1.0.1"
 	// NAME defines the name of this project
 	NAME = "mod_gearman_worker"
 )
@@ -122,19 +122,21 @@ func initConfiguration(config *configurationStruct) bool {
 	for i := 1; i < len(os.Args); i++ {
 		//is it a param?
 		if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
-			if os.Args[i] == "--help" || os.Args[i] == "-h" {
+			arg := strings.ToLower(os.Args[i])
+			if arg == "--help" || arg == "-h" {
 				return false
-			} else if os.Args[i] == "--version" || os.Args[i] == "-v" {
-				return false
-			} else if os.Args[i] == "-d" || os.Args[i] == "--daemon" {
+			} else if arg == "--version" || arg == "-v" {
+				printVersion(config)
+				os.Exit(2)
+			} else if arg == "-d" || arg == "--daemon" {
 				config.daemon = true
-			} else if os.Args[i] == "-r" {
+			} else if arg == "-r" {
 				if len(os.Args) < i+1 {
 					return false
 				}
 				config.returnCode = getInt(os.Args[i+1])
 				i++
-			} else if os.Args[i] == "-m" {
+			} else if arg == "-m" {
 				if len(os.Args) < i+1 {
 					return false
 				}
@@ -195,8 +197,12 @@ func logThreaddump() {
 }
 
 // printVersion prints the version
-func printVersion() {
-	fmt.Printf("%s - version %s (Build: %s)\n", NAME, VERSION, Build)
+func printVersion(config *configurationStruct) {
+	name := config.name
+	if name == "" {
+		name = NAME
+	}
+	fmt.Printf("%s - version %s (Build: %s)\n", name, VERSION, Build)
 }
 
 func printUsage() {
