@@ -8,47 +8,43 @@ import (
 )
 
 type configurationStruct struct {
-	name                      string
-	build                     string
-	identifier                string
-	debug                     int
-	logfile                   string
-	logmode                   string
-	config                    []string
-	dupserver                 []string
-	eventhandler              bool
-	notifications             bool
-	services                  bool
-	hosts                     bool
-	hostgroups                []string
-	servicegroups             []string
-	encryption                bool
-	key                       string
-	keyfile                   string
-	pidfile                   string
-	jobTimeout                int
-	minWorker                 int
-	maxWorker                 int
-	idleTimeout               int
-	maxAge                    int
-	spawnRate                 int
-	forkOnExec                bool
-	loadLimit1                float64
-	loadLimit5                float64
-	loadLimit15               float64
-	showErrorOutput           bool
-	dupResultsArePassive      bool
-	enableEmbeddedPerl        bool
-	useEmbeddedPerlImplicitly bool
-	usePerlCache              bool
-	p1File                    string
-	gearmanConnectionTimeout  int
-	restrictPath              []string
-	workaroundRc25            bool
-	server                    []string
-	timeoutReturn             int
-	daemon                    bool
-	prometheusServer          string
+	name                     string
+	build                    string
+	identifier               string
+	debug                    int
+	logfile                  string
+	logmode                  string
+	config                   []string
+	dupserver                []string
+	eventhandler             bool
+	notifications            bool
+	services                 bool
+	hosts                    bool
+	hostgroups               []string
+	servicegroups            []string
+	encryption               bool
+	key                      string
+	keyfile                  string
+	pidfile                  string
+	jobTimeout               int
+	minWorker                int
+	maxWorker                int
+	idleTimeout              int
+	maxAge                   int
+	spawnRate                int
+	forkOnExec               bool
+	loadLimit1               float64
+	loadLimit5               float64
+	loadLimit15              float64
+	showErrorOutput          bool
+	dupResultsArePassive     bool
+	usePerlCache             bool
+	gearmanConnectionTimeout int
+	restrictPath             []string
+	server                   []string
+	timeoutReturn            int
+	daemon                   bool
+	prometheusServer         string
 	// send_gearman specific
 	timeout     int
 	delimiter   string
@@ -91,30 +87,27 @@ func setDefaultValues(result *configurationStruct) {
 *
  */
 func readSetting(values []string, result *configurationStruct) {
-	values[0] = strings.Trim(values[0], " ")
-	values[1] = strings.Trim(values[1], " ")
-	//check for the special cases
+	key := strings.ToLower(strings.Trim(values[0], " "))
+	value := strings.Trim(values[1], " ")
 
-	if values[0] == "dupserver" {
-		list := strings.Split(values[1], ",")
+	switch key {
+	case "dupserver":
+		list := strings.Split(value, ",")
 		result.dupserver = append(result.dupserver, list...)
-	}
-	if values[0] == "hostgroups" {
-		list := strings.Split(values[1], ",")
+	case "hostgroups":
+		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
 		}
 		result.hostgroups = append(result.hostgroups, list...)
-	}
-	if values[0] == "servicegroups" {
-		list := strings.Split(values[1], ",")
+	case "servicegroups":
+		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
 		}
 		result.servicegroups = append(result.servicegroups, list...)
-	}
-	if values[0] == "server" {
-		list := strings.Split(values[1], ",")
+	case "server":
+		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
 		}
@@ -122,141 +115,86 @@ func readSetting(values []string, result *configurationStruct) {
 			list[i] = fixGearmandServerAddress(s)
 		}
 		result.server = append(result.server, list...)
-	}
-	if values[0] == "prometheus_server" {
-		result.prometheusServer = values[1]
-	}
-	if values[0] == "timeout_return" {
-		result.timeoutReturn = getInt(values[1])
-	}
-	if values[0] == "config" {
-		readSettingsFile(values[1], result)
-	}
-	if values[0] == "debug" {
-		result.debug = getInt(values[1])
-	}
-	if values[0] == "logfile" {
-		result.logfile = values[1]
-	}
-	if values[0] == "logmode" {
-		result.logmode = values[1]
-	}
-	if values[0] == "identifier" {
-		result.identifier = values[1]
-	}
-	if values[0] == "eventhandler" {
-		result.eventhandler = getBool(values[1])
-	}
-	if values[0] == "notifications" {
-		result.notifications = getBool(values[1])
-	}
-	if values[0] == "services" {
-		result.services = getBool(values[1])
-	}
-	if values[0] == "hosts" {
-		result.hosts = getBool(values[1])
-	}
-	if values[0] == "encryption" {
-		result.encryption = getBool(values[1])
-	}
-	if values[0] == "key" {
-		result.key = values[1]
-	}
-	if values[0] == "keyfile" {
-		result.keyfile = values[1]
-	}
-	if values[0] == "pidfile" {
-		result.pidfile = values[1]
-	}
-	if values[0] == "job_timeout" {
-		result.jobTimeout = getInt(values[1])
-	}
-	if values[0] == "min-worker" {
-		result.minWorker = getInt(values[1])
-	}
-	if values[0] == "max-worker" {
-		result.maxWorker = getInt(values[1])
-	}
-	if values[0] == "idle-timeout" {
-		result.idleTimeout = getInt(values[1])
-	}
-	if values[0] == "max-age" {
-		result.maxAge = getInt(values[1])
-	}
-	if values[0] == "spawn-rate" {
-		result.spawnRate = getInt(values[1])
-	}
-	if values[0] == "fork_on_exec" {
-		result.forkOnExec = getBool(values[1])
-	}
-	if values[0] == "load_limit1" {
-		result.loadLimit1 = getFloat(values[1])
-	}
-	if values[0] == "load_limit5" {
-		result.loadLimit5 = getFloat(values[1])
-	}
-	if values[0] == "load_limit15" {
-		result.loadLimit15 = getFloat(values[1])
-	}
-	if values[0] == "show_error_output" {
-		result.showErrorOutput = getBool(values[1])
-	}
-	if values[0] == "dup_results_are_passive" {
-		result.dupResultsArePassive = getBool(values[1])
-	}
-	if values[0] == "enable_embedded_perl" {
-		result.enableEmbeddedPerl = getBool(values[1])
-	}
-	if values[0] == "use_embedded_perl_implicitly" {
-		result.useEmbeddedPerlImplicitly = getBool(values[1])
-	}
-	if values[0] == "use_perl_cache" {
-		result.usePerlCache = getBool(values[1])
-	}
-	if values[0] == "p1_file" {
-		result.p1File = values[1]
-	}
-	if values[0] == "gearman_connection_timeout" {
-		result.gearmanConnectionTimeout = getInt(values[1])
-	}
-	if values[0] == "restrict_path" {
-		result.restrictPath = append(result.restrictPath, values[1])
-	}
-	if values[0] == "workaround_rc_25" {
-		result.workaroundRc25 = getBool(values[1])
-	}
-	if values[0] == "timeout" || values[0] == "t" {
-		result.timeout = getInt(values[1])
-	}
-	if values[0] == "delimiter" || values[0] == "d" {
-		result.delimiter = values[1]
-	}
-	if values[0] == "host" {
-		result.host = values[1]
-	}
-	if values[0] == "service" {
-		result.service = values[1]
-	}
-	if values[0] == "result_queue" {
-		result.resultQueue = values[1]
-	}
-	if values[0] == "message" || values[0] == "m" {
-		result.message = values[1]
-	}
-	if values[0] == "return_code" || values[0] == "r" {
-		result.returnCode = getInt(values[1])
-	}
-	if values[0] == "active" {
-		result.active = getBool(values[1])
-	}
-	if values[0] == "starttime" {
-		result.startTime = getFloat(values[1])
-	}
-	if values[0] == "finishtime" {
-		result.finishTime = getFloat(values[1])
-	}
-	if values[0] == "latency" {
-		result.latency = getFloat(values[1])
+	case "prometheus_server":
+		result.prometheusServer = value
+	case "timeout_return":
+		result.timeoutReturn = getInt(value)
+	case "config":
+		readSettingsFile(value, result)
+	case "debug":
+		result.debug = getInt(value)
+	case "logfile":
+		result.logfile = value
+	case "logmode":
+		result.logmode = value
+	case "identifier":
+		result.identifier = value
+	case "eventhandler":
+		result.eventhandler = getBool(value)
+	case "notifications":
+		result.notifications = getBool(value)
+	case "services":
+		result.services = getBool(value)
+	case "hosts":
+		result.hosts = getBool(value)
+	case "encryption":
+		result.encryption = getBool(value)
+	case "key":
+		result.key = value
+	case "keyfile":
+		result.keyfile = value
+	case "pidfile":
+		result.pidfile = value
+	case "job_timeout":
+		result.jobTimeout = getInt(value)
+	case "min-worker":
+		result.minWorker = getInt(value)
+	case "max-worker":
+		result.maxWorker = getInt(value)
+	case "idle-timeout":
+		result.idleTimeout = getInt(value)
+	case "max-age":
+		result.maxAge = getInt(value)
+	case "spawn-rate":
+		result.spawnRate = getInt(value)
+	case "fork_on_exec":
+		result.forkOnExec = getBool(value)
+	case "load_limit1":
+		result.loadLimit1 = getFloat(value)
+	case "load_limit5":
+		result.loadLimit5 = getFloat(value)
+	case "load_limit15":
+		result.loadLimit15 = getFloat(value)
+	case "show_error_output":
+		result.showErrorOutput = getBool(value)
+	case "dup_results_are_passive":
+		result.dupResultsArePassive = getBool(value)
+	case "gearman_connection_timeout":
+		result.gearmanConnectionTimeout = getInt(value)
+	case "restrict_path":
+		result.restrictPath = append(result.restrictPath, value)
+	case "timeout", "t":
+		result.timeout = getInt(value)
+	case "delimiter", "d":
+		result.delimiter = value
+	case "host":
+		result.host = value
+	case "service":
+		result.service = value
+	case "result_queue":
+		result.resultQueue = value
+	case "message", "m":
+		result.message = value
+	case "return_code", "r":
+		result.returnCode = getInt(value)
+	case "active":
+		result.active = getBool(value)
+	case "starttime":
+		result.startTime = getFloat(value)
+	case "finishtime":
+		result.finishTime = getFloat(value)
+	case "latency":
+		result.latency = getFloat(value)
 	}
 }
 
