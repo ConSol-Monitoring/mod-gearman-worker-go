@@ -113,7 +113,7 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 	}
 
 	//check for restricted path
-	splittedString := strings.Split(cmdString, " ")
+	splittedString := strings.Fields(cmdString)
 	for _, v := range restrictPath {
 		if strings.HasPrefix(splittedString[0], v) {
 			return true
@@ -152,7 +152,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	if executeInShell(received.commandLine) {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", received.commandLine)
 	} else {
-		splitted := strings.Split(received.commandLine, " ")
+		splitted := strings.Fields(received.commandLine)
 		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
 	}
 

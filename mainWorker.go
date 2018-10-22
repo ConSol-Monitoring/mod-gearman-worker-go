@@ -133,7 +133,7 @@ func (w *mainWorker) getLoadAvg() {
 	//read first line:
 	scanner.Scan()
 	firstline := scanner.Text()
-	values := strings.Split(firstline, " ")
+	values := strings.Fields(firstline)
 
 	w.min1 = getFloat(values[0])
 	w.min5 = getFloat(values[1])
