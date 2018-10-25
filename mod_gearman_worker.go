@@ -53,7 +53,15 @@ func Worker(build string) {
 		defer cntxt.Release()
 	}
 
-	defer logger.Infof("mod-gearman-worker-go shutdown complete")
+	// initialize prometheus
+	prometheusListener := startPrometheus(&config)
+	defer func() {
+		if prometheusListener != nil {
+			(*prometheusListener).Close()
+		}
+		logger.Infof("mod-gearman-worker-go shutdown complete")
+	}()
+
 	for {
 		exitCode := mainLoop(&config, nil)
 		if exitCode > 0 {
@@ -62,6 +70,12 @@ func Worker(build string) {
 		// make it possible to call main() from tests without exiting the tests
 		if exitCode == 0 {
 			break
+		}
+
+		oldPrometheusListener := config.prometheusServer
+		initConfiguration(&config)
+		if prometheusListener != nil && oldPrometheusListener != config.prometheusServer {
+			(*prometheusListener).Close()
 		}
 	}
 }
@@ -87,9 +101,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
 
-	// initialize prometheus
-	prometheusListener := startPrometheus(config)
-
 	//create the cipher
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
@@ -105,9 +116,9 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	for {
 		select {
 		case sig := <-osSignalChannel:
-			return mainSignalHandler(sig, shutdownChannel, prometheusListener)
+			return mainSignalHandler(sig, shutdownChannel)
 		case sig := <-osSignalUsrChannel:
-			mainSignalHandler(sig, shutdownChannel, prometheusListener)
+			mainSignalHandler(sig, shutdownChannel)
 		}
 	}
 }
