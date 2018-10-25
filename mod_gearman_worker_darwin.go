@@ -34,6 +34,8 @@ func mainSignalHandler(sig os.Signal, shutdownChannel chan bool, prometheusListe
 		return 1
 	case syscall.SIGHUP:
 		logger.Infof("got sighup, reloading configuration...")
+		shutdownChannel <- true
+		close(shutdownChannel)
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
 		}
