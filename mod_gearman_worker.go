@@ -94,7 +94,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
-	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker)
+	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid())
 	mainworker := newMainWorker(config, key)
 	go func() {
 		defer logPanicExit()

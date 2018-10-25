@@ -64,25 +64,26 @@ var (
 )
 
 func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {
-	defer logPanicExit()
-	if config.prometheusServer != "" {
-		l, err := net.Listen("tcp", config.prometheusServer)
-		prometheusListener = &l
-		go func() {
-			// make sure we log panics properly
-			defer logPanicExit()
-
-			if err != nil {
-				logger.Fatalf("starting prometheus exporter failed: %s", err)
-			}
-			mux := http.NewServeMux()
-			mux.Handle("/metrics", prometheus.Handler())
-			http.Serve(l, mux)
-		}()
-		logger.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
-	}
 	registerMetrics()
 	infoCount.WithLabelValues(VERSION, config.identifier).Set(1)
+
+	if config.prometheusServer == "" {
+		return
+	}
+
+	l, err := net.Listen("tcp", config.prometheusServer)
+	if err != nil {
+		logger.Fatalf("starting prometheus exporter failed: %s", err)
+	}
+	prometheusListener = &l
+	go func() {
+		// make sure we log panics properly
+		defer logPanicExit()
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", prometheus.Handler())
+		http.Serve(l, mux)
+	}()
+	logger.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
 	return
 }
 
