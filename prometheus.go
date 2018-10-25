@@ -82,6 +82,7 @@ func startPrometheus(config *configurationStruct) (prometheusListener *net.Liste
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", prometheus.Handler())
 		http.Serve(l, mux)
+		logger.Debugf("prometheus listener %s stopped", config.prometheusServer)
 	}()
 	logger.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
 	return
