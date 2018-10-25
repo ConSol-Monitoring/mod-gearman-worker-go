@@ -106,6 +106,10 @@ citest: deps
 	#
 	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 	#
+	# Darwin and Linux should be handled equal
+	#
+	diff mod_gearman_worker_linux.go mod_gearman_worker_darwin.go
+	#
 	# Run other subtests
 	#
 	$(MAKE) lint

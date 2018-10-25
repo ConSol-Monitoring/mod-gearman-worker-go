@@ -53,9 +53,9 @@ func Worker(build string) {
 		defer cntxt.Release()
 	}
 
+	defer logger.Infof("mod-gearman-worker-go shutdown complete")
 	for {
 		exitCode := mainLoop(&config, nil)
-		defer logger.Infof("mod-gearman-worker-go shutdown complete")
 		if exitCode > 0 {
 			os.Exit(exitCode)
 		}
@@ -76,7 +76,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	signal.Notify(osSignalChannel, syscall.SIGINT)
 
 	osSignalUsrChannel := make(chan os.Signal, 1)
-	setupUsr1Channel(osSignalChannel)
+	setupUsr1Channel(osSignalUsrChannel)
 
 	shutdownChannel := make(chan bool)
 

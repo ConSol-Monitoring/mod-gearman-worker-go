@@ -21,7 +21,7 @@ func mainSignalHandler(sig os.Signal, shutdownChannel chan bool, prometheusListe
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
 		}
-		return (0)
+		return 0
 	case syscall.SIGINT:
 		fallthrough
 	case os.Interrupt:
@@ -31,21 +31,21 @@ func mainSignalHandler(sig os.Signal, shutdownChannel chan bool, prometheusListe
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
 		}
-		return (1)
+		return 1
 	case syscall.SIGHUP:
 		logger.Infof("got sighup, reloading configuration...")
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
 		}
-		return (-1)
+		return -1
 	case syscall.SIGUSR1:
 		logger.Errorf("requested thread dump via signal %s", sig)
 		logThreaddump()
-		return 0
+		return -1
 	default:
 		logger.Warnf("Signal not handled: %v", sig)
 	}
-	return 1
+	return -1
 }
 
 func setSysProcAttr(cmd *exec.Cmd) {
