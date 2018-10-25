@@ -165,6 +165,10 @@ func checkForReasonableConfig(config *configurationStruct) {
 		logger.Fatal("encryption enabled but no keys defined")
 	}
 
+	if config.minWorker > config.maxWorker {
+		config.maxWorker = config.minWorker
+	}
+
 }
 
 func createPidFile(path string) {
