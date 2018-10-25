@@ -87,38 +87,70 @@ func (w *mainWorker) manageWorkers() {
 		w.idleSince = time.Now()
 	}
 
-	//check if we have too many workers (less than 90% active and above minWorker)
-	if (w.activeWorkers/len(w.workerMap)*100) < 90 && len(w.workerMap) > w.config.minWorker && (time.Now().Unix()-w.idleSince.Unix() > int64(w.config.idleTimeout)) {
-		//reduce workers at spawnrate
-		for i := 0; i < w.config.spawnRate; i++ {
-			if len(w.workerMap) <= w.config.minWorker {
-				break
-			}
-			// stop first idle worker
-			logger.Debugf("manageWorkers: stopping one...")
-			for _, worker := range w.workerMap {
-				if worker.idle {
-					worker.Shutdown()
-					break
-				}
-			}
-		}
-	}
+	//check if we have too many workers
+	w.adjustWorkerBottomLevel()
 
 	//check if we need more workers
-	if w.activeWorkers == len(w.workerMap) && len(w.workerMap) < w.config.maxWorker {
-		if !w.checkLoads() {
-			return
+	w.adjustWorkerTopLevel()
+}
+
+//check if we need more workers and start new ones
+func (w *mainWorker) adjustWorkerTopLevel() {
+	// only if all are busy
+	if w.activeWorkers < len(w.workerMap) {
+		return
+	}
+	// do not exceed maxWorker level
+	if len(w.workerMap) >= w.config.maxWorker {
+		return
+	}
+	// check load levels
+	if !w.checkLoads() {
+		return
+	}
+
+	//start new workers at spawn speed
+	for i := 0; i < w.config.spawnRate; i++ {
+		if len(w.workerMap) >= w.config.maxWorker {
+			break
 		}
-		//start new workers at spawn speed from the configuration file
-		for i := 0; i < w.config.spawnRate; i++ {
-			if len(w.workerMap) >= w.config.maxWorker {
+		logger.Debugf("manageWorkers: starting one...")
+		worker := newWorker(w.activeChan, w.config, w)
+		w.registerWorker(worker)
+		w.idleSince = time.Now()
+	}
+}
+
+//check if we have too many workers (less than 90% active and above minWorker)
+func (w *mainWorker) adjustWorkerBottomLevel() {
+	if len(w.workerMap) <= 0 {
+		return
+	}
+	// below minmum level
+	if len(w.workerMap) <= w.config.minWorker {
+		return
+	}
+	// above 90% utilization
+	if (w.activeWorkers / len(w.workerMap) * 100) >= 90 {
+		return
+	}
+	// not idling long enough
+	if time.Now().Unix()-w.idleSince.Unix() <= int64(w.config.idleTimeout) {
+		return
+	}
+
+	//reduce workers at spawnrate
+	for i := 0; i < w.config.spawnRate; i++ {
+		if len(w.workerMap) <= w.config.minWorker {
+			break
+		}
+		// stop first idle worker
+		logger.Debugf("manageWorkers: stopping one...")
+		for _, worker := range w.workerMap {
+			if worker.idle {
+				worker.Shutdown()
 				break
 			}
-			logger.Debugf("manageWorkers: starting one...")
-			worker := newWorker(w.activeChan, w.config, w)
-			w.registerWorker(worker)
-			w.idleSince = time.Now()
 		}
 	}
 }
