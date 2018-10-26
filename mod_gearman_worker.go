@@ -72,10 +72,15 @@ func Worker(build string) {
 			break
 		}
 
+		// return codes of < 0 from mainLoop are for sighups, so code here is to reinitialize things
+
 		oldPrometheusListener := config.prometheusServer
 		initConfiguration(&config)
-		if prometheusListener != nil && oldPrometheusListener != config.prometheusServer {
-			(*prometheusListener).Close()
+		if oldPrometheusListener != config.prometheusServer {
+			if prometheusListener != nil {
+				(*prometheusListener).Close()
+			}
+			prometheusListener = startPrometheus(&config)
 		}
 	}
 }
