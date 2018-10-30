@@ -18,7 +18,7 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 		c = cl
 	}
 
-	logger.Trace(answer)
+	logger.Tracef("result\n%s", answer)
 
 	byteAnswer := createAnswer(answer, encrypted)
 

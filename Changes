@@ -1,6 +1,7 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
+          - fix issue with hostchecks not returned properly
           - internal improvements
 
 1.0.1    Mon Oct 22 11:33:24 CEST 2018

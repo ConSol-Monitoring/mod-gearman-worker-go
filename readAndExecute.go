@@ -66,6 +66,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	//first set the start time
 	result.startTime = float64(time.Now().UnixNano()) / 1e9
 	result.source = "Mod-Gearman Worker @ " + config.identifier
+	result.active = "active"
 
 	logger.Debug("new Job Received\n")
 	logger.Debug(received)
