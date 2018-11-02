@@ -25,20 +25,12 @@ var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time}
 func Worker(build string) {
 	defer logPanicExit()
 
-	config := configurationStruct{name: "mod_gearman_worker", build: build}
-	setDefaultValues(&config)
-
 	//reads the args, check if they are params, if so sends them to the configuration reader
-	if len(os.Args) > 1 {
-		if !initConfiguration(&config) {
-			printUsage()
-		}
-	} else {
-		fmt.Println("Missing Parameters")
-		printUsage()
+	config, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		os.Exit(3)
 	}
-
-	checkForReasonableConfig(&config)
 
 	if config.daemon {
 		cntxt := &daemon.Context{}
@@ -54,7 +46,7 @@ func Worker(build string) {
 	}
 
 	// initialize prometheus
-	prometheusListener := startPrometheus(&config)
+	prometheusListener := startPrometheus(config)
 	defer func() {
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
@@ -63,7 +55,7 @@ func Worker(build string) {
 	}()
 
 	for {
-		exitCode := mainLoop(&config, nil)
+		exitCode := mainLoop(config, nil)
 		if exitCode > 0 {
 			os.Exit(exitCode)
 		}
@@ -73,14 +65,20 @@ func Worker(build string) {
 		}
 
 		// return codes of < 0 from mainLoop are for sighups, so code here is to reinitialize things
-
 		oldPrometheusListener := config.prometheusServer
-		initConfiguration(&config)
+		configNew, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
+		if err != nil {
+			logger.Errorf("cannot reload configuration: %s", err.Error())
+			continue
+		}
+
+		// reinitialize things
+		config = configNew
 		if oldPrometheusListener != config.prometheusServer {
 			if prometheusListener != nil {
 				(*prometheusListener).Close()
 			}
-			prometheusListener = startPrometheus(&config)
+			prometheusListener = startPrometheus(config)
 		}
 	}
 }
@@ -128,13 +126,19 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	}
 }
 
-func initConfiguration(config *configurationStruct) bool {
+type helpCallback func()
+type verifyCallback func(*configurationStruct) error
+
+func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
+	config := &configurationStruct{name: name, build: build}
+	setDefaultValues(config)
 	for i := 1; i < len(os.Args); i++ {
 		//is it a param?
 		if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
 			arg := strings.ToLower(os.Args[i])
 			if arg == "--help" || arg == "-h" {
-				return false
+				helpFunc()
+				os.Exit(2)
 			} else if arg == "--version" || arg == "-v" {
 				printVersion(config)
 				os.Exit(2)
@@ -142,13 +146,13 @@ func initConfiguration(config *configurationStruct) bool {
 				config.daemon = true
 			} else if arg == "-r" {
 				if len(os.Args) < i+1 {
-					return false
+					return nil, fmt.Errorf("-r requires an argument")
 				}
 				config.returnCode = getInt(os.Args[i+1])
 				i++
 			} else if arg == "-m" {
 				if len(os.Args) < i+1 {
-					return false
+					return nil, fmt.Errorf("-m requires an argument")
 				}
 				config.message = os.Args[i+1]
 				i++
@@ -165,26 +169,26 @@ func initConfiguration(config *configurationStruct) bool {
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
 		}
 	}
-	return true
+	err := verifyFunc(config)
+	return config, err
 }
 
-func checkForReasonableConfig(config *configurationStruct) {
+func checkForReasonableConfig(config *configurationStruct) error {
 	if len(config.server) == 0 {
-		logger.Fatal("no server specified")
+		return fmt.Errorf("no server specified")
 	}
 	if !config.notifications && !config.services && !config.eventhandler && !config.hosts &&
 		len(config.hostgroups) == 0 && len(config.servicegroups) == 0 {
-
-		logger.Fatal("no listen queues defined!")
+		return fmt.Errorf("no listen queues defined")
 	}
 	if config.encryption && config.key == "" && config.keyfile == "" {
-		logger.Fatal("encryption enabled but no keys defined")
+		return fmt.Errorf("encryption enabled but no keys defined")
 	}
 
 	if config.minWorker > config.maxWorker {
 		config.maxWorker = config.minWorker
 	}
-
+	return nil
 }
 
 func createPidFile(path string) {

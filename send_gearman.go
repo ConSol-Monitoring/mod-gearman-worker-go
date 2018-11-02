@@ -33,36 +33,28 @@ func Sendgearman(build string) {
 }
 
 func sendgearmanInit(build string) *configurationStruct {
-	config := configurationStruct{name: "send_gearman", build: build}
-	setDefaultValues(&config)
-
 	//reads the args, check if they are params, if so sends them to the configuration reader
-	if len(os.Args) > 1 {
-		if !initConfiguration(&config) {
-			printUsageSendGearman()
-		}
-	} else {
-		fmt.Println("Missing Parameters")
-		printUsageSendGearman()
+	config, err := initConfiguration("mod_gearman_worker", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		os.Exit(3)
 	}
 
-	checkForReasonableConfigSendGearman(&config)
-
 	//create the logger, everything logged until here gets printed to stdOut
-	createLogger(&config)
+	createLogger(config)
 	logger.SetOutput(os.Stderr)
 	frmt := `[%{Severity}] %{Message}`
 	logger.SetFormatter(factorlog.NewStdFormatter(frmt))
 
 	//create the cipher
-	key := getKey(&config)
+	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
 	if config.resultQueue == "" {
 		config.resultQueue = "check_results"
 	}
 
-	return &config
+	return config
 }
 
 func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess bool, resultsCounter int, lastAddress string, err error) {
@@ -148,14 +140,14 @@ func createResultFromArgs(config *configurationStruct) *answer {
 	return result
 }
 
-func checkForReasonableConfigSendGearman(config *configurationStruct) {
+func checkForReasonableConfigSendGearman(config *configurationStruct) error {
 	if len(config.server) == 0 {
-		logger.Fatal("no server specified")
+		return fmt.Errorf("no server specified")
 	}
 	if config.encryption && config.key == "" && config.keyfile == "" {
-		logger.Fatal("encryption enabled but no keys defined")
+		return fmt.Errorf("encryption enabled but no keys defined")
 	}
-
+	return nil
 }
 
 func parseLine2Answer(config *configurationStruct, result *answer, input string) bool {

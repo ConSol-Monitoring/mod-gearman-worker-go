@@ -43,6 +43,7 @@ func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 }
 
 func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
+	w.manageWorkers()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
@@ -74,7 +75,7 @@ func (w *mainWorker) manageWorkers() {
 	}
 
 	totalWorker := len(w.workerMap)
-	logger.Debugf("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, w.activeWorkers, w.config.minWorker, w.config.maxWorker)
+	logger.Tracef("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, w.activeWorkers, w.config.minWorker, w.config.maxWorker)
 	workerCount.Set(float64(totalWorker))
 	workingWorkerCount.Set(float64(w.activeWorkers))
 	idleWorkerCount.Set(float64(totalWorker - w.activeWorkers))
