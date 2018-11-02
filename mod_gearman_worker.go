@@ -207,7 +207,7 @@ func deletePidFile(f string) {
 func logThreaddump() {
 	buf := make([]byte, 1<<16)
 	runtime.Stack(buf, true)
-	logger.Errorf("%s", buf)
+	logger.Errorf("threaddump:\n%s", buf)
 }
 
 // printVersion prints the version
