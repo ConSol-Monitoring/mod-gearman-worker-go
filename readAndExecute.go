@@ -19,7 +19,6 @@ type answer struct {
 	startTime          float64
 	finishTime         float64
 	returnCode         int
-	exitedOk           bool
 	source             string
 	output             string
 	resultQueue        string
@@ -34,7 +33,7 @@ func (a *answer) String() string {
 			"start_time=%f\n"+
 			"finish_time=%f\n"+
 			"return_code=%d\n"+
-			"exited_ok=%d\n"+
+			"exited_ok=1\n"+
 			"source=%s\n"+
 			"output=%s\n",
 		a.active,
@@ -42,7 +41,6 @@ func (a *answer) String() string {
 		a.startTime,
 		a.finishTime,
 		a.returnCode,
-		bool2int(a.exitedOk),
 		a.source,
 		a.output,
 	)
@@ -140,7 +138,6 @@ func executeInShell(cmdString string) bool {
 func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
 
 	result.returnCode = 3
-	result.exitedOk = false
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
 		result.output = "command contains bad path"
 		return
@@ -195,7 +192,6 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	if waitStatus, ok := state.Sys().(syscall.WaitStatus); ok {
 		result.returnCode = waitStatus.ExitStatus()
-		result.exitedOk = true
 	}
 
 	// extract stdout and stderr

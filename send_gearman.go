@@ -95,7 +95,6 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 		if config.finishTime <= 0 {
 			result.finishTime = float64(time.Now().Unix())
 		}
-		result.exitedOk = true
 		for _, a := range config.server {
 			if c == nil {
 				logger.Debugf("connecting to: %s", a)
