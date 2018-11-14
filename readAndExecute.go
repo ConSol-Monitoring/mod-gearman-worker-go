@@ -202,11 +202,10 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 			result.output += "\n[" + error + "]"
 		}
 	}
-	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
-
 	if result.returnCode > 3 || result.returnCode < 0 {
 		fixReturnCodes(result, config, state)
 	}
+	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
 }
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {

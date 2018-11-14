@@ -75,9 +75,9 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	}
 
 	//stdout & stderr output
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr' >&2; echo \"stdout\"; exit 2\"", timeout: 10}, &config)
-	if result.output != `stdout\n[stderr]` || result.returnCode != 2 {
-		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `stdout\n[stderr]`, 2)
+	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr\nstderr' >&2; echo 'stdout\nstdout'; exit 2\"", timeout: 10}, &config)
+	if result.output != `stdout\nstdout\n[stderr\nstderr]` || result.returnCode != 2 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `stdout\nstdout\n[stderr\nstderr]`, 2)
 	}
 
 	//stderr output only
@@ -105,9 +105,12 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	}
 
 	//signals
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'killing me...'; kill $$\"", timeout: 10}, &config)
+	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'killing\nme...'; echo 'stderr\nstderr' >&2; kill $$\"", timeout: 10}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 15 is out of bounds.") || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 15 is out of bounds.", 2)
+	}
+	if !strings.Contains(result.output, `)\nkilling\nme...\n[stderr\nstderr]`) || result.returnCode != 2 {
+		t.Errorf("got result %s, but expected containing %s", result.output, `)\nkilling\nme...\n[stderr\nstderr]`)
 	}
 }
 
