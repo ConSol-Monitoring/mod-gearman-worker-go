@@ -48,7 +48,7 @@ func (r *receivedStruct) String() string {
 
 func createCipher(key []byte, encrypt bool) cipher.Block {
 	if encrypt {
-		newCipher, err := aes.NewCipher([]byte(key))
+		newCipher, err := aes.NewCipher(key)
 		if err != nil {
 			logger.Panic(err)
 		}

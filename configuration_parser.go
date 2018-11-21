@@ -246,7 +246,7 @@ func getFloat(input string) float64 {
 		logger.Errorf("error Converting %s to float", input)
 		result = 0
 	}
-	return float64(result)
+	return result
 }
 
 func getBool(input string) bool {

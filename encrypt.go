@@ -42,6 +42,6 @@ func encrypt(data []byte, encrypt bool) []byte {
 * returns the base64 encoded string
  */
 func encodeBase64(data []byte) []byte {
-	encodedBase := b64.StdEncoding.EncodeToString([]byte(data))
+	encodedBase := b64.StdEncoding.EncodeToString(data)
 	return []byte(encodedBase)
 }
