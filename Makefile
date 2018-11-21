@@ -25,6 +25,7 @@ EXTERNAL_DEPS = \
 	github.com/jmhodges/copyfighter \
 	honnef.co/go/tools/cmd/gosimple \
 	github.com/mvdan/unparam \
+	github.com/mdempsky/unconvert \
 
 CMDS = $(shell cd ./cmd && ls -1)
 
@@ -118,6 +119,7 @@ citest: deps
 	$(MAKE) copyfighter
 	$(MAKE) gosimple
 	$(MAKE) unparam
+	$(MAKE) unconvert
 	$(MAKE) fmt
 	#
 	# Normal test cases
@@ -232,6 +234,13 @@ unparam:
 		unparam -exported .; \
 		exit 1; \
 	fi
+
+unconvert:
+	#
+	# The unconvert program analyzes Go packages to identify unnecessary type conversions
+	# See https://github.com/mdempsky/unconvert
+	#
+	unconvert -v
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
