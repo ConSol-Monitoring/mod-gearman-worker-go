@@ -229,11 +229,7 @@ unparam:
 	# Check if all function parameters are actually used
 	# See https://github.com/mvdan/unparam
 	#
-	if [ $$(unparam -exported . 2>&1 | wc -l) -gt 0 ]; then \
-		echo "found unparam errors:"; \
-		unparam -exported .; \
-		exit 1; \
-	fi
+	unparam -exported .
 
 unconvert:
 	#
