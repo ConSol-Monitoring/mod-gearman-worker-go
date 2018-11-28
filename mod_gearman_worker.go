@@ -169,6 +169,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
 		}
 	}
+	config.removeDuplicates()
 	err := verifyFunc(config)
 	return config, err
 }

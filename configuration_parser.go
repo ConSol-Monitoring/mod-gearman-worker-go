@@ -82,6 +82,15 @@ func setDefaultValues(result *configurationStruct) {
 	result.delimiter = "\t"
 }
 
+// remove duplicate entries from all string lists
+func (config *configurationStruct) removeDuplicates() {
+	config.server = removeDuplicateStrings(config.server)
+	config.dupserver = removeDuplicateStrings(config.dupserver)
+	config.hostgroups = removeDuplicateStrings(config.hostgroups)
+	config.servicegroups = removeDuplicateStrings(config.servicegroups)
+	config.restrictPath = removeDuplicateStrings(config.restrictPath)
+}
+
 /**
 * parses the key value pairs and stores them in the configuration struct
 *
@@ -274,4 +283,17 @@ func fixGearmandServerAddress(address string) string {
 		return "0.0.0.0:" + parts[1]
 	}
 	return address
+}
+
+func removeDuplicateStrings(elements []string) []string {
+	encountered := map[string]bool{}
+	uniq := []string{}
+
+	for v := range elements {
+		if !encountered[elements[v]] {
+			encountered[elements[v]] = true
+			uniq = append(uniq, elements[v])
+		}
+	}
+	return uniq
 }

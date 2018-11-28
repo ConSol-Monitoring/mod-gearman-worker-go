@@ -24,9 +24,11 @@ idle-timeout=200
 server=hostname:4730
 server=:4730
 server=hostname
+server=hostname2
 `))
 
 	readSettingsFile("testConfigFile", &testConfig)
+	testConfig.removeDuplicates()
 
 	if testConfig.debug != 2 {
 		t.Errorf("wrong value expected 2 got %d", testConfig.debug)
@@ -48,7 +50,7 @@ server=hostname
 		t.Errorf("server 2 parsed incorrect: '%s' vs. '0.0.0.0:4730'", testConfig.server[1])
 	}
 
-	if testConfig.server[2] != "hostname:4730" {
+	if testConfig.server[2] != "hostname2:4730" {
 		t.Errorf("server 3 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[2])
 	}
 
