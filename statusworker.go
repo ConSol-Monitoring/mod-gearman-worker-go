@@ -2,54 +2,13 @@ package modgearman
 
 import (
 	"fmt"
-	"runtime/debug"
 
 	libworker "github.com/appscode/g2/worker"
 )
 
-//creates a new worker and returns a pointer to it
-// counterChanel will receive +1 if a job is received and started
-// and -1 if a job is completed
+//creates a new status worker and returns a pointer to it
 func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker) *worker {
-	logger.Tracef("starting new status worker")
-	worker := &worker{
-		config:     configuration,
-		mainWorker: mainWorker,
-	}
-
-	w := libworker.New(libworker.OneByOne)
-	worker.worker = w
-
-	w.ErrorHandler = func(e error) {
-		logger.Errorf(e.Error())
-		logger.Errorf("%s", debug.Stack())
-		worker.Shutdown()
-	}
-
-	//listen to this servers
-	for _, address := range worker.config.server {
-		err := w.AddServer("tcp", address)
-		if err != nil {
-			logger.Error(err)
-		}
-	}
-
-	// specifies what events the worker listens
-	statusQueue := fmt.Sprintf("worker_%s", configuration.identifier)
-	w.AddFunc(statusQueue, worker.returnStatus, libworker.Unlimited)
-
-	//check if worker is ready
-	if err := w.Ready(); err != nil {
-		logger.Debugf("worker not ready closing again: %s", err.Error())
-		return nil
-	}
-	//start the worker
-	go func() {
-		defer logPanicExit()
-		w.Work()
-	}()
-
-	return worker
+	return newWorker("status", nil, configuration, mainWorker)
 }
 
 func (worker *worker) returnStatus(job libworker.Job) ([]byte, error) {

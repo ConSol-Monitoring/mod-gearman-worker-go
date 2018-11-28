@@ -11,6 +11,7 @@ import (
 
 type worker struct {
 	id         string
+	what       string
 	worker     *libworker.Worker
 	idle       bool
 	start      chan int
@@ -24,9 +25,10 @@ type worker struct {
 //creates a new worker and returns a pointer to it
 // counterChanel will receive +1 if a job is received and started
 // and -1 if a job is completed
-func newWorker(counterChanel chan int, configuration *configurationStruct, mainWorker *mainWorker) *worker {
-	logger.Tracef("starting new worker")
+func newWorker(what string, counterChanel chan int, configuration *configurationStruct, mainWorker *mainWorker) *worker {
+	logger.Tracef("starting new %sworker", what)
 	worker := &worker{
+		what:       what,
 		idle:       true,
 		start:      counterChanel,
 		config:     configuration,
@@ -40,44 +42,22 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, mainW
 	worker.worker = w
 
 	w.ErrorHandler = func(e error) {
-		logger.Errorf(e.Error())
-		logger.Errorf("%s", debug.Stack())
+		if e.Error() == "EOF" {
+			logger.Debugf("worker error: %s", e.Error())
+		} else {
+			logger.Errorf("worker error: %s", e.Error())
+			logger.Errorf("%s", debug.Stack())
+		}
 		worker.Shutdown()
 	}
+
+	worker.registerFunctions(configuration)
 
 	//listen to this servers
 	for _, address := range worker.config.server {
 		err := w.AddServer("tcp", address)
 		if err != nil {
 			logger.Error(err)
-		}
-	}
-
-	// specifies what events the worker listens
-	if worker.config.eventhandler {
-		w.AddFunc("eventhandler", worker.doWork, libworker.Unlimited)
-	}
-	if worker.config.hosts {
-		w.AddFunc("host", worker.doWork, libworker.Unlimited)
-	}
-	if worker.config.services {
-		w.AddFunc("service", worker.doWork, libworker.Unlimited)
-	}
-	if worker.config.notifications {
-		w.AddFunc("notification", worker.doWork, libworker.Unlimited)
-	}
-
-	//register for the hostgroups
-	if len(worker.config.hostgroups) > 0 {
-		for _, element := range worker.config.hostgroups {
-			w.AddFunc("hostgroup_"+element, worker.doWork, libworker.Unlimited)
-		}
-	}
-
-	//register for servicegroups
-	if len(worker.config.servicegroups) > 0 {
-		for _, element := range worker.config.servicegroups {
-			w.AddFunc("servicegroup_"+element, worker.doWork, libworker.Unlimited)
 		}
 	}
 
@@ -94,6 +74,45 @@ func newWorker(counterChanel chan int, configuration *configurationStruct, mainW
 	}()
 
 	return worker
+}
+
+func (worker *worker) registerFunctions(configuration *configurationStruct) {
+	w := worker.worker
+	// specifies what events the worker listens
+	switch worker.what {
+	case "check":
+		if worker.config.eventhandler {
+			w.AddFunc("eventhandler", worker.doWork, libworker.Unlimited)
+		}
+		if worker.config.hosts {
+			w.AddFunc("host", worker.doWork, libworker.Unlimited)
+		}
+		if worker.config.services {
+			w.AddFunc("service", worker.doWork, libworker.Unlimited)
+		}
+		if worker.config.notifications {
+			w.AddFunc("notification", worker.doWork, libworker.Unlimited)
+		}
+
+		//register for the hostgroups
+		if len(worker.config.hostgroups) > 0 {
+			for _, element := range worker.config.hostgroups {
+				w.AddFunc("hostgroup_"+element, worker.doWork, libworker.Unlimited)
+			}
+		}
+
+		//register for servicegroups
+		if len(worker.config.servicegroups) > 0 {
+			for _, element := range worker.config.servicegroups {
+				w.AddFunc("servicegroup_"+element, worker.doWork, libworker.Unlimited)
+			}
+		}
+	case "status":
+		statusQueue := fmt.Sprintf("worker_%s", configuration.identifier)
+		w.AddFunc(statusQueue, worker.returnStatus, libworker.Unlimited)
+	default:
+		logger.Panicf("type not implemented: %s", worker.what)
+	}
 }
 
 func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
