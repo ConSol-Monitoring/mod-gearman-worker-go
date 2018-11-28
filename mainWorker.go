@@ -202,16 +202,29 @@ func (w *mainWorker) checkLoads() bool {
 }
 
 func (w *mainWorker) unregisterWorker(worker *worker) {
-	w.workerMapLock.Lock()
-	delete(w.workerMap, worker.id)
-	w.workerMapLock.Unlock()
+	switch worker.what {
+	case "check":
+		w.workerMapLock.Lock()
+		delete(w.workerMap, worker.id)
+		w.workerMapLock.Unlock()
+	case "status":
+		w.statusWorker = nil
+	}
 }
 
 func (w *mainWorker) registerWorker(worker *worker) {
 	if worker == nil {
 		return
 	}
-	w.workerMapLock.Lock()
-	w.workerMap[worker.id] = worker
-	w.workerMapLock.Unlock()
+	switch worker.what {
+	case "check":
+		w.workerMapLock.Lock()
+		w.workerMap[worker.id] = worker
+		w.workerMapLock.Unlock()
+	case "status":
+		if w.statusWorker != nil {
+			logger.Errorf("duplicate status worker started")
+		}
+		w.statusWorker = worker
+	}
 }
