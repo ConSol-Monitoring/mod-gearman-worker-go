@@ -8,7 +8,7 @@ import (
 
 //creates a new status worker and returns a pointer to it
 func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker) *worker {
-	return newWorker("status", nil, configuration, mainWorker)
+	return newWorker("status", configuration, mainWorker)
 }
 
 func (worker *worker) returnStatus(job libworker.Job) ([]byte, error) {

@@ -20,7 +20,6 @@ type mainWorker struct {
 	workerMap     map[string]*worker
 	workerMapLock *sync.RWMutex
 	statusWorker  *worker
-	activeChan    chan int
 	min1          float64
 	min5          float64
 	min15         float64
@@ -33,7 +32,6 @@ type mainWorker struct {
 func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
 	return &mainWorker{
 		activeWorkers: 0,
-		activeChan:    make(chan int, 100),
 		key:           key,
 		config:        configuration,
 		workerMap:     make(map[string]*worker),
@@ -47,8 +45,6 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
-		case x := <-w.activeChan:
-			w.activeWorkers += x
 		case <-ticker.C:
 			w.manageWorkers()
 		case <-shutdownChannel:
@@ -74,16 +70,23 @@ func (w *mainWorker) manageWorkers() {
 		w.statusWorker = newStatusWorker(w.config, w)
 	}
 
+	activeWorkers := 0
 	totalWorker := len(w.workerMap)
-	logger.Tracef("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, w.activeWorkers, w.config.minWorker, w.config.maxWorker)
+	for _, w := range w.workerMap {
+		if !w.idle {
+			activeWorkers++
+		}
+	}
+	w.activeWorkers = activeWorkers
+	logger.Tracef("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, activeWorkers, w.config.minWorker, w.config.maxWorker)
 	workerCount.Set(float64(totalWorker))
-	workingWorkerCount.Set(float64(w.activeWorkers))
-	idleWorkerCount.Set(float64(totalWorker - w.activeWorkers))
+	workingWorkerCount.Set(float64(activeWorkers))
+	idleWorkerCount.Set(float64(totalWorker - activeWorkers))
 
 	//as long as there are to few workers start them without a limit
 	for i := w.config.minWorker - len(w.workerMap); i > 0; i-- {
 		logger.Debugf("manageWorkers: starting minworker: %d, %d", w.config.minWorker-len(w.workerMap), i)
-		worker := newWorker("check", w.activeChan, w.config, w)
+		worker := newWorker("check", w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
@@ -116,7 +119,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 			break
 		}
 		logger.Debugf("manageWorkers: starting one...")
-		worker := newWorker("check", w.activeChan, w.config, w)
+		worker := newWorker("check", w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}

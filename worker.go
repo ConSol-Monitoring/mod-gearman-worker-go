@@ -14,7 +14,6 @@ type worker struct {
 	what       string
 	worker     *libworker.Worker
 	idle       bool
-	start      chan int
 	config     *configurationStruct
 	mainWorker *mainWorker
 	tasks      int
@@ -23,14 +22,11 @@ type worker struct {
 }
 
 //creates a new worker and returns a pointer to it
-// counterChanel will receive +1 if a job is received and started
-// and -1 if a job is completed
-func newWorker(what string, counterChanel chan int, configuration *configurationStruct, mainWorker *mainWorker) *worker {
+func newWorker(what string, configuration *configurationStruct, mainWorker *mainWorker) *worker {
 	logger.Tracef("starting new %sworker", what)
 	worker := &worker{
 		what:       what,
 		idle:       true,
-		start:      counterChanel,
 		config:     configuration,
 		mainWorker: mainWorker,
 		client:     nil,
@@ -121,10 +117,8 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 
 	//set worker to idle
 	worker.idle = false
-	worker.start <- 1
 
 	defer func() {
-		worker.start <- -1
 		worker.idle = true
 	}()
 
