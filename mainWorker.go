@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bufio"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -27,20 +28,41 @@ type mainWorker struct {
 	key           []byte
 	tasks         int
 	idleSince     time.Time
+	serverStatus  map[string]string
+	running       bool
+	restartWorker int
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
-	return &mainWorker{
+	w := &mainWorker{
 		activeWorkers: 0,
 		key:           key,
 		config:        configuration,
 		workerMap:     make(map[string]*worker),
 		workerMapLock: new(sync.RWMutex),
 		idleSince:     time.Now(),
+		serverStatus:  make(map[string]string),
 	}
+	w.RetryFailedConnections()
+	return w
 }
 
 func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
+	w.running = true
+	defer func() { w.running = false }()
+
+	// check connections
+	go func() {
+		defer logPanicExit()
+		for w.running {
+			if w.RetryFailedConnections() {
+				w.restartWorker = len(w.workerMap)
+				w.StopAllWorker()
+			}
+			time.Sleep(3 * time.Second)
+		}
+	}()
+
 	w.manageWorkers()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
@@ -50,21 +72,19 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 		case <-shutdownChannel:
 			logger.Debugf("managerWorkerLoop ending...")
 			ticker.Stop()
-			for _, worker := range w.workerMap {
-				logger.Debugf("worker removed...")
-				worker.Shutdown()
-			}
-			if w.statusWorker != nil {
-				logger.Debugf("statusworker removed...")
-				w.statusWorker.Shutdown()
-				w.statusWorker = nil
-			}
+			w.StopAllWorker()
 			return
 		}
 	}
 }
 
 func (w *mainWorker) manageWorkers() {
+	// if there are no servers, we cannot do anything
+	if len(w.ActiveServerList()) == 0 {
+		logger.Tracef("manageWorkers: no active servers available, retrying...")
+		return
+	}
+
 	// start status worker
 	if w.statusWorker == nil {
 		w.statusWorker = newStatusWorker(w.config, w)
@@ -84,12 +104,17 @@ func (w *mainWorker) manageWorkers() {
 	idleWorkerCount.Set(float64(totalWorker - activeWorkers))
 
 	//as long as there are to few workers start them without a limit
-	for i := w.config.minWorker - len(w.workerMap); i > 0; i-- {
-		logger.Debugf("manageWorkers: starting minworker: %d, %d", w.config.minWorker-len(w.workerMap), i)
+	minWorker := w.config.minWorker
+	if w.restartWorker > 0 {
+		minWorker = w.restartWorker
+	}
+	for i := minWorker - len(w.workerMap); i > 0; i-- {
+		logger.Debugf("manageWorkers: starting minworker: %d, %d", minWorker-len(w.workerMap), i)
 		worker := newWorker("check", w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
+	w.restartWorker = 0
 
 	//check if we have too many workers
 	w.adjustWorkerBottomLevel()
@@ -226,5 +251,81 @@ func (w *mainWorker) registerWorker(worker *worker) {
 			logger.Errorf("duplicate status worker started")
 		}
 		w.statusWorker = worker
+	}
+}
+
+// RetryFailedConnections updates status of failed servers
+// returns true if server list has changed
+func (w *mainWorker) RetryFailedConnections() bool {
+	changed := false
+	for _, address := range w.config.server {
+		w.workerMapLock.RLock()
+		status, ok := w.serverStatus[address]
+		w.workerMapLock.RUnlock()
+		previous := true
+		if !ok || status != "" {
+			previous = false
+		}
+		_, err := net.DialTimeout("tcp", address, 30*time.Second)
+		w.workerMapLock.Lock()
+		if err != nil {
+			w.serverStatus[address] = err.Error()
+			if previous {
+				changed = true
+			}
+		} else {
+			w.serverStatus[address] = ""
+			if !previous {
+				changed = true
+			}
+		}
+		w.workerMapLock.Unlock()
+	}
+	return changed
+}
+
+// ActiveServerList returns list of active servers
+func (w *mainWorker) ActiveServerList() (servers []string) {
+	w.workerMapLock.RLock()
+	defer w.workerMapLock.RUnlock()
+
+	servers = make([]string, 0)
+	for _, address := range w.config.server {
+		if w.serverStatus[address] == "" {
+			servers = append(servers, address)
+		}
+	}
+	return
+}
+
+// GetServerStatus returns server status for given address
+func (w *mainWorker) GetServerStatus(addr string) (err string) {
+	w.workerMapLock.RLock()
+	defer w.workerMapLock.RUnlock()
+
+	err = w.serverStatus[addr]
+	return err
+}
+
+// SetServerStatus sets server status for given address
+func (w *mainWorker) SetServerStatus(addr, err string) {
+	w.workerMapLock.Lock()
+	defer w.workerMapLock.Unlock()
+	w.serverStatus[addr] = err
+}
+
+// StopAllWorker stops all check worker and the status worker
+func (w *mainWorker) StopAllWorker() {
+	w.workerMapLock.RLock()
+	workerMap := w.workerMap
+	w.workerMapLock.RUnlock()
+	for _, worker := range workerMap {
+		logger.Debugf("worker removed...")
+		worker.Shutdown()
+	}
+	if w.statusWorker != nil {
+		logger.Debugf("statusworker removed...")
+		w.statusWorker.Shutdown()
+		w.statusWorker = nil
 	}
 }

@@ -38,22 +38,25 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 	worker.worker = w
 
 	w.ErrorHandler = func(e error) {
-		if e.Error() == "EOF" {
-			logger.Debugf("worker error: %s", e.Error())
-		} else {
-			logger.Errorf("worker error: %s", e.Error())
-			logger.Errorf("%s", debug.Stack())
-		}
-		worker.Shutdown()
+		worker.errorHandler(e)
 	}
 
 	worker.registerFunctions(configuration)
 
 	//listen to this servers
-	for _, address := range worker.config.server {
+	servers := mainWorker.ActiveServerList()
+	if len(servers) == 0 {
+		return nil
+	}
+	for _, address := range servers {
+		status := worker.mainWorker.GetServerStatus(address)
+		if status != "" {
+			continue
+		}
 		err := w.AddServer("tcp", address)
 		if err != nil {
-			logger.Error(err)
+			worker.mainWorker.SetServerStatus(address, err.Error())
+			return nil
 		}
 	}
 
@@ -63,6 +66,7 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 		worker.Shutdown()
 		return nil
 	}
+
 	//start the worker
 	go func() {
 		defer logPanicExit()
@@ -143,6 +147,21 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		worker.SendResultDup(result)
 	}
 	return
+}
+
+//errorHandler gets called if the libworker worker throws an errror
+func (worker *worker) errorHandler(e error) {
+	switch e.(type) {
+	case *libworker.WorkerDisconnectError:
+		err := e.(*libworker.WorkerDisconnectError)
+		_, addr := err.Server()
+		logger.Debugf("worker disconnect: %s from %s", e.Error(), addr)
+		worker.mainWorker.SetServerStatus(addr, err.Error())
+	default:
+		logger.Errorf("worker error: %s", e.Error())
+		logger.Errorf("%s", debug.Stack())
+	}
+	worker.Shutdown()
 }
 
 //SendResult sends the result back to the result queue
