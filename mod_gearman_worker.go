@@ -15,7 +15,7 @@ import (
 
 const (
 	// VERSION contains the actual lmd version
-	VERSION = "1.0.3"
+	VERSION = "1.0.4"
 )
 
 // var config configurationStruct
