@@ -71,6 +71,7 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 			w.manageWorkers()
 		case <-shutdownChannel:
 			logger.Debugf("managerWorkerLoop ending...")
+			w.restartWorker = len(w.workerMap)
 			ticker.Stop()
 			w.StopAllWorker()
 			return

@@ -66,9 +66,6 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	result.source = "Mod-Gearman Worker @ " + config.identifier
 	result.active = "active"
 
-	logger.Debug("new Job Received\n")
-	logger.Debug(received)
-
 	//hostname and core start time are the same in the result as in receive
 	result.hostName = received.hostName
 	result.coreStartTime = received.coreTime

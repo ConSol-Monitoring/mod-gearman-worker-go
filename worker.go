@@ -117,7 +117,7 @@ func (worker *worker) registerFunctions(configuration *configurationStruct) {
 
 func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	res = []byte("")
-	logger.Debugf("worker got a job: %s", job.Handle())
+	logger.Tracef("worker got a job: %s", job.Handle())
 
 	//set worker to idle
 	worker.idle = false
@@ -134,7 +134,8 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	taskCounter.WithLabelValues(received.typ).Inc()
 	worker.mainWorker.tasks++
 
-	logger.Tracef("job data: %s", received)
+	logger.Debugf("incoming %s job: %s", received.typ, job.Handle())
+	logger.Trace(received)
 
 	result := readAndExecute(received, worker.config)
 
