@@ -6,8 +6,8 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-MINGOVERSION:=00010007
-MINGOVERSIONSTR:=1.7
+MINGOVERSION:=00010009
+MINGOVERSIONSTR:=1.9
 
 EXTERNAL_DEPS = \
 	github.com/appscode/g2 \
@@ -28,6 +28,7 @@ EXTERNAL_DEPS = \
 	github.com/mdempsky/unconvert \
 
 CMDS = $(shell cd ./cmd && ls -1)
+BINPATH = $(shell if test -d "$$GOPATH"; then echo "$$GOPATH/bin"; else echo "~/go/bin"; fi)
 
 all: deps fmt build
 
@@ -169,7 +170,7 @@ clean:
 	rm -f coverage.html
 
 fmt:
-	goimports -w .
+	$(BINPATH)/goimports -w .
 	go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable *.go
 	set -e; for CMD in $(CMDS); do \
 		go tool vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
@@ -188,7 +189,7 @@ lint:
 	#
 	# Check if golint complains
 	# see https://github.com/golang/lint/ for details.
-	golint -set_exit_status .
+	$(BINPATH)/golint -set_exit_status .
 
 cyclo:
 	#
@@ -196,14 +197,14 @@ cyclo:
 	# Any function with a score higher than 15 is bad.
 	# See https://github.com/fzipp/gocyclo for details.
 	#
-	gocyclo -over 15 . | ./t/filter_cyclo_exceptions.sh
+	$(BINPATH)/gocyclo -over 15 . | ./t/filter_cyclo_exceptions.sh
 
 misspell:
 	#
 	# Check if there are common spell errors.
 	# See https://github.com/client9/misspell
 	#
-	misspell -error .
+	$(BINPATH)/misspell -error .
 
 copyfighter:
 	#
@@ -212,7 +213,7 @@ copyfighter:
 	#
 	mv mod_gearman_worker_windows.go mod_gearman_worker_windows.off; \
 	mv mod_gearman_worker_darwin.go mod_gearman_worker_darwin.off; \
-	copyfighter .; rc=$$?; \
+	$(BINPATH)/copyfighter .; rc=$$?; \
 	mv mod_gearman_worker_windows.off mod_gearman_worker_windows.go; \
 	mv mod_gearman_worker_darwin.off mod_gearman_worker_darwin.go; \
 	exit $$rc
@@ -222,21 +223,25 @@ gosimple:
 	# Check if something could be made simpler
 	# See https://github.com/dominikh/go-tools/tree/master/cmd/gosimple
 	#
-	gosimple
+	$(BINPATH)/gosimple
 
 unparam:
 	#
 	# Check if all function parameters are actually used
 	# See https://github.com/mvdan/unparam
 	#
-	unparam -exported .
+	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort | head -n 1 ) = $(GOVERSION) ]; then \
+		echo "unparam requires at least go 1.10"; \
+	else \
+		$(BINPATH)/unparam -exported .; \
+	fi
 
 unconvert:
 	#
 	# The unconvert program analyzes Go packages to identify unnecessary type conversions
 	# See https://github.com/mdempsky/unconvert
 	#
-	unconvert -v
+	$(BINPATH)/unconvert -v
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
