@@ -55,8 +55,10 @@ func Worker(build string) {
 	}()
 
 	workerMap := make(map[string]*worker)
+	initialStart := 0
 	for {
-		exitCode := mainLoop(config, nil, &workerMap)
+		exitCode, numWorker := mainLoop(config, nil, &workerMap, initialStart)
+		initialStart = numWorker
 		if exitCode > 0 {
 			os.Exit(exitCode)
 		}
@@ -84,7 +86,7 @@ func Worker(build string) {
 	}
 }
 
-func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker) (exitCode int) {
+func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitCode int, numWorker int) {
 	if osSignalChannel == nil {
 		osSignalChannel = make(chan os.Signal, 1)
 	}
@@ -111,16 +113,24 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid())
 	mainworker := newMainWorker(config, key, workerMap)
+	mainLoopExited := make(chan bool)
 	go func() {
 		defer logPanicExit()
-		mainworker.managerWorkerLoop(shutdownChannel)
+		mainworker.managerWorkerLoop(shutdownChannel, initialStart)
+		mainLoopExited <- true
 	}()
 
 	// just wait till someone hits ctrl+c or we have to reload
 	for {
 		select {
 		case sig := <-osSignalChannel:
-			return mainSignalHandler(sig, shutdownChannel)
+			exitCode = mainSignalHandler(sig, shutdownChannel)
+			numWorker = len(*workerMap)
+			// wait at least till main loop exited
+			<-mainLoopExited
+			// only restart those who have exited in time
+			numWorker = numWorker - len(*workerMap)
+			return exitCode, numWorker
 		case sig := <-osSignalUsrChannel:
 			mainSignalHandler(sig, shutdownChannel)
 		}

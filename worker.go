@@ -254,6 +254,7 @@ func (worker *worker) SendResultDup(result *answer) {
 //Shutdown and unregister this worker
 func (worker *worker) Shutdown() {
 	logger.Debugf("worker shutting down")
+	worker.mainWorker.unregisterWorker(worker)
 	if worker.worker != nil {
 		worker.worker.ErrorHandler = nil
 		if !worker.idle {
@@ -273,5 +274,4 @@ func (worker *worker) Shutdown() {
 		worker.dupclient = nil
 	}
 	worker.worker = nil
-	worker.mainWorker.unregisterWorker(worker)
 }

@@ -30,7 +30,6 @@ type mainWorker struct {
 	idleSince     time.Time
 	serverStatus  map[string]string
 	running       bool
-	restartWorker int
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {
@@ -47,7 +46,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	return w
 }
 
-func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
+func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool, initialStart int) {
 	w.running = true
 	defer func() { w.running = false }()
 
@@ -56,22 +55,20 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 		defer logPanicExit()
 		for w.running {
 			if w.RetryFailedConnections() {
-				w.restartWorker = len(w.workerMap)
 				w.StopAllWorker()
 			}
 			time.Sleep(3 * time.Second)
 		}
 	}()
 
-	w.manageWorkers()
+	w.manageWorkers(initialStart)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			w.manageWorkers()
+			w.manageWorkers(0)
 		case <-shutdownChannel:
 			logger.Debug("managerWorkerLoop ending...")
-			w.restartWorker = len(w.workerMap)
 			ticker.Stop()
 			w.StopAllWorker()
 			return
@@ -79,7 +76,7 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 	}
 }
 
-func (w *mainWorker) manageWorkers() {
+func (w *mainWorker) manageWorkers(initialStart int) {
 	// if there are no servers, we cannot do anything
 	if len(w.ActiveServerList()) == 0 {
 		logger.Tracef("manageWorkers: no active servers available, retrying...")
@@ -106,16 +103,16 @@ func (w *mainWorker) manageWorkers() {
 
 	//as long as there are to few workers start them without a limit
 	minWorker := w.config.minWorker
-	if w.restartWorker > 0 {
-		minWorker = w.restartWorker
+	if initialStart > 0 {
+		minWorker = initialStart
 	}
+	logger.Tracef("manageWorkers: total: %d, active: %d, minWorker: %d", totalWorker, activeWorkers, minWorker)
 	for i := minWorker - len(w.workerMap); i > 0; i-- {
-		logger.Debugf("manageWorkers: starting minworker: %d, %d", minWorker-len(w.workerMap), i)
+		logger.Tracef("manageWorkers: starting minworker: %d, %d", minWorker-len(w.workerMap), i)
 		worker := newWorker("check", w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
-	w.restartWorker = 0
 
 	//check if we have too many workers
 	w.adjustWorkerBottomLevel()
@@ -319,18 +316,38 @@ func (w *mainWorker) SetServerStatus(addr, err string) {
 func (w *mainWorker) StopAllWorker() {
 	w.workerMapLock.RLock()
 	workerMap := w.workerMap
+	workerNum := len(workerMap)
 	w.workerMapLock.RUnlock()
+	exited := make(chan int, 1)
 	for _, wo := range workerMap {
 		logger.Debugf("worker removed...")
-		go func(wo *worker) {
+		go func(wo *worker, ch chan int) {
 			defer logPanicExit()
 			// this might take a while, because it waits for the current job to complete
 			wo.Shutdown()
-		}(wo)
+			ch <- 1
+		}(wo, exited)
 	}
 	if w.statusWorker != nil {
 		logger.Debugf("statusworker removed...")
 		w.statusWorker.Shutdown()
 		w.statusWorker = nil
+	}
+
+	// wait 5 seconds to end all worker
+	timeout := time.NewTicker(5 * time.Second)
+	alreadyExited := 0
+	for {
+		select {
+		case <-timeout.C:
+			logger.Errorf("timeout exiting %d/%d", alreadyExited, workerNum)
+			return
+		case <-exited:
+			logger.Errorf("exiting %d/%d", alreadyExited, workerNum)
+			alreadyExited++
+			if alreadyExited >= workerNum {
+				return
+			}
+		}
 	}
 }
