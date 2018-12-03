@@ -328,26 +328,28 @@ func (w *mainWorker) StopAllWorker() {
 			ch <- 1
 		}(wo, exited)
 	}
-	if w.statusWorker != nil {
-		logger.Debugf("statusworker removed...")
-		w.statusWorker.Shutdown()
-		w.statusWorker = nil
-	}
 
-	// wait 5 seconds to end all worker
-	timeout := time.NewTicker(5 * time.Second)
+	// wait 10 seconds to end all worker
+	timeout := time.NewTimer(10 * time.Second)
 	alreadyExited := 0
 	for {
 		select {
 		case <-timeout.C:
-			logger.Errorf("timeout exiting %d/%d", alreadyExited, workerNum)
-			return
+			logger.Debugf("timeout while waiting for all workers to stop, already stopped: %d/%d", alreadyExited, workerNum)
+			break
 		case <-exited:
-			logger.Errorf("exiting %d/%d", alreadyExited, workerNum)
+			logger.Tracef("worker exiting %d/%d", alreadyExited, workerNum)
 			alreadyExited++
 			if alreadyExited >= workerNum {
-				return
+				break
 			}
+			timeout.Stop()
 		}
+	}
+
+	if w.statusWorker != nil {
+		logger.Debugf("statusworker removed...")
+		w.statusWorker.Shutdown()
+		w.statusWorker = nil
 	}
 }
