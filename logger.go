@@ -15,7 +15,7 @@ func createLogger(config *configurationStruct) {
 	//check in config file if file is specified
 	verbosity := getSeverity(config.debug)
 
-	if config.debug >= 3 {
+	if config.debug >= 3 || config.logfile == "stderr" {
 		logger.SetOutput(os.Stderr)
 	} else if config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file") {
 		file, err := openFileOrCreate(config.logfile)
