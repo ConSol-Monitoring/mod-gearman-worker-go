@@ -144,6 +144,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	}
 
 	if received.resultQueue != "" {
+		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
 		worker.SendResultDup(result)
 	}
@@ -181,6 +182,7 @@ func (worker *worker) SendResult(result *answer) {
 				sendSuccess = true
 				break
 			}
+			worker.client = nil
 			if c != nil {
 				c.Close()
 			}
@@ -192,6 +194,8 @@ func (worker *worker) SendResult(result *answer) {
 			lastErr = err
 			if retries == 0 {
 				logger.Debugf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
+			} else {
+				logger.Tracef("still failing to send back result: %s", err.Error())
 			}
 		}
 		time.Sleep(1 * time.Second)
@@ -209,6 +213,7 @@ func (worker *worker) SendResultDup(result *answer) {
 	// send to duplicate servers as well
 	sendSuccess := false
 	retries := 0
+	var lastErr error
 	for {
 		var err error
 		var c *client.Client
@@ -222,6 +227,7 @@ func (worker *worker) SendResultDup(result *answer) {
 				sendSuccess = true
 				break
 			}
+			worker.dupclient = nil
 			if c != nil {
 				c.Close()
 			}
@@ -229,11 +235,19 @@ func (worker *worker) SendResultDup(result *answer) {
 		if sendSuccess || retries > 120 {
 			break
 		}
-		if retries == 0 && err != nil {
-			logger.Errorf("failed to send back result (to dupserver), will continue to retry for 2 minutes: %s", err.Error())
+		if err != nil {
+			lastErr = err
+			if retries == 0 {
+				logger.Debugf("failed to send back result (to dupserver), will continue to retry for 2 minutes: %s", err.Error())
+			} else {
+				logger.Tracef("still failing to send back result (to dupserver): %s", err.Error())
+			}
 		}
 		time.Sleep(1 * time.Second)
 		retries++
+	}
+	if !sendSuccess && lastErr != nil {
+		logger.Debugf("failed to send back result (to dupserver): %s", lastErr.Error())
 	}
 }
 

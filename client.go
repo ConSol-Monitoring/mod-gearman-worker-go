@@ -18,8 +18,6 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 		c = cl
 	}
 
-	logger.Tracef("result\n%s", answer)
-
 	byteAnswer := createAnswer(answer, encrypted)
 
 	//send the data in the background to the right queue
