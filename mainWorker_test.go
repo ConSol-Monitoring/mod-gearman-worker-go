@@ -15,7 +15,8 @@ func TestCheckLoads(t *testing.T) {
 	config.loadLimit5 = 999
 	config.loadLimit15 = 999
 
-	mainworker := newMainWorker(&config, []byte("key"))
+	workerMap := make(map[string]*worker)
+	mainworker := newMainWorker(&config, []byte("key"), &workerMap)
 
 	if !mainworker.checkLoads() {
 		t.Errorf("loads are to ok, checkload says they are too hight")

@@ -33,12 +33,12 @@ type mainWorker struct {
 	restartWorker int
 }
 
-func newMainWorker(configuration *configurationStruct, key []byte) *mainWorker {
+func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {
 	w := &mainWorker{
 		activeWorkers: 0,
 		key:           key,
 		config:        configuration,
-		workerMap:     make(map[string]*worker),
+		workerMap:     *workerMap,
 		workerMapLock: new(sync.RWMutex),
 		idleSince:     time.Now(),
 		serverStatus:  make(map[string]string),
@@ -70,7 +70,7 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool) {
 		case <-ticker.C:
 			w.manageWorkers()
 		case <-shutdownChannel:
-			logger.Debugf("managerWorkerLoop ending...")
+			logger.Debug("managerWorkerLoop ending...")
 			w.restartWorker = len(w.workerMap)
 			ticker.Stop()
 			w.StopAllWorker()
@@ -320,9 +320,13 @@ func (w *mainWorker) StopAllWorker() {
 	w.workerMapLock.RLock()
 	workerMap := w.workerMap
 	w.workerMapLock.RUnlock()
-	for _, worker := range workerMap {
+	for _, wo := range workerMap {
 		logger.Debugf("worker removed...")
-		worker.Shutdown()
+		go func(wo *worker) {
+			defer logPanicExit()
+			// this might take a while, because it waits for the current job to complete
+			wo.Shutdown()
+		}(wo)
 	}
 	if w.statusWorker != nil {
 		logger.Debugf("statusworker removed...")

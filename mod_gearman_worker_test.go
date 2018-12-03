@@ -64,7 +64,8 @@ func BenchmarkJobs(b *testing.B) {
 	defer resultWorker.Close()
 
 	shutdownChannel := make(chan bool)
-	mainworker := newMainWorker(&config, getKey(&config))
+	workerMap := make(map[string]*worker)
+	mainworker := newMainWorker(&config, getKey(&config), &workerMap)
 	go func() {
 		mainworker.managerWorkerLoop(shutdownChannel)
 	}()

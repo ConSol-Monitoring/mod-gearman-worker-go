@@ -170,6 +170,7 @@ func (worker *worker) SendResult(result *answer) {
 	// send result back to any server
 	sendSuccess := false
 	retries := 0
+	var lastErr error
 	for {
 		var err error
 		var c *client.Client
@@ -187,11 +188,17 @@ func (worker *worker) SendResult(result *answer) {
 		if sendSuccess || retries > 120 {
 			break
 		}
-		if retries == 0 && err != nil {
-			logger.Errorf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
+		if err != nil {
+			lastErr = err
+			if retries == 0 {
+				logger.Debugf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
+			}
 		}
 		time.Sleep(1 * time.Second)
 		retries++
+	}
+	if !sendSuccess && lastErr != nil {
+		logger.Debugf("failed to send back result: %s", lastErr.Error())
 	}
 }
 
@@ -239,7 +246,9 @@ func (worker *worker) Shutdown() {
 			// try to stop gracefully
 			worker.worker.Shutdown()
 		}
-		worker.worker.Close()
+		if worker.worker != nil {
+			worker.worker.Close()
+		}
 	}
 	if worker.client != nil {
 		worker.client.Close()

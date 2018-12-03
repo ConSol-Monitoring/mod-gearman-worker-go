@@ -54,8 +54,9 @@ func Worker(build string) {
 		logger.Infof("mod-gearman-worker-go shutdown complete")
 	}()
 
+	workerMap := make(map[string]*worker)
 	for {
-		exitCode := mainLoop(config, nil)
+		exitCode := mainLoop(config, nil, &workerMap)
 		if exitCode > 0 {
 			os.Exit(exitCode)
 		}
@@ -83,7 +84,7 @@ func Worker(build string) {
 	}
 }
 
-func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exitCode int) {
+func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker) (exitCode int) {
 	if osSignalChannel == nil {
 		osSignalChannel = make(chan os.Signal, 1)
 	}
@@ -109,7 +110,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal) (exit
 	myCipher = createCipher(key, config.encryption)
 
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid())
-	mainworker := newMainWorker(config, key)
+	mainworker := newMainWorker(config, key, workerMap)
 	go func() {
 		defer logPanicExit()
 		mainworker.managerWorkerLoop(shutdownChannel)
