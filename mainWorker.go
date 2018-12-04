@@ -336,20 +336,26 @@ func (w *mainWorker) StopAllWorker() {
 		select {
 		case <-timeout.C:
 			logger.Debugf("timeout while waiting for all workers to stop, already stopped: %d/%d", alreadyExited, workerNum)
-			break
+			w.StopStatusWorker()
+			return
 		case <-exited:
 			logger.Tracef("worker exiting %d/%d", alreadyExited, workerNum)
 			alreadyExited++
 			if alreadyExited >= workerNum {
-				break
+				w.StopStatusWorker()
+				return
 			}
 			timeout.Stop()
 		}
 	}
+}
 
-	if w.statusWorker != nil {
-		logger.Debugf("statusworker removed...")
-		w.statusWorker.Shutdown()
-		w.statusWorker = nil
+// StopStatusWorker stops all check worker and the status worker
+func (w *mainWorker) StopStatusWorker() {
+	if w.statusWorker == nil {
+		return
 	}
+	logger.Debugf("statusworker removed...")
+	w.statusWorker.Shutdown()
+	w.statusWorker = nil
 }
