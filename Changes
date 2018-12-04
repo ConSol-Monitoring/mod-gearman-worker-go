@@ -1,5 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - add grace period to reloads and shutdown
+          - improve maintaining worker level during reload
+
 1.0.4    Thu Nov 29 15:00:40 CET 2018
           - rework server failover handling
 
