@@ -45,6 +45,10 @@ func Worker(build string) {
 		defer cntxt.Release()
 	}
 
+	//create the PidFile
+	createPidFile(config.pidfile)
+	defer deletePidFile(config.pidfile)
+
 	// start usr1 routine which prints stacktraces upon request
 	osSignalUsrChannel := make(chan os.Signal, 1)
 	setupUsr1Channel(osSignalUsrChannel)
@@ -107,10 +111,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	signal.Notify(osSignalChannel, syscall.SIGINT)
 
 	shutdownChannel := make(chan bool)
-
-	//create the PidFile
-	createPidFile(config.pidfile)
-	defer deletePidFile(config.pidfile)
 
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
