@@ -45,6 +45,17 @@ func Worker(build string) {
 		defer cntxt.Release()
 	}
 
+	// start usr1 routine which prints stacktraces upon request
+	osSignalUsrChannel := make(chan os.Signal, 1)
+	setupUsr1Channel(osSignalUsrChannel)
+	go func() {
+		defer logPanicExit()
+		for {
+			sig := <-osSignalUsrChannel
+			mainSignalHandler(sig, nil)
+		}
+	}()
+
 	// initialize prometheus
 	prometheusListener := startPrometheus(config)
 	defer func() {
@@ -95,9 +106,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	signal.Notify(osSignalChannel, os.Interrupt)
 	signal.Notify(osSignalChannel, syscall.SIGINT)
 
-	osSignalUsrChannel := make(chan os.Signal, 1)
-	setupUsr1Channel(osSignalUsrChannel)
-
 	shutdownChannel := make(chan bool)
 
 	//create the PidFile
@@ -131,8 +139,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 			// only restart those who have exited in time
 			numWorker = numWorker - len(*workerMap)
 			return exitCode, numWorker
-		case sig := <-osSignalUsrChannel:
-			mainSignalHandler(sig, shutdownChannel)
 		}
 	}
 }

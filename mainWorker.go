@@ -332,7 +332,7 @@ func (w *mainWorker) StopAllWorker() {
 	// wait 10 seconds to end all worker
 	timeout := time.NewTimer(10 * time.Second)
 	alreadyExited := 0
-	for {
+	for alreadyExited < workerNum {
 		select {
 		case <-timeout.C:
 			logger.Debugf("timeout while waiting for all workers to stop, already stopped: %d/%d", alreadyExited, workerNum)
