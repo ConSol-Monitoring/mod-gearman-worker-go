@@ -161,6 +161,15 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// prevent child from receiving signals meant for the worker only
 	setSysProcAttr(cmd)
 
+	// https://github.com/golang/go/issues/18874
+	// timeout does not work for child processes and/or if filehandles are still open
+	go func() {
+		<-ctx.Done()
+		cmd.Process.Kill()
+		// make sure hole process group is being killed
+		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}()
+
 	err := cmd.Run()
 	if err != nil && cmd.ProcessState == nil {
 		logger.Errorf("Error in cmd.Run(): %s", err.Error())

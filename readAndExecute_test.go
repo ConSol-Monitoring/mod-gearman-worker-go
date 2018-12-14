@@ -54,18 +54,44 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	setDefaultValues(&config)
 	config.encryption = false
 	result := &answer{}
-	//checks needed: timeout, right return,
+
 	executeCommand(result, &receivedStruct{commandLine: "ls readAndExecute_test.go", timeout: 10}, &config)
 	if result.output != "readAndExecute_test.go" || result.returnCode != 0 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "readAndExecute_test.go", 0)
 	}
 
 	//check for timeout:
-	//set return value in config
+	t1 := time.Now()
 	config.timeoutReturn = 3
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sleep 2", timeout: 1}, &config)
 	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
+	}
+	duration := time.Since(t1)
+	if duration > 2*time.Second {
+		t.Errorf("command took %s, which is beyond the expected timeout", duration)
+	}
+
+	// try command which ignores normal signals
+	t1 = time.Now()
+	executeCommand(result, &receivedStruct{commandLine: "trap 'echo Booh!' SIGINT SIGTERM; sleep 2", timeout: 1}, &config)
+	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
+	}
+	duration = time.Since(t1)
+	if duration > 2*time.Second {
+		t.Errorf("command took %s, which is beyond the expected timeout", duration)
+	}
+
+	// try command which ignores normal signals as subshell
+	t1 = time.Now()
+	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"trap 'echo Booh!' SIGINT SIGTERM; sleep 2\"", timeout: 1}, &config)
+	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
+	}
+	duration = time.Since(t1)
+	if duration > 2*time.Second {
+		t.Errorf("command took %s, which is beyond the expected timeout", duration)
 	}
 
 	//exit(3) fuer exit codes
