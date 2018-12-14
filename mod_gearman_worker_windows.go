@@ -10,27 +10,23 @@ func setupUsr1Channel(osSignalUsrChannel chan os.Signal) {
 	// not supported on windows
 }
 
-func mainSignalHandler(sig os.Signal, shutdownChannel chan bool) (exitCode int) {
+func mainSignalHandler(sig os.Signal) MainStateType {
 	switch sig {
 	case syscall.SIGTERM:
 		logger.Infof("got sigterm, quiting gracefully")
-		shutdownChannel <- true
-		close(shutdownChannel)
-		return 0
+		return ShutdownGraceFully
 	case syscall.SIGINT:
 		fallthrough
 	case os.Interrupt:
 		logger.Infof("got sigint, quitting")
-		shutdownChannel <- true
-		close(shutdownChannel)
-		return 1
+		return Shutdown
 	case syscall.SIGHUP:
 		logger.Infof("got sighup, reloading configuration...")
-		return -1
+		return Reload
 	default:
 		logger.Warnf("Signal not handled: %v", sig)
 	}
-	return -1
+	return Resume
 }
 
 func setSysProcAttr(cmd *exec.Cmd) {

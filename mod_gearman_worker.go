@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -18,8 +19,30 @@ const (
 	VERSION = "1.0.5"
 )
 
+// MainStateType is used to set different states of the main loop
+type MainStateType int
+
+const (
+	// Reload flag if used after a sighup
+	Reload MainStateType = iota
+
+	// Restart is used when all worker should be recreated
+	Restart
+
+	// Shutdown is used when sigint received
+	Shutdown
+
+	// ShutdownGraceFully is used when sigterm received
+	ShutdownGraceFully
+
+	// Resume is used when signal does not change main state
+	Resume
+)
+
 // var config configurationStruct
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
+
+var prometheusListener *net.Listener
 
 // Worker starts the mod_gearman_worker program
 func Worker(build string) {
@@ -56,12 +79,12 @@ func Worker(build string) {
 		defer logPanicExit()
 		for {
 			sig := <-osSignalUsrChannel
-			mainSignalHandler(sig, nil)
+			mainSignalHandler(sig)
 		}
 	}()
 
 	// initialize prometheus
-	prometheusListener := startPrometheus(config)
+	prometheusListener = startPrometheus(config)
 	defer func() {
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
@@ -72,36 +95,20 @@ func Worker(build string) {
 	workerMap := make(map[string]*worker)
 	initialStart := 0
 	for {
-		exitCode, numWorker := mainLoop(config, nil, &workerMap, initialStart)
-		initialStart = numWorker
-		if exitCode > 0 {
-			os.Exit(exitCode)
-		}
-		// make it possible to call main() from tests without exiting the tests
-		if exitCode == 0 {
+		exitState, numWorker, newConfig := mainLoop(config, nil, &workerMap, initialStart)
+		if exitState != Reload {
+			// make it possible to call main() from tests without exiting the tests
 			break
 		}
 
-		// return codes of < 0 from mainLoop are for sighups, so code here is to reinitialize things
-		oldPrometheusListener := config.prometheusServer
-		configNew, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
-		if err != nil {
-			logger.Errorf("cannot reload configuration: %s", err.Error())
-			continue
-		}
-
-		// reinitialize things
-		config = configNew
-		if oldPrometheusListener != config.prometheusServer {
-			if prometheusListener != nil {
-				(*prometheusListener).Close()
-			}
-			prometheusListener = startPrometheus(config)
+		initialStart = numWorker
+		if newConfig != nil {
+			config = newConfig
 		}
 	}
 }
 
-func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitCode int, numWorker int) {
+func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitCode MainStateType, numWorker int, newConfig *configurationStruct) {
 	if osSignalChannel == nil {
 		osSignalChannel = make(chan os.Signal, 1)
 	}
@@ -110,7 +117,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	signal.Notify(osSignalChannel, os.Interrupt)
 	signal.Notify(osSignalChannel, syscall.SIGINT)
 
-	shutdownChannel := make(chan bool)
+	shutdownChannel := make(chan MainStateType)
 
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
@@ -126,19 +133,38 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 		defer logPanicExit()
 		mainworker.managerWorkerLoop(shutdownChannel, initialStart)
 		mainLoopExited <- true
+		close(mainLoopExited)
 	}()
 
 	// just wait till someone hits ctrl+c or we have to reload
 	for {
 		select {
 		case sig := <-osSignalChannel:
-			exitCode = mainSignalHandler(sig, shutdownChannel)
-			numWorker = len(*workerMap)
-			// wait at least till main loop exited
-			<-mainLoopExited
+			exitCode = mainSignalHandler(sig)
+			switch exitCode {
+			case Resume:
+				continue
+			case Reload:
+				restartRequired, config := mainworker.applyConfigChanges()
+				if !restartRequired {
+					// no restart of our workers required
+					continue
+				}
+				newConfig = config
+				fallthrough
+			case ShutdownGraceFully:
+				fallthrough
+			case Shutdown:
+				numWorker = len(*workerMap)
+				shutdownChannel <- exitCode
+				close(shutdownChannel)
+				// continue waiting for signals or an exited mainloop
+				continue
+			}
+		case <-mainLoopExited:
 			// only restart those who have exited in time
 			numWorker = numWorker - len(*workerMap)
-			return exitCode, numWorker
+			return
 		}
 	}
 }

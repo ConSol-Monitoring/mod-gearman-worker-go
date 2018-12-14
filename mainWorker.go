@@ -46,7 +46,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	return w
 }
 
-func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool, initialStart int) {
+func (w *mainWorker) managerWorkerLoop(shutdownChannel chan MainStateType, initialStart int) {
 	w.running = true
 	defer func() { w.running = false }()
 
@@ -55,7 +55,7 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool, initialStart i
 		defer logPanicExit()
 		for w.running {
 			if w.RetryFailedConnections() {
-				w.StopAllWorker()
+				w.StopAllWorker(ShutdownGraceFully)
 			}
 			time.Sleep(3 * time.Second)
 		}
@@ -67,10 +67,10 @@ func (w *mainWorker) managerWorkerLoop(shutdownChannel chan bool, initialStart i
 		select {
 		case <-ticker.C:
 			w.manageWorkers(0)
-		case <-shutdownChannel:
+		case state := <-shutdownChannel:
 			logger.Debug("managerWorkerLoop ending...")
 			ticker.Stop()
-			w.StopAllWorker()
+			w.StopAllWorker(state)
 			return
 		}
 	}
@@ -180,6 +180,57 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 			}
 		}
 	}
+}
+
+// applyConfigChanges reloads configuration and returns true if config has been reloaded and no restart is required
+// returns false if mainloop needs to be restarted
+func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configurationStruct) {
+	config, err := initConfiguration("mod_gearman_worker", w.config.build, printUsage, checkForReasonableConfig)
+	if err != nil {
+		restartRequired = false
+		logger.Errorf("cannot reload configuration: %s", err.Error())
+		return
+	}
+
+	// restart prometheus if necessary
+	if config.prometheusServer != w.config.prometheusServer {
+		if prometheusListener != nil {
+			(*prometheusListener).Close()
+		}
+		prometheusListener = startPrometheus(config)
+	}
+
+	// do we have to restart our worker routines?
+	if strings.Join(config.server, "\n") != strings.Join(w.config.server, "\n") {
+		restartRequired = true
+	} else if strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n") {
+		restartRequired = true
+	} else if config.host != w.config.host {
+		restartRequired = true
+	} else if config.service != w.config.service {
+		restartRequired = true
+	} else if strings.Join(config.hostgroups, "\n") != strings.Join(w.config.hostgroups, "\n") {
+		restartRequired = true
+	} else if strings.Join(config.servicegroups, "\n") != strings.Join(w.config.servicegroups, "\n") {
+		restartRequired = true
+	} else if config.eventhandler != w.config.eventhandler {
+		restartRequired = true
+	} else if config.notifications != w.config.notifications {
+		restartRequired = true
+	}
+
+	if !restartRequired {
+		// reopen logfile
+		createLogger(config)
+
+		// recreate cipher
+		key := getKey(config)
+		myCipher = createCipher(key, config.encryption)
+		w.config = config
+		logger.Debugf("reloading configuration finished, no worker restart necessary")
+	}
+
+	return
 }
 
 // reads the avg loads from /procs/loadavg
@@ -313,14 +364,14 @@ func (w *mainWorker) SetServerStatus(addr, err string) {
 }
 
 // StopAllWorker stops all check worker and the status worker
-func (w *mainWorker) StopAllWorker() {
+func (w *mainWorker) StopAllWorker(state MainStateType) {
 	w.workerMapLock.RLock()
 	workerMap := w.workerMap
 	workerNum := len(workerMap)
 	w.workerMapLock.RUnlock()
 	exited := make(chan int, 1)
 	for _, wo := range workerMap {
-		logger.Debugf("worker removed...")
+		logger.Tracef("worker removed...")
 		go func(wo *worker, ch chan int) {
 			defer logPanicExit()
 			// this might take a while, because it waits for the current job to complete
@@ -329,23 +380,29 @@ func (w *mainWorker) StopAllWorker() {
 		}(wo, exited)
 	}
 
-	// wait 10 seconds to end all worker
-	timeout := time.NewTimer(10 * time.Second)
+	// do not wait on shutdown via sigint
+	wait := 10 * time.Second
+	if state == Shutdown {
+		wait = 1 * time.Second
+	}
+
+	// wait to end all worker
+	timeout := time.NewTimer(wait)
 	alreadyExited := 0
 	for alreadyExited < workerNum {
 		select {
 		case <-timeout.C:
-			logger.Debugf("timeout while waiting for all workers to stop, already stopped: %d/%d", alreadyExited, workerNum)
+			logger.Infof("%s timeout hit while waiting for all workers to stop, remaining: %d", wait, workerNum-alreadyExited)
 			w.StopStatusWorker()
 			return
 		case <-exited:
-			logger.Tracef("worker exiting %d/%d", alreadyExited, workerNum)
 			alreadyExited++
+			logger.Tracef("worker %d/%d exited", alreadyExited, workerNum)
 			if alreadyExited >= workerNum {
+				timeout.Stop()
 				w.StopStatusWorker()
 				return
 			}
-			timeout.Stop()
 		}
 	}
 }
