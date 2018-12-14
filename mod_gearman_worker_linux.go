@@ -40,3 +40,9 @@ func setSysProcAttr(cmd *exec.Cmd) {
 		Pgid:    0,
 	}
 }
+
+func processKill(p *os.Process) {
+	p.Kill()
+	// make sure hole process group is being killed
+	syscall.Kill(-p.Pid, syscall.SIGKILL)
+}

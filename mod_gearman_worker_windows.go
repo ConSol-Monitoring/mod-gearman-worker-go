@@ -32,3 +32,7 @@ func mainSignalHandler(sig os.Signal) MainStateType {
 func setSysProcAttr(cmd *exec.Cmd) {
 	// not supported on windows
 }
+
+func processKill(p *os.Process) {
+	p.Kill()
+}
