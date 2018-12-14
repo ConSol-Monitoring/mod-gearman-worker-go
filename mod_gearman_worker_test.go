@@ -3,7 +3,9 @@ package modgearman
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"syscall"
 	"testing"
 	time "time"
 
@@ -30,6 +32,7 @@ func BenchmarkJobs(b *testing.B) {
 		debug:      0,
 	}
 	setDefaultValues(&config)
+	config.debug = -1
 	disableLogging()
 	cmd := exec.Command("gearmand", "--port", "54730", "--listen", "127.0.0.1", "--log-file", "stderr", "--verbose", "DEBUG")
 	var stdout, stderr bytes.Buffer
@@ -63,15 +66,13 @@ func BenchmarkJobs(b *testing.B) {
 	go resultWorker.Work()
 	defer resultWorker.Close()
 
-	shutdownChannel := make(chan MainStateType)
 	workerMap := make(map[string]*worker)
-	mainworker := newMainWorker(&config, getKey(&config), &workerMap)
+	osSignalChannel := make(chan os.Signal, 1)
 	go func() {
-		mainworker.managerWorkerLoop(shutdownChannel, 0)
+		mainLoop(&config, osSignalChannel, &workerMap, 0)
 	}()
 	defer func() {
-		shutdownChannel <- Shutdown
-		close(shutdownChannel)
+		osSignalChannel <- syscall.SIGINT
 	}()
 	time.Sleep(1 * time.Second)
 

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/kdar/factorlog"
 	daemon "github.com/sevlyar/go-daemon"
@@ -108,7 +109,7 @@ func Worker(build string) {
 	}
 }
 
-func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitCode MainStateType, numWorker int, newConfig *configurationStruct) {
+func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitState MainStateType, numWorker int, newConfig *configurationStruct) {
 	if osSignalChannel == nil {
 		osSignalChannel = make(chan os.Signal, 1)
 	}
@@ -116,8 +117,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	signal.Notify(osSignalChannel, syscall.SIGTERM)
 	signal.Notify(osSignalChannel, os.Interrupt)
 	signal.Notify(osSignalChannel, syscall.SIGINT)
-
-	shutdownChannel := make(chan MainStateType)
 
 	//create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
@@ -128,20 +127,30 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid())
 	mainworker := newMainWorker(config, key, workerMap)
+	defer func() { mainworker.running = false }()
 	mainLoopExited := make(chan bool)
+
+	// check connections
 	go func() {
 		defer logPanicExit()
-		mainworker.managerWorkerLoop(shutdownChannel, initialStart)
-		mainLoopExited <- true
-		close(mainLoopExited)
+		for mainworker.running {
+			if mainworker.RetryFailedConnections() {
+				mainworker.StopAllWorker(ShutdownGraceFully)
+			}
+			time.Sleep(3 * time.Second)
+		}
 	}()
 
 	// just wait till someone hits ctrl+c or we have to reload
+	mainworker.manageWorkers(initialStart)
+	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
+		case <-ticker.C:
+			mainworker.manageWorkers(0)
 		case sig := <-osSignalChannel:
-			exitCode = mainSignalHandler(sig)
-			switch exitCode {
+			exitState = mainSignalHandler(sig)
+			switch exitState {
 			case Resume:
 				continue
 			case Reload:
@@ -156,8 +165,12 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 				fallthrough
 			case Shutdown:
 				numWorker = len(*workerMap)
-				shutdownChannel <- exitCode
-				close(shutdownChannel)
+				ticker.Stop()
+				// stop worker in background, so we can continue listening to signals
+				go func() {
+					mainworker.StopAllWorker(exitState)
+					mainLoopExited <- true
+				}()
 				// continue waiting for signals or an exited mainloop
 				continue
 			}

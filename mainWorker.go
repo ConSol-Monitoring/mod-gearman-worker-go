@@ -46,36 +46,6 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	return w
 }
 
-func (w *mainWorker) managerWorkerLoop(shutdownChannel chan MainStateType, initialStart int) {
-	w.running = true
-	defer func() { w.running = false }()
-
-	// check connections
-	go func() {
-		defer logPanicExit()
-		for w.running {
-			if w.RetryFailedConnections() {
-				w.StopAllWorker(ShutdownGraceFully)
-			}
-			time.Sleep(3 * time.Second)
-		}
-	}()
-
-	w.manageWorkers(initialStart)
-	ticker := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			w.manageWorkers(0)
-		case state := <-shutdownChannel:
-			logger.Debug("managerWorkerLoop ending...")
-			ticker.Stop()
-			w.StopAllWorker(state)
-			return
-		}
-	}
-}
-
 func (w *mainWorker) manageWorkers(initialStart int) {
 	// if there are no servers, we cannot do anything
 	if len(w.ActiveServerList()) == 0 {
