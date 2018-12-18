@@ -33,6 +33,6 @@ func setSysProcAttr(cmd *exec.Cmd) {
 	// not supported on windows
 }
 
-func processKill(p *os.Process) {
+func processTimeoutKill(p *os.Process) {
 	p.Kill()
 }

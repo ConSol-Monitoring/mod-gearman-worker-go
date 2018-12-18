@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func setupUsr1Channel(osSignalUsrChannel chan os.Signal) {
@@ -41,8 +42,13 @@ func setSysProcAttr(cmd *exec.Cmd) {
 	}
 }
 
-func processKill(p *os.Process) {
-	p.Kill()
-	// make sure hole process group is being killed
+func processTimeoutKill(p *os.Process) {
+	// kill the process itself and the hole process group
+	syscall.Kill(-p.Pid, syscall.SIGTERM)
+	time.Sleep(1 * time.Second)
+
+	syscall.Kill(-p.Pid, syscall.SIGINT)
+	time.Sleep(1 * time.Second)
+
 	syscall.Kill(-p.Pid, syscall.SIGKILL)
 }

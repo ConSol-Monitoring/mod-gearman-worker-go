@@ -165,7 +165,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// timeout does not work for child processes and/or if filehandles are still open
 	go func() {
 		<-ctx.Done()
-		processKill(cmd.Process)
+		processTimeoutKill(cmd.Process)
 	}()
 
 	err := cmd.Run()
