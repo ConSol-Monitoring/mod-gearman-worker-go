@@ -3,6 +3,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
           - send sigterm, then sigint and finally sigkill instead of immediate sigkill on timeout
+          - do not kill child processes if the main check plugin exited ok
 
 1.0.6    Fri Dec 14 16:29:57 CET 2018
           - improve reloading configuration

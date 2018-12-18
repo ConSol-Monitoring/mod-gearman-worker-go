@@ -165,7 +165,14 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// timeout does not work for child processes and/or if filehandles are still open
 	go func() {
 		<-ctx.Done()
-		processTimeoutKill(cmd.Process)
+		switch ctx.Err() {
+		case context.DeadlineExceeded:
+			// timeout
+			processTimeoutKill(cmd.Process)
+		case context.Canceled:
+			// normal exit
+			cmd.Process.Kill()
+		}
 	}()
 
 	err := cmd.Run()
@@ -180,17 +187,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
-		result.returnCode = config.timeoutReturn
-		if received.typ == "service" {
-			logger.Infof("service check: %s - %s run into timeout after %d seconds", received.hostName, received.serviceDescription, received.timeout)
-			result.output = fmt.Sprintf("(Service Check Timed Out On Worker: %s)", config.identifier)
-		} else if received.typ == "host" {
-			logger.Infof("host check: %s run into timeout after %d seconds", received.hostName, received.timeout)
-			result.output = fmt.Sprintf("(Host Check Timed Out On Worker: %s)", config.identifier)
-		} else {
-			logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
-			result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
-		}
+		setTimeoutResult(result, config, received)
 		return
 	}
 
@@ -232,6 +229,20 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 	}
 	result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
 	result.returnCode = 3
+}
+
+func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct) {
+	result.returnCode = config.timeoutReturn
+	if received.typ == "service" {
+		logger.Infof("service check: %s - %s run into timeout after %d seconds", received.hostName, received.serviceDescription, received.timeout)
+		result.output = fmt.Sprintf("(Service Check Timed Out On Worker: %s)", config.identifier)
+	} else if received.typ == "host" {
+		logger.Infof("host check: %s run into timeout after %d seconds", received.hostName, received.timeout)
+		result.output = fmt.Sprintf("(Host Check Timed Out On Worker: %s)", config.identifier)
+	} else {
+		logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
+		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
+	}
 }
 
 func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
