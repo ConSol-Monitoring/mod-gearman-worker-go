@@ -27,29 +27,31 @@ type answer struct {
 }
 
 func (a *answer) String() string {
-	result := fmt.Sprintf(
-		"type=%s\n"+
-			"host_name=%s\n"+
-			"start_time=%f\n"+
-			"finish_time=%f\n"+
-			"return_code=%d\n"+
-			"exited_ok=1\n"+
-			"source=%s\n"+
-			"output=%s\n",
+	optional := ""
+	if a.serviceDescription != "" {
+		optional += fmt.Sprintf("\nservice_description=%s", a.serviceDescription)
+	}
+	if a.coreStartTime > 0 {
+		optional += fmt.Sprintf("\ncore_start_time=%f", a.coreStartTime)
+	}
+	result := fmt.Sprintf(`type=%s
+host_name=%s%s
+start_time=%f
+finish_time=%f
+return_code=%d
+exited_ok=1
+source=%s
+output=%s
+`,
 		a.active,
 		a.hostName,
+		optional,
 		a.startTime,
 		a.finishTime,
 		a.returnCode,
 		a.source,
 		a.output,
 	)
-	if a.coreStartTime > 0 {
-		result += fmt.Sprintf("core_start_time=%f\n", a.coreStartTime)
-	}
-	if a.serviceDescription != "" {
-		result += fmt.Sprintf("service_description=%s\n", a.serviceDescription)
-	}
 	return result
 }
 
