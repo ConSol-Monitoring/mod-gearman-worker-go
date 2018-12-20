@@ -182,7 +182,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	err := cmd.Run()
 	if err != nil && cmd.ProcessState == nil {
 		logger.Errorf("Error in cmd.Run(): %s", err.Error())
-		setProcessErrorResult(result, config, received, err)
+		setProcessErrorResult(result, config, err)
 		return
 	}
 	state := cmd.ProcessState
@@ -249,7 +249,7 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 	}
 }
 
-func setProcessErrorResult(result *answer, config *configurationStruct, received *receivedStruct, err error) {
+func setProcessErrorResult(result *answer, config *configurationStruct, err error) {
 	//if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
 	if os.IsNotExist(err) {
 		result.output = fmt.Sprintf("CRITICAL: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
