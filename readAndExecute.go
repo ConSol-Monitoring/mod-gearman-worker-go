@@ -164,6 +164,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// https://github.com/golang/go/issues/18874
 	// timeout does not work for child processes and/or if filehandles are still open
 	go func() {
+		defer logPanicExit()
 		<-ctx.Done()
 		switch ctx.Err() {
 		case context.DeadlineExceeded:

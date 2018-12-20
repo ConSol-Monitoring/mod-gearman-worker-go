@@ -168,6 +168,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 				ticker.Stop()
 				// stop worker in background, so we can continue listening to signals
 				go func() {
+					defer logPanicExit()
 					mainworker.StopAllWorker(exitState)
 					mainLoopExited <- true
 				}()
