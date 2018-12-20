@@ -194,10 +194,10 @@ lint:
 cyclo:
 	#
 	# Check if there are any too complicated functions
-	# Any function with a score higher than 15 is bad.
+	# Any function with a score higher than 16 is bad.
 	# See https://github.com/fzipp/gocyclo for details.
 	#
-	$(BINPATH)/gocyclo -over 15 . | ./t/filter_cyclo_exceptions.sh
+	$(BINPATH)/gocyclo -over 16 . | ./t/filter_cyclo_exceptions.sh
 
 misspell:
 	#

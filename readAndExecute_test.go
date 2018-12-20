@@ -119,6 +119,12 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	}
 
 	//none-existing command
+	executeCommand(result, &receivedStruct{commandLine: "/not-there", timeout: 3}, &config)
+	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 127 is out of bounds.") || result.returnCode != 2 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 127 is out of bounds.", 2)
+	}
+
+	//none-existing command II
 	executeCommand(result, &receivedStruct{commandLine: "/not-there \"\"", timeout: 3}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 127 is out of bounds.") || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 127 is out of bounds.", 2)

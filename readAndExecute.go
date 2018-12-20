@@ -133,7 +133,6 @@ func executeInShell(cmdString string) bool {
 //executes a command in the bash, returns whatever gets printed on the bash
 //and as second value a status Code between 0 and 3
 func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
-
 	result.returnCode = 3
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
 		result.output = "command contains bad path"
@@ -172,14 +171,16 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 			processTimeoutKill(cmd.Process)
 		case context.Canceled:
 			// normal exit
-			cmd.Process.Kill()
+			if cmd.Process != nil {
+				cmd.Process.Kill()
+			}
 		}
 	}()
 
 	err := cmd.Run()
 	if err != nil && cmd.ProcessState == nil {
 		logger.Errorf("Error in cmd.Run(): %s", err.Error())
-		result.output = "UNKNOWN - cmd.Run(): " + err.Error()
+		setProcessErrorResult(result, config, received, err)
 		return
 	}
 	state := cmd.ProcessState
@@ -244,6 +245,21 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 		logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
 		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
 	}
+}
+
+func setProcessErrorResult(result *answer, config *configurationStruct, received *receivedStruct, err error) {
+	//if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
+	if os.IsNotExist(err) {
+		result.output = fmt.Sprintf("CRITICAL: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
+		result.returnCode = 2
+		return
+	}
+	if os.IsPermission(err) {
+		result.output = fmt.Sprintf("CRITICAL: Return code of 126 is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", config.identifier)
+		result.returnCode = 2
+		return
+	}
+	result.output = "UNKNOWN - " + err.Error()
 }
 
 func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
