@@ -24,9 +24,9 @@ EXTERNAL_DEPS = \
 	github.com/fzipp/gocyclo \
 	github.com/client9/misspell/cmd/misspell \
 	github.com/jmhodges/copyfighter \
-	honnef.co/go/tools/cmd/gosimple \
 	github.com/mvdan/unparam \
 	github.com/mdempsky/unconvert \
+	honnef.co/go/tools/cmd/staticcheck \
 
 CMDS = $(shell cd ./cmd && ls -1)
 BINPATH = $(shell if test -d "$$GOPATH"; then echo "$$GOPATH/bin"; else echo "~/go/bin"; fi)
@@ -119,9 +119,9 @@ citest: deps
 	$(MAKE) cyclo
 	$(MAKE) misspell
 	$(MAKE) copyfighter
-	$(MAKE) gosimple
 	$(MAKE) unparam
 	$(MAKE) unconvert
+	$(MAKE) staticcheck
 	$(MAKE) fmt
 	#
 	# Normal test cases
@@ -219,13 +219,6 @@ copyfighter:
 	mv mod_gearman_worker_darwin.off mod_gearman_worker_darwin.go; \
 	exit $$rc
 
-gosimple:
-	#
-	# Check if something could be made simpler
-	# See https://github.com/dominikh/go-tools/tree/master/cmd/gosimple
-	#
-	$(BINPATH)/gosimple
-
 unparam:
 	#
 	# Check if all function parameters are actually used
@@ -243,6 +236,13 @@ unconvert:
 	# See https://github.com/mdempsky/unconvert
 	#
 	$(BINPATH)/unconvert -v
+
+staticcheck:
+	#
+	# staticcheck combines a few static code analyzer
+	# See honnef.co/go/tools/cmd/staticcheck
+	#
+	staticcheck .
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
