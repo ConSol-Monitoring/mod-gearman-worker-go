@@ -242,7 +242,11 @@ staticcheck:
 	# staticcheck combines a few static code analyzer
 	# See honnef.co/go/tools/cmd/staticcheck
 	#
-	staticcheck .
+	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort | head -n 1 ) = $(GOVERSION) ]; then \
+		echo "staticcheck requires at least go 1.10"; \
+	else \
+		staticcheck . ; \
+	fi
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
