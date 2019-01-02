@@ -23,7 +23,6 @@ type answer struct {
 	output             string
 	resultQueue        string
 	active             string
-	latency            float64
 }
 
 func (a *answer) String() string {

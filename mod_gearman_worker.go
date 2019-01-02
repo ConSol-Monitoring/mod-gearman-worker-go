@@ -214,7 +214,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 				config.message = os.Args[i+1]
 				i++
 			} else {
-				s := strings.Trim(os.Args[i], "--")
+				s := strings.Trim(os.Args[i], "-")
 				sa := strings.SplitN(s, "=", 2)
 				if len(sa) == 1 {
 					sa = append(sa, "yes")

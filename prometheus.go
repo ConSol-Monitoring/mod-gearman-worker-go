@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var run bool
 var (
 	infoCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -80,7 +80,7 @@ func startPrometheus(config *configurationStruct) (prometheusListener *net.Liste
 		// make sure we log panics properly
 		defer logPanicExit()
 		mux := http.NewServeMux()
-		mux.Handle("/metrics", prometheus.Handler())
+		mux.Handle("/metrics", promhttp.Handler())
 		http.Serve(l, mux)
 		logger.Debugf("prometheus listener %s stopped", config.prometheusServer)
 	}()

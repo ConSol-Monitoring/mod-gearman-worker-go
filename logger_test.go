@@ -24,7 +24,7 @@ func TestCreateLogger(t *testing.T) {
 	logger.Error("testError")
 	logger.Debug("testDebug")
 
-	content, err := ioutil.ReadAll(file)
+	content, _ := ioutil.ReadAll(file)
 
 	if !strings.Contains(string(content), "testError") {
 		t.Errorf("testError not in logfile! %s", string(content))
@@ -61,7 +61,7 @@ func TestCreateLogger(t *testing.T) {
 		t.Errorf("could not open loggertest File, maybe gets not created?")
 	}
 
-	content, err = ioutil.ReadAll(file)
+	content, _ = ioutil.ReadAll(file)
 
 	if !strings.Contains(string(content), "TestError") {
 		t.Errorf("TestError not in File but should be!")

@@ -76,13 +76,14 @@ func BenchmarkJobs(b *testing.B) {
 	}()
 	time.Sleep(1 * time.Second)
 
+	var sendError error
 	b.StartTimer()
 	go func() {
 		for n := 0; n < b.N; n++ {
 			// run e2e test
 			_, err := sender.DoBg("host", testJob, runtime.JobNormal)
 			if err != nil {
-				b.Fatalf("sending job failed: %s", err.Error())
+				sendError = fmt.Errorf("sending job failed: %s", err.Error())
 			}
 		}
 	}()
@@ -91,6 +92,9 @@ func BenchmarkJobs(b *testing.B) {
 		resultsTotal++
 	}
 	b.StopTimer()
+	if sendError != nil {
+		b.Fatalf(sendError.Error())
+	}
 }
 
 func countResults(job libworker.Job) ([]byte, error) {

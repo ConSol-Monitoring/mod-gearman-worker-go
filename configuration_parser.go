@@ -14,7 +14,6 @@ type configurationStruct struct {
 	debug                    int
 	logfile                  string
 	logmode                  string
-	config                   []string
 	dupserver                []string
 	eventhandler             bool
 	notifications            bool
@@ -38,7 +37,6 @@ type configurationStruct struct {
 	loadLimit15              float64
 	showErrorOutput          bool
 	dupResultsArePassive     bool
-	usePerlCache             bool
 	gearmanConnectionTimeout int
 	restrictPath             []string
 	server                   []string
@@ -263,13 +261,6 @@ func getBool(input string) bool {
 		return true
 	}
 	return false
-}
-
-func bool2int(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 func fixGearmandServerAddress(address string) string {

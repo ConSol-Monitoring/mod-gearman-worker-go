@@ -16,7 +16,6 @@ type worker struct {
 	idle       bool
 	config     *configurationStruct
 	mainWorker *mainWorker
-	tasks      int
 	client     *client.Client
 	dupclient  *client.Client
 }
