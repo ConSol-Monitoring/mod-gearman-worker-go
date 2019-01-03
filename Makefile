@@ -224,7 +224,7 @@ unparam:
 	# Check if all function parameters are actually used
 	# See https://github.com/mvdan/unparam
 	#
-	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort | head -n 1 ) = $(GOVERSION) ]; then \
+	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
 		echo "unparam requires at least go 1.10"; \
 	else \
 		$(BINPATH)/unparam -exported .; \
@@ -242,7 +242,7 @@ staticcheck:
 	# staticcheck combines a few static code analyzer
 	# See honnef.co/go/tools/cmd/staticcheck
 	#
-	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort | head -n 1 ) = $(GOVERSION) ]; then \
+	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
 		echo "staticcheck requires at least go 1.10"; \
 	else \
 		staticcheck . ; \
