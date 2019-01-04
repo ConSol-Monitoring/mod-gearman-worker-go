@@ -169,6 +169,7 @@ clean:
 	rm -f *.linux.*
 	rm -f cover.out
 	rm -f coverage.html
+	rm -f mod-gearman*.html
 
 fmt:
 	$(BINPATH)/goimports -w .
@@ -247,6 +248,14 @@ staticcheck:
 	else \
 		staticcheck . ; \
 	fi
+
+goreporter: clean
+	#
+	# The goreporter program creates a static-analyisis report
+	# See https://github.com/360EntSecGroup-Skylar/goreporter
+	#
+	go get -u github.com/360EntSecGroup-Skylar/goreporter
+	goreporter -p . -r .
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
