@@ -3,3 +3,4 @@ send_gearman
 *.exe
 *.linux.amd64
 .vscode
+coverage.txt

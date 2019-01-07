@@ -149,7 +149,7 @@ benchmark: fmt
 	go test -timeout=1m -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
 
 racetest: fmt
-	go test -race -v -timeout=1m
+	go test -race -v -timeout=3m -coverprofile=coverage.txt -covermode=atomic
 
 covertest: fmt
 	go test -v -coverprofile=cover.out -timeout=1m
@@ -169,6 +169,7 @@ clean:
 	rm -f *.linux.*
 	rm -f cover.out
 	rm -f coverage.html
+	rm -f coverage.txt
 	rm -f mod-gearman*.html
 
 fmt:
