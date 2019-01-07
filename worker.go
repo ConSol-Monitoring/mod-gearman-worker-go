@@ -152,9 +152,8 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 
 //errorHandler gets called if the libworker worker throws an errror
 func (worker *worker) errorHandler(e error) {
-	switch e.(type) {
+	switch err := e.(type) {
 	case *libworker.WorkerDisconnectError:
-		err := e.(*libworker.WorkerDisconnectError)
 		_, addr := err.Server()
 		logger.Debugf("worker disconnect: %s from %s", e.Error(), addr)
 		worker.mainWorker.SetServerStatus(addr, err.Error())
