@@ -208,45 +208,31 @@ func (worker *worker) SendResultDup(result *answer) {
 	if len(worker.config.dupserver) == 0 {
 		return
 	}
-	// send to duplicate servers as well
-	sendSuccess := false
-	retries := 0
-	var lastErr error
-	for {
+	
+	for _, dupAddress := range worker.config.dupserver {
+		sendSuccess := false
+	
 		var err error
 		var c *client.Client
-		for _, dupAddress := range worker.config.dupserver {
-			if worker.config.dupResultsArePassive {
-				result.active = "passive"
-			}
-			c, err = sendAnswer(worker.dupclient, result, dupAddress, worker.config.encryption)
-			if err == nil {
-				worker.dupclient = c
-				sendSuccess = true
-				break
-			}
-			worker.dupclient = nil
-			if c != nil {
-				c.Close()
-			}
+		
+		if worker.config.dupResultsArePassive {
+			result.active = "passive"
 		}
-		if sendSuccess || retries > 120 {
+		c, err = sendAnswer(worker.dupclient, result, dupAddress, worker.config.encryption)
+		if err == nil {
+			worker.dupclient = c
+			sendSuccess = true
 			break
 		}
-		if err != nil {
-			lastErr = err
-			if retries == 0 {
-				logger.Debugf("failed to send back result (to dupserver), will continue to retry for 2 minutes: %s", err.Error())
-			} else {
-				logger.Tracef("still failing to send back result (to dupserver): %s", err.Error())
-			}
+		worker.dupclient = nil
+		if c != nil {
+			c.Close()
 		}
-		time.Sleep(1 * time.Second)
-		retries++
-	}
-	if !sendSuccess && lastErr != nil {
-		logger.Debugf("failed to send back result (to dupserver): %s", lastErr.Error())
-	}
+	
+		if !sendSuccess && err != nil {
+			logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
+		}
+	}	
 }
 
 //Shutdown and unregister this worker
