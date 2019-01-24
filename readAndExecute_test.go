@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -170,6 +171,33 @@ func TestExecuteCommandArgListTooLongError(t *testing.T) {
 	executeCommand(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
 	if !strings.Contains(result.output, `argument list too long`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `argument list too long`)
+	}
+}
+
+func TestExecuteCommandOutOfFilesError(t *testing.T) {
+	if os.Getenv("PANIC_TESTS") == "" {
+		t.Skip("test will panic, run manually with PANIC_TESTS=1 env set")
+	}
+	config := configurationStruct{}
+	setDefaultValues(&config)
+	config.encryption = false
+	result := &answer{}
+
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		t.Skip("cannot get current rlimit")
+	}
+	rLimit.Cur = 10
+	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		t.Skip("cannot set rlimit")
+	}
+
+	// create a cmd which should trigger out of files error
+	executeCommand(result, &receivedStruct{commandLine: "/bin/true", timeout: 10}, &config)
+	if !strings.Contains(result.output, `too many open files`) || result.returnCode != 3 {
+		t.Errorf("got result %s, but expected containing %s", result.output, `too many open files`)
 	}
 }
 
