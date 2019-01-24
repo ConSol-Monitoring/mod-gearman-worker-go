@@ -120,8 +120,8 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	//none-existing command
 	executeCommand(result, &receivedStruct{commandLine: "/not-there", timeout: 3}, &config)
-	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 127 is out of bounds.") || result.returnCode != 2 {
-		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 127 is out of bounds.", 2)
+	if !strings.HasPrefix(result.output, "UNKNOWN: Return code of 127 is out of bounds.") || result.returnCode != 3 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "UNKNOWN: Return code of 127 is out of bounds.", 3)
 	}
 
 	//none-existing command II
@@ -143,6 +143,23 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	}
 	if !strings.Contains(result.output, `)\nkilling\nme...\n[stderr\nstderr]`) || result.returnCode != 2 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `)\nkilling\nme...\n[stderr\nstderr]`)
+	}
+}
+
+func TestExecuteCommandArgListTooLongError(t *testing.T) {
+	config := configurationStruct{}
+	setDefaultValues(&config)
+	config.encryption = false
+	result := &answer{}
+
+	// create a cmd which should trigger arguments too long error
+	cmd := "/bin/sh -c echo"
+	for i := 0; i <= 30000; i++ {
+		cmd = cmd + " x"
+	}
+	executeCommand(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
+	if !strings.Contains(result.output, `argument list too long`) || result.returnCode != 3 {
+		t.Errorf("got result %s, but expected containing %s", result.output, `argument list too long`)
 	}
 }
 

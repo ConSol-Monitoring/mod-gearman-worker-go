@@ -1,6 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
 
+next:
+          - bail out to prevent false positives on out of memory/open files
+
 1.0.8    Thu Dec 20 16:44:13 CET 2018
           - fix panic when executing non-existing command without a shell
 

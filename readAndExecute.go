@@ -180,7 +180,6 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	err := cmd.Run()
 	if err != nil && cmd.ProcessState == nil {
-		logger.Errorf("Error in cmd.Run(): %s", err.Error())
 		setProcessErrorResult(result, config, err)
 		return
 	}
@@ -251,16 +250,29 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 func setProcessErrorResult(result *answer, config *configurationStruct, err error) {
 	//if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
 	if os.IsNotExist(err) {
-		result.output = fmt.Sprintf("CRITICAL: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
-		result.returnCode = 2
+		result.output = fmt.Sprintf("UNKNOWN: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
+		result.returnCode = 3
 		return
 	}
 	if os.IsPermission(err) {
-		result.output = fmt.Sprintf("CRITICAL: Return code of 126 is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", config.identifier)
-		result.returnCode = 2
+		result.output = fmt.Sprintf("UNKNOWN: Return code of 126 is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", config.identifier)
+		result.returnCode = 3
 		return
 	}
-	result.output = "UNKNOWN - " + err.Error()
+	if e, ok := err.(*os.PathError); ok {
+		// catch some known errors and stop to prevent false positives
+		switch e.Err {
+		case syscall.EMFILE:
+			// out of open files
+			fallthrough
+		case syscall.ENOMEM:
+			// out of memory
+			logger.Fatalf("system error, bailing out to prevent false positives: %s", err.Error())
+		}
+	}
+	logger.Warnf("system error: %s", err.Error())
+	result.returnCode = 3
+	result.output = fmt.Sprintf("UNKNOWN: %s (worker: %s)", err.Error(), config.identifier)
 }
 
 func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
