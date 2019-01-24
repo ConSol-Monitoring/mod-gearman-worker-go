@@ -127,6 +127,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid())
 	mainworker := newMainWorker(config, key, workerMap)
+	mainworker.running = true
 	defer func() { mainworker.running = false }()
 	mainLoopExited := make(chan bool)
 
