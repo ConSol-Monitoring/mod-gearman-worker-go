@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -160,8 +161,12 @@ func TestExecuteCommandArgListTooLongError(t *testing.T) {
 		t.Skip("skipping test without ARG_MAX")
 	}
 
+	if argMax > math.MaxInt32 {
+		t.Skip("skipping test integer too small")
+	}
+
 	// create a cmd which should trigger arguments too long error
-	cmd := "/bin/sh -c echo " + string(bytes.Repeat([]byte{1}, int(argMax)))
+	cmd := "/bin/sh -c echo " + string(bytes.Repeat([]byte{1}, int(argMax-1)))
 	executeCommand(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
 	if !strings.Contains(result.output, `argument list too long`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `argument list too long`)
