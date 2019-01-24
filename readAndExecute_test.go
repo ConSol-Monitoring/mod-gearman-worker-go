@@ -1,7 +1,9 @@
 package modgearman
 
 import (
+	"bytes"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -152,11 +154,14 @@ func TestExecuteCommandArgListTooLongError(t *testing.T) {
 	config.encryption = false
 	result := &answer{}
 
-	// create a cmd which should trigger arguments too long error
-	cmd := "/bin/sh -c echo"
-	for i := 0; i <= 30000; i++ {
-		cmd = cmd + " x"
+	executeCommand(result, &receivedStruct{commandLine: "getconf ARG_MAX", timeout: 10}, &config)
+	argMax, err := strconv.ParseInt(result.output, 0, 64)
+	if err != nil || argMax <= 0 {
+		t.Skip("skipping test without ARG_MAX")
 	}
+
+	// create a cmd which should trigger arguments too long error
+	cmd := "/bin/sh -c echo " + string(bytes.Repeat([]byte{1}, int(argMax)))
 	executeCommand(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
 	if !strings.Contains(result.output, `argument list too long`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `argument list too long`)
