@@ -169,7 +169,9 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		switch ctx.Err() {
 		case context.DeadlineExceeded:
 			// timeout
-			processTimeoutKill(cmd.Process)
+			if cmd.Process != nil {
+				processTimeoutKill(cmd.Process)
+			}
 		case context.Canceled:
 			// normal exit
 			if cmd.Process != nil {
