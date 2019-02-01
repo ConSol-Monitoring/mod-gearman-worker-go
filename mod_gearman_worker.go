@@ -63,7 +63,7 @@ func Worker(build string) {
 		d, err := cntxt.Reborn()
 
 		if err != nil {
-			logger.Error("unable to start daemon mode")
+			fmt.Fprintf(os.Stderr, "Error: unable to start daemon mode")
 		}
 		if d != nil {
 			return
@@ -262,15 +262,17 @@ func createPidFile(path string) {
 		if pid, err := strconv.Atoi(strings.TrimSpace(string(dat))); err == nil {
 			if process, err := os.FindProcess(pid); err == nil {
 				if err := process.Signal(syscall.Signal(0)); err == nil {
-					logger.Fatalf("worker already running: %d", pid)
+					fmt.Fprintf(os.Stderr, "Error: worker already running: %d\n", pid)
+					os.Exit(3)
 				}
 			}
 		}
-		logger.Warnf("removing stale pidfile %s", path)
+		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
 	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
-		logger.Fatalf("Could not write pidfile: %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
+		os.Exit(3)
 	}
 	pidFile = path
 }
