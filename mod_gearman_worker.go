@@ -266,6 +266,7 @@ func createPidFile(path string) {
 				}
 			}
 		}
+		logger.Warnf("removing stale pidfile %s", path)
 	}
 	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
