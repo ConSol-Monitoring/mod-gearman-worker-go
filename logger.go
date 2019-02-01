@@ -58,6 +58,7 @@ func logPanicExit() {
 		logger.Errorf("**** Stack:")
 		logger.Errorf("%s", debug.Stack())
 		logger.Errorf("*************************")
+		deletePidFile(pidFile)
 		os.Exit(1)
 	}
 }

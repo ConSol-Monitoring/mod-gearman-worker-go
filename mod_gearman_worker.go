@@ -44,6 +44,7 @@ const (
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 
 var prometheusListener *net.Listener
+var pidFile string
 
 // Worker starts the mod_gearman_worker program
 func Worker(build string) {
@@ -71,7 +72,7 @@ func Worker(build string) {
 
 	//create the PidFile
 	createPidFile(config.pidfile)
-	defer deletePidFile(config.pidfile)
+	defer deletePidFile(pidFile)
 
 	// start usr1 routine which prints stacktraces upon request
 	osSignalUsrChannel := make(chan os.Signal, 1)
@@ -259,12 +260,14 @@ func createPidFile(path string) {
 		} else {
 			f.WriteString(strconv.Itoa(os.Getpid()))
 		}
-
+		pidFile = path
 	}
 }
 
 func deletePidFile(f string) {
-	os.Remove(f)
+	if f != "" {
+		os.Remove(f)
+	}
 }
 
 func logThreaddump() {
