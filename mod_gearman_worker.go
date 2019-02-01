@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -253,15 +254,24 @@ func checkForReasonableConfig(config *configurationStruct) error {
 
 func createPidFile(path string) {
 	//write the pid id if file path is defined
-	if path != "" && path != "%PIDFILE%" {
-		f, err := os.Create(path)
-		if err != nil {
-			logger.Errorf("Could not open/create pidfile: %s", err.Error())
-		} else {
-			f.WriteString(strconv.Itoa(os.Getpid()))
-		}
-		pidFile = path
+	if path == "" || path == "%PIDFILE%" {
+		return
 	}
+	// check existing pid
+	if dat, err := ioutil.ReadFile(path); err == nil {
+		if pid, err := strconv.Atoi(strings.TrimSpace(string(dat))); err == nil {
+			if process, err := os.FindProcess(pid); err == nil {
+				if err := process.Signal(syscall.Signal(0)); err == nil {
+					logger.Fatalf("worker already running: %d", pid)
+				}
+			}
+		}
+	}
+	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
+	if err != nil {
+		logger.Fatalf("Could not write pidfile: %s", err.Error())
+	}
+	pidFile = path
 }
 
 func deletePidFile(f string) {

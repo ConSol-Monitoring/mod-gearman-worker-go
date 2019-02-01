@@ -2,6 +2,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 
 next:
+          - improve pid file handling
           - remove pid file on panics
 
 1.0.9    Fri Feb  1 15:21:17 CET 2019
