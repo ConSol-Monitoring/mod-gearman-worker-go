@@ -1,0 +1,30 @@
+{
+    "EnableAll": true,
+    "Linters": {
+        "prealloc": {
+            "Command": "prealloc -forloops -rangeloops -set_exit_status -simple=false",
+            "Pattern": "^(?P<path>.*?\\.go):(?P<line>\\d+) (?P<message>.*)",
+            "IsFast": true
+        },
+        "scopelint": {
+            "Command": "scopelint",
+            "Pattern": "^(?P<path>.*?\\.go):(?P<line>[\\d:]+) (?P<message>.*)",
+            "IsFast": true
+        }
+    },
+    "Disable": ["safesql"],
+    "Exclude": [
+        "Potential file inclusion via variable",
+        "error return value not checked",
+        "Errors unhandled.",
+        "Expect file permissions to be",
+        "Expect directory permissions to be",
+        "Subprocess launched with variable",
+        "cyclomatic complexity \\d+ of function readSetting",
+        "cyclomatic complexity \\d+ of function TestExecuteCommandWithTimeout"
+    ],
+    "Cyclo": 16,
+    "Aggregate": true,
+    "Sort": ["linter", "severity", "path", "line"],
+    "Deadline": "10m"
+}

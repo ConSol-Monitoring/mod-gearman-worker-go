@@ -258,6 +258,26 @@ goreporter: clean
 	go get -u github.com/360EntSecGroup-Skylar/goreporter
 	goreporter -p . -r .
 
+gometalinter:
+	#
+	# See https://github.com/alecthomas/gometalinter
+	#
+	go get github.com/jgautheron/goconst/cmd/goconst
+	go get github.com/golang/tools/cmd/gotype
+	go get github.com/mibk/dupl
+	go get github.com/gordonklaus/ineffassign
+	go get github.com/alexkohler/nakedret
+	go get github.com/tsenart/deadcode
+	go get github.com/kisielk/errcheck
+	go get mvdan.cc/interfacer
+	go get github.com/alexkohler/prealloc
+	go get github.com/kyoh86/scopelint
+	if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
+		echo "gometalinter requires at least go 1.10"; \
+	else \
+		gometalinter . ; \
+	fi
+
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
 	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "v$$OLDVERSION") && \
