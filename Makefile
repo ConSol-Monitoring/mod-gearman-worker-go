@@ -174,9 +174,9 @@ clean:
 
 fmt:
 	$(BINPATH)/goimports -w .
-	go vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable *.go
+	go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable *.go
 	set -e; for CMD in $(CMDS); do \
-		go vet -all -shadow -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
+		go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
 	done
 	gofmt -w -s .
 
