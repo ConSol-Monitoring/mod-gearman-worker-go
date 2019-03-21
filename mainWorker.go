@@ -120,7 +120,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 
 //check if we have too many workers (less than 90% active and above minWorker)
 func (w *mainWorker) adjustWorkerBottomLevel() {
-	if len(w.workerMap) <= 0 {
+	if len(w.workerMap) == 0 {
 		return
 	}
 	// below minmum level
@@ -171,21 +171,22 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 	}
 
 	// do we have to restart our worker routines?
-	if strings.Join(config.server, "\n") != strings.Join(w.config.server, "\n") {
+	switch {
+	case strings.Join(config.server, "\n") != strings.Join(w.config.server, "\n"):
 		restartRequired = true
-	} else if strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n") {
+	case strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n"):
 		restartRequired = true
-	} else if config.host != w.config.host {
+	case config.host != w.config.host:
 		restartRequired = true
-	} else if config.service != w.config.service {
+	case config.service != w.config.service:
 		restartRequired = true
-	} else if strings.Join(config.hostgroups, "\n") != strings.Join(w.config.hostgroups, "\n") {
+	case strings.Join(config.hostgroups, "\n") != strings.Join(w.config.hostgroups, "\n"):
 		restartRequired = true
-	} else if strings.Join(config.servicegroups, "\n") != strings.Join(w.config.servicegroups, "\n") {
+	case strings.Join(config.servicegroups, "\n") != strings.Join(w.config.servicegroups, "\n"):
 		restartRequired = true
-	} else if config.eventhandler != w.config.eventhandler {
+	case config.eventhandler != w.config.eventhandler:
 		restartRequired = true
-	} else if config.notifications != w.config.notifications {
+	case config.notifications != w.config.notifications:
 		restartRequired = true
 	}
 

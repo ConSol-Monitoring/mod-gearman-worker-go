@@ -33,7 +33,7 @@ func readKeyFile(path string) []byte {
 		return dat[:len(dat)-1]
 	}
 
-	return dat[:]
+	return dat
 
 }
 

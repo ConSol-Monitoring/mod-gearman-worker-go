@@ -156,7 +156,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	var outbuf bytes.Buffer
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
-	cmd.Env = append(os.Environ())
+	cmd.Env = os.Environ()
 
 	// prevent child from receiving signals meant for the worker only
 	setSysProcAttr(cmd)
@@ -235,13 +235,14 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 
 func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct) {
 	result.returnCode = config.timeoutReturn
-	if received.typ == "service" {
+	switch received.typ {
+	case "service":
 		logger.Infof("service check: %s - %s run into timeout after %d seconds", received.hostName, received.serviceDescription, received.timeout)
 		result.output = fmt.Sprintf("(Service Check Timed Out On Worker: %s)", config.identifier)
-	} else if received.typ == "host" {
+	case "host":
 		logger.Infof("host check: %s run into timeout after %d seconds", received.hostName, received.timeout)
 		result.output = fmt.Sprintf("(Host Check Timed Out On Worker: %s)", config.identifier)
-	} else {
+	default:
 		logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
 		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
 	}

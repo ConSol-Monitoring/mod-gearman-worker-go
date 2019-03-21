@@ -15,9 +15,10 @@ func createLogger(config *configurationStruct) {
 	//check in config file if file is specified
 	verbosity := getSeverity(config.debug)
 
-	if config.debug >= 3 || config.logfile == "stderr" {
+	switch {
+	case config.debug >= 3 || config.logfile == "stderr":
 		logger.SetOutput(os.Stderr)
-	} else if config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file") {
+	case config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file"):
 		file, err := openFileOrCreate(config.logfile)
 		if err != nil {
 			logger.Errorf("could not create or open file %s: %s", config.logfile, err.Error())
@@ -28,7 +29,7 @@ func createLogger(config *configurationStruct) {
 			logger.Errorf("could not open/create logfile: %s", err.Error())
 		}
 		logger.SetOutput(logfile)
-	} else {
+	default:
 		logger.SetOutput(os.Stdout)
 	}
 

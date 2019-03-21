@@ -20,13 +20,8 @@ EXTERNAL_DEPS = \
 	github.com/prometheus/client_golang/prometheus/promhttp \
 	github.com/davecgh/go-spew/spew \
 	golang.org/x/tools/cmd/goimports \
-	golang.org/x/lint/golint \
-	github.com/fzipp/gocyclo \
-	github.com/client9/misspell/cmd/misspell \
 	github.com/jmhodges/copyfighter \
-	github.com/mvdan/unparam \
-	github.com/mdempsky/unconvert \
-	honnef.co/go/tools/cmd/staticcheck \
+	github.com/golangci/golangci-lint/cmd/golangci-lint \
 
 CMDS = $(shell cd ./cmd && ls -1)
 BINPATH = $(shell if test -d "$$GOPATH"; then echo "$$GOPATH/bin"; else echo "~/go/bin"; fi)
@@ -61,12 +56,12 @@ build-linux-amd64: dump
 		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; cd ../..; \
 	done
 
-build-windows-i386: dump
+build-windows-i386:
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
 	done
 
-build-windows-amd64: dump
+build-windows-amd64:
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
 	done
@@ -115,13 +110,8 @@ citest: deps
 	#
 	# Run other subtests
 	#
-	$(MAKE) lint
-	$(MAKE) cyclo
-	$(MAKE) misspell
 	$(MAKE) copyfighter
-	$(MAKE) unparam
-	$(MAKE) unconvert
-	$(MAKE) staticcheck
+	$(MAKE) golangci
 	$(MAKE) fmt
 	#
 	# Normal test cases
@@ -188,27 +178,6 @@ versioncheck:
 		exit 1; \
 	}
 
-lint:
-	#
-	# Check if golint complains
-	# see https://github.com/golang/lint/ for details.
-	$(BINPATH)/golint -set_exit_status .
-
-cyclo:
-	#
-	# Check if there are any too complicated functions
-	# Any function with a score higher than 16 is bad.
-	# See https://github.com/fzipp/gocyclo for details.
-	#
-	$(BINPATH)/gocyclo -over 16 . | ./t/filter_cyclo_exceptions.sh
-
-misspell:
-	#
-	# Check if there are common spell errors.
-	# See https://github.com/client9/misspell
-	#
-	$(BINPATH)/misspell -error .
-
 copyfighter:
 	#
 	# Check if there are values better passed as pointer
@@ -221,61 +190,15 @@ copyfighter:
 	mv mod_gearman_worker_darwin.off mod_gearman_worker_darwin.go; \
 	exit $$rc
 
-unparam:
+golangci:
 	#
-	# Check if all function parameters are actually used
-	# See https://github.com/mvdan/unparam
-	#
-	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
-		echo "unparam requires at least go 1.10"; \
-	else \
-		$(BINPATH)/unparam -exported .; \
-	fi
-
-unconvert:
-	#
-	# The unconvert program analyzes Go packages to identify unnecessary type conversions
-	# See https://github.com/mdempsky/unconvert
-	#
-	$(BINPATH)/unconvert -v
-
-staticcheck:
-	#
-	# staticcheck combines a few static code analyzer
-	# See honnef.co/go/tools/cmd/staticcheck
+	# golangci combines a few static code analyzer
+	# See https://github.com/golangci/golangci-lint
 	#
 	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
-		echo "staticcheck requires at least go 1.10"; \
+		echo "golangci requires at least go 1.10"; \
 	else \
-		staticcheck . ; \
-	fi
-
-goreporter: clean
-	#
-	# The goreporter program creates a static-analyisis report
-	# See https://github.com/360EntSecGroup-Skylar/goreporter
-	#
-	go get -u github.com/360EntSecGroup-Skylar/goreporter
-	goreporter -p . -r .
-
-gometalinter:
-	#
-	# See https://github.com/alecthomas/gometalinter
-	#
-	go get github.com/jgautheron/goconst/cmd/goconst
-	go get github.com/golang/tools/cmd/gotype
-	go get github.com/mibk/dupl
-	go get github.com/gordonklaus/ineffassign
-	go get github.com/alexkohler/nakedret
-	go get github.com/tsenart/deadcode
-	go get github.com/kisielk/errcheck
-	go get mvdan.cc/interfacer
-	go get github.com/alexkohler/prealloc
-	go get github.com/kyoh86/scopelint
-	if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
-		echo "gometalinter requires at least go 1.10"; \
-	else \
-		gometalinter . ; \
+		golangci-lint run ./...; \
 	fi
 
 version:

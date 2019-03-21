@@ -127,7 +127,7 @@ func parseTimeStringToFloat64(input string) float64 {
 //then stores every line splitted by an = in a map
 //returns map[(value before = )] = (value after =)
 func createMap(input []byte) map[string]string {
-	stringValue := string(input[:])
+	stringValue := string(input)
 	splitted := strings.Split(stringValue, "\n")
 	//every command is now in one array field
 

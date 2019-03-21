@@ -180,7 +180,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 			}
 		case <-mainLoopExited:
 			// only restart those who have exited in time
-			numWorker = numWorker - len(*workerMap)
+			numWorker -= len(*workerMap)
 			return
 		}
 	}
@@ -194,39 +194,41 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	setDefaultValues(config)
 	for i := 1; i < len(os.Args); i++ {
 		//is it a param?
-		if strings.HasPrefix(os.Args[i], "--") || strings.HasPrefix(os.Args[i], "-") {
-			arg := strings.ToLower(os.Args[i])
-			if arg == "--help" || arg == "-h" {
-				helpFunc()
-				os.Exit(2)
-			} else if arg == "--version" || arg == "-v" {
-				printVersion(config)
-				os.Exit(2)
-			} else if arg == "-d" || arg == "--daemon" {
-				config.daemon = true
-			} else if arg == "-r" {
-				if len(os.Args) < i+1 {
-					return nil, fmt.Errorf("-r requires an argument")
-				}
-				config.returnCode = getInt(os.Args[i+1])
-				i++
-			} else if arg == "-m" {
-				if len(os.Args) < i+1 {
-					return nil, fmt.Errorf("-m requires an argument")
-				}
-				config.message = os.Args[i+1]
-				i++
-			} else {
-				s := strings.Trim(os.Args[i], "-")
-				sa := strings.SplitN(s, "=", 2)
-				if len(sa) == 1 {
-					sa = append(sa, "yes")
-				}
-				//give the param and the value to readSetting
-				readSetting(sa, config)
-			}
-		} else {
+		if !strings.HasPrefix(os.Args[i], "--") && !strings.HasPrefix(os.Args[i], "-") {
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
+			continue
+		}
+
+		arg := strings.ToLower(os.Args[i])
+		switch {
+		case arg == "--help" || arg == "-h":
+			helpFunc()
+			os.Exit(2)
+		case arg == "--version" || arg == "-v":
+			printVersion(config)
+			os.Exit(2)
+		case arg == "-d" || arg == "--daemon":
+			config.daemon = true
+		case arg == "-r":
+			if len(os.Args) < i+1 {
+				return nil, fmt.Errorf("-r requires an argument")
+			}
+			config.returnCode = getInt(os.Args[i+1])
+			i++
+		case arg == "-m":
+			if len(os.Args) < i+1 {
+				return nil, fmt.Errorf("-m requires an argument")
+			}
+			config.message = os.Args[i+1]
+			i++
+		default:
+			s := strings.Trim(os.Args[i], "-")
+			sa := strings.SplitN(s, "=", 2)
+			if len(sa) == 1 {
+				sa = append(sa, "yes")
+			}
+			//give the param and the value to readSetting
+			readSetting(sa, config)
 		}
 	}
 	config.removeDuplicates()
