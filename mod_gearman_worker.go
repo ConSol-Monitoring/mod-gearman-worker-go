@@ -199,28 +199,33 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			continue
 		}
 
-		arg := strings.ToLower(os.Args[i])
+		arg := os.Args[i]
+		argLc := strings.ToLower(arg)
 		switch {
-		case arg == "--help" || arg == "-h":
+		case argLc == "--help" || argLc == "-h":
 			helpFunc()
 			os.Exit(2)
-		case arg == "--version" || arg == "-v":
+		case argLc == "--version" || argLc == "-v":
 			printVersion(config)
 			os.Exit(2)
-		case arg == "-d" || arg == "--daemon":
+		case argLc == "-d" || argLc == "--daemon":
 			config.daemon = true
-		case arg == "-r":
-			if len(os.Args) < i+1 {
-				return nil, fmt.Errorf("-r requires an argument")
-			}
-			config.returnCode = getInt(os.Args[i+1])
-			i++
-		case arg == "-m":
-			if len(os.Args) < i+1 {
-				return nil, fmt.Errorf("-m requires an argument")
-			}
-			config.message = os.Args[i+1]
-			i++
+        case strings.HasPrefix(argLc, "-r") || strings.HasPrefix(argLc, "--returncode"):
+            s := strings.Trim(arg, "-")
+            sa := strings.SplitN(s, "=", 2)
+            if len(sa) > 1 {
+                config.returnCode, _ = strconv.Atoi(sa[1])
+            } else {
+                return nil, fmt.Errorf("returncode requires an argument (0-3)")
+            }
+        case strings.HasPrefix(argLc, "-m") || strings.HasPrefix(argLc, "--message"):
+            s := strings.Trim(arg, "-")
+            sa := strings.SplitN(s, "=", 2)
+            if len(sa) > 1 {
+                config.message = sa[1]
+            } else {
+                return nil, fmt.Errorf("message requires an argument")
+            }
 		default:
 			s := strings.Trim(os.Args[i], "-")
 			sa := strings.SplitN(s, "=", 2)
