@@ -210,22 +210,22 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			os.Exit(2)
 		case argLc == "-d" || argLc == "--daemon":
 			config.daemon = true
-        case strings.HasPrefix(argLc, "-r") || strings.HasPrefix(argLc, "--returncode"):
-            s := strings.Trim(arg, "-")
-            sa := strings.SplitN(s, "=", 2)
-            if len(sa) > 1 {
-                config.returnCode, _ = strconv.Atoi(sa[1])
-            } else {
-                return nil, fmt.Errorf("returncode requires an argument (0-3)")
-            }
-        case strings.HasPrefix(argLc, "-m") || strings.HasPrefix(argLc, "--message"):
-            s := strings.Trim(arg, "-")
-            sa := strings.SplitN(s, "=", 2)
-            if len(sa) > 1 {
-                config.message = sa[1]
-            } else {
-                return nil, fmt.Errorf("message requires an argument")
-            }
+		case strings.HasPrefix(argLc, "-r") || strings.HasPrefix(argLc, "--returncode"):
+			s := strings.Trim(arg, "-")
+			sa := strings.SplitN(s, "=", 2)
+			if len(sa) > 1 {
+				config.returnCode, _ = strconv.Atoi(sa[1])
+			} else {
+				return nil, fmt.Errorf("returncode requires an argument (0-3)")
+			}
+		case strings.HasPrefix(argLc, "-m") || strings.HasPrefix(argLc, "--message"):
+			s := strings.Trim(arg, "-")
+			sa := strings.SplitN(s, "=", 2)
+			if len(sa) > 1 {
+				config.message = sa[1]
+			} else {
+				return nil, fmt.Errorf("message requires an argument")
+			}
 		default:
 			s := strings.Trim(os.Args[i], "-")
 			sa := strings.SplitN(s, "=", 2)
