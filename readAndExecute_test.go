@@ -50,7 +50,6 @@ func TestReadAndExecute(t *testing.T) {
 	if resultValue.output != "Could not Start Check In Time" {
 		t.Errorf("got %s but expected: %s", resultValue, "Could not Start Check In Time")
 	}
-
 }
 
 func TestExecuteCommandWithTimeout(t *testing.T) {

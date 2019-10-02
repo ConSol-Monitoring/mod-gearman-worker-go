@@ -79,5 +79,4 @@ func TestCreateLogger(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not remove loggertest")
 	}
-
 }

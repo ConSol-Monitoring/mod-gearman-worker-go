@@ -8,7 +8,6 @@ import (
 )
 
 func createLogger(config *configurationStruct) {
-
 	//logging format
 	frmt := `%{Color \"yellow\" \"WARN\"}%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}[%{Date} %{Time "15:04:05.000"}][%{Severity}][%{File}:%{Line}] %{Message}`
 
@@ -35,7 +34,6 @@ func createLogger(config *configurationStruct) {
 
 	logger.SetFormatter(factorlog.NewStdFormatter(frmt))
 	logger.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))
-
 }
 
 func getSeverity(input int) string {

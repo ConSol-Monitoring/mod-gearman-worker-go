@@ -17,6 +17,7 @@ linters:
     - lll
     - gochecknoinits
     - dupl
+    - funlen
   fast: false
 
 issues:

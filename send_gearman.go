@@ -215,5 +215,4 @@ Note: When using a delimiter you may also submit one result
 `)
 
 	os.Exit(3)
-
 }

@@ -223,7 +223,6 @@ func readSettingsFile(path string, result *configurationStruct) {
 		line = strings.TrimSpace(line)
 		//check if not commented out
 		if len(line) > 0 && line[0] != '#' {
-
 			//get both values
 			values := strings.SplitN(line, "=", 2)
 			readSetting(values, result)

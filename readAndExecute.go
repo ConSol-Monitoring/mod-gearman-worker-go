@@ -280,7 +280,6 @@ func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
 	basename := getCommandBasename(command)
 	userTimes.WithLabelValues(basename).Observe(state.UserTime().Seconds())
 	systemTimes.WithLabelValues(basename).Observe(state.SystemTime().Seconds())
-
 }
 
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)

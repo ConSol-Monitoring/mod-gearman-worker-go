@@ -11,7 +11,6 @@ func TestDecodeBase64(t *testing.T) {
 	if string(result) != "Test Encoded String" {
 		t.Errorf("expected: %s, got:%s", "Test Encoded String", string(result))
 	}
-
 }
 
 func TestCreateMap(t *testing.T) {

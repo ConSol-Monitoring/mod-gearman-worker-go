@@ -120,7 +120,6 @@ func parseTimeStringToFloat64(input string) float64 {
 		return 0
 	}
 	return floatValue
-
 }
 
 //takes a byte input, splits it first at every new line
@@ -134,7 +133,6 @@ func createMap(input []byte) map[string]string {
 	resultMap := make(map[string]string)
 
 	for i := 0; i < len(splitted); i++ {
-
 		//split at = and store in map
 		access := strings.SplitN(splitted[i], "=", 2)
 

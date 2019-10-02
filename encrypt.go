@@ -14,7 +14,6 @@ func createAnswer(value *answer, withEncrypt bool) []byte {
 *
  */
 func encrypt(data []byte, encrypt bool) []byte {
-
 	if !encrypt {
 		return data
 	}

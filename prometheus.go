@@ -91,7 +91,6 @@ func startPrometheus(config *configurationStruct) (prometheusListener *net.Liste
 var prometheusRegistered bool
 
 func registerMetrics() {
-
 	// registering twice will throw lots of errors
 	if prometheusRegistered {
 		return
@@ -129,5 +128,4 @@ func registerMetrics() {
 	if err := prometheus.Register(systemTimes); err != nil {
 		fmt.Println(err)
 	}
-
 }

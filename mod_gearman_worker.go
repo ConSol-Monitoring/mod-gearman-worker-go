@@ -345,5 +345,4 @@ func printUsage() {
 	fmt.Print("\n")
 
 	os.Exit(3)
-
 }

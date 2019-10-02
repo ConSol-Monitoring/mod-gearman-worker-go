@@ -20,7 +20,6 @@ func getKey(config *configurationStruct) []byte {
 		return nil
 	}
 	return nil
-
 }
 
 //loads the keyfile and extracts the key, if a newline is at the end it gets cut off
@@ -34,7 +33,6 @@ func readKeyFile(path string) []byte {
 	}
 
 	return dat
-
 }
 
 func fixKeySize(key []byte) []byte {
@@ -66,7 +64,6 @@ func openFileOrCreate(path string) (os.File, error) {
 		logger.Errorf("could not open file %s: %s", path, err.Error())
 	}
 	return *file, nil
-
 }
 
 func createDirectoryAndFile(pathe string) {
@@ -86,5 +83,4 @@ func createDirectoryAndFile(pathe string) {
 			logger.Panic(err)
 		}
 	}
-
 }

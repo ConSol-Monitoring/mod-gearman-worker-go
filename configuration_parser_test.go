@@ -55,7 +55,6 @@ server=hostname2
 	}
 
 	os.Remove("testConfigFile")
-
 }
 
 func TestGetFloat(t *testing.T) {
