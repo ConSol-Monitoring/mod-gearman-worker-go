@@ -18,6 +18,7 @@ linters:
     - gochecknoinits
     - dupl
     - funlen
+    - wsl
   fast: false
 
 issues:
@@ -26,3 +27,4 @@ issues:
   exclude:
     - "cyclomatic complexity .* of func `Test.*` is high"
     - "cyclomatic complexity .* of func `readSetting` is high"
+    - "cognitive complexity .* of func `Test.*"
