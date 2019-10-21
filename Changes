@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - fix null pointer exception on timeouts
+
 1.1.2    Thu Oct 17 18:09:15 CEST 2019
           - maintainance release
 
