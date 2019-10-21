@@ -18,7 +18,7 @@ import (
 
 const (
 	// VERSION contains the actual lmd version
-	VERSION = "1.1.2"
+	VERSION = "1.1.3"
 )
 
 // MainStateType is used to set different states of the main loop
