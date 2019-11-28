@@ -7,6 +7,11 @@ import (
 	"path"
 )
 
+const (
+	// EncryptionKeySize defines the exact size of the excryption key
+	EncryptionKeySize = 32
+)
+
 //returns the secret_key as byte array from the location in the worker.cfg
 func getKey(config *configurationStruct) []byte {
 	if config.encryption {
@@ -36,11 +41,11 @@ func readKeyFile(path string) []byte {
 }
 
 func fixKeySize(key []byte) []byte {
-	if len(key) > 32 {
-		return key[0:32]
+	if len(key) > EncryptionKeySize {
+		return key[0:EncryptionKeySize]
 	}
 	for {
-		if len(key) == 32 {
+		if len(key) == EncryptionKeySize {
 			return key
 		}
 		key = append(key, 0)

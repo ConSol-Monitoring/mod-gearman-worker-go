@@ -11,6 +11,8 @@ import (
 	"github.com/kdar/factorlog"
 )
 
+const ServiceAnswerSize = 4
+
 // Sendgearman starts the mod_gearman_worker program
 func Sendgearman(build string) {
 	defer logPanicExit()
@@ -26,10 +28,10 @@ func Sendgearman(build string) {
 
 	if !sendSuccess {
 		logger.Errorf("failed to send back result: %s", err.Error())
-		os.Exit(2)
+		os.Exit(ExitCodeError)
 	}
 	logger.Infof("%d data packet(s) sent to host %s successfully.", resultsCounter, lastAddress)
-	os.Exit(2)
+	os.Exit(ExitCodeError)
 }
 
 func sendgearmanInit(build string) *configurationStruct {
@@ -37,7 +39,7 @@ func sendgearmanInit(build string) *configurationStruct {
 	config, err := initConfiguration("mod_gearman_worker", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		os.Exit(3)
+		os.Exit(ExitCodeUnknown)
 	}
 
 	//create the logger, everything logged until here gets printed to stdOut
@@ -69,7 +71,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 			// read package from stdin
 			timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 				logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
-				os.Exit(2)
+				os.Exit(ExitCodeError)
 			})
 			if !scanner.Scan() {
 				timeout.Stop()
@@ -78,7 +80,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 			timeout.Stop()
 			if scanner.Err() != nil {
 				logger.Errorf("reading stdin failed: %s", scanner.Err().Error())
-				os.Exit(2)
+				os.Exit(ExitCodeError)
 			}
 			input := scanner.Text()
 			if input == "" {
@@ -151,7 +153,7 @@ func checkForReasonableConfigSendGearman(config *configurationStruct) error {
 
 func parseLine2Answer(config *configurationStruct, result *answer, input string) bool {
 	fields := strings.Split(input, config.delimiter)
-	if len(fields) >= 4 {
+	if len(fields) >= ServiceAnswerSize {
 		// service result
 		result.hostName = fields[0]
 		result.serviceDescription = fields[1]
@@ -214,5 +216,5 @@ Note: When using a delimiter you may also submit one result
       <host_name>[tab]<return_code>[tab]<plugin_output>[newline]
 `)
 
-	os.Exit(3)
+	os.Exit(ExitCodeUnknown)
 }

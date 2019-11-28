@@ -4,6 +4,8 @@ import (
 	b64 "encoding/base64"
 )
 
+const EncryptionBlockSize = 16
+
 func createAnswer(value *answer, withEncrypt bool) []byte {
 	encrypted := encrypt([]byte(value.String()), withEncrypt)
 	return encodeBase64(encrypted)
@@ -17,9 +19,9 @@ func encrypt(data []byte, encrypt bool) []byte {
 	if !encrypt {
 		return data
 	}
-	//len(data) needs to be multiple of 16
-	if (len(data) % 16) != 0 {
-		times := 15 - (len(data) % 16)
+	//len(data) needs to be multiple of 16 (EncryptionBlockSize)
+	if (len(data) % EncryptionBlockSize) != 0 {
+		times := (EncryptionBlockSize - 1) - (len(data) % EncryptionBlockSize)
 
 		for i := 0; i <= times; i++ {
 			data = append(data, 10)
@@ -27,9 +29,8 @@ func encrypt(data []byte, encrypt bool) []byte {
 	}
 
 	encrypted := make([]byte, len(data))
-	size := 16
 
-	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+	for bs, be := 0, EncryptionBlockSize; bs < len(data); bs, be = bs+EncryptionBlockSize, be+EncryptionBlockSize {
 		myCipher.Encrypt(encrypted[bs:be], data[bs:be])
 	}
 

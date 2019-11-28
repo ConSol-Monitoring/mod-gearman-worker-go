@@ -9,6 +9,12 @@ import (
 	time "time"
 )
 
+const (
+	DefaultConnectionTimeout = 30
+
+	UtilizationWatermakeLow = 90
+)
+
 /*
 * starts the min workers
 * manages the worker list
@@ -118,7 +124,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 	}
 }
 
-//check if we have too many workers (less than 90% active and above minWorker)
+//check if we have too many workers (less than 90% UtilizationWatermakeLow) active and above minWorker)
 func (w *mainWorker) adjustWorkerBottomLevel() {
 	if len(w.workerMap) == 0 {
 		return
@@ -127,8 +133,8 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 	if len(w.workerMap) <= w.config.minWorker {
 		return
 	}
-	// above 90% utilization
-	if (w.activeWorkers / len(w.workerMap) * 100) >= 90 {
+	// above 90% (UtilizationWatermakeLow) utilization
+	if (w.activeWorkers / len(w.workerMap) * 100) >= UtilizationWatermakeLow {
 		return
 	}
 	// not idling long enough
@@ -286,7 +292,7 @@ func (w *mainWorker) RetryFailedConnections() bool {
 		if !ok || status != "" {
 			previous = false
 		}
-		_, err := net.DialTimeout("tcp", address, 30*time.Second)
+		_, err := net.DialTimeout("tcp", address, DefaultConnectionTimeout*time.Second)
 		w.workerMapLock.Lock()
 		if err != nil {
 			w.serverStatus[address] = err.Error()

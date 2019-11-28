@@ -28,3 +28,15 @@ issues:
     - "cyclomatic complexity .* of func `Test.*` is high"
     - "cyclomatic complexity .* of func `readSetting` is high"
     - "cognitive complexity .* of func `Test.*"
+    - 'Magic number: 0.01\D '
+    - 'Magic number: 1\D '
+    - 'Magic number: 10\D '
+    - 'Magic number: 16\D '
+    - 'Magic number: 100\D '
+    - 'Magic number: 1024\D '
+    - 'Magic number: 1e9\D '
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gomnd

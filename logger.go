@@ -7,6 +7,13 @@ import (
 	"github.com/kdar/factorlog"
 )
 
+const (
+	LogLevelInfo   = 0
+	LogLevelDebug  = 1
+	LogLevelTrace  = 2
+	LogLevelTrace2 = 3
+)
+
 func createLogger(config *configurationStruct) {
 	//logging format
 	frmt := `%{Color \"yellow\" \"WARN\"}%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}[%{Date} %{Time "15:04:05.000"}][%{Severity}][%{File}:%{Line}] %{Message}`
@@ -15,7 +22,7 @@ func createLogger(config *configurationStruct) {
 	verbosity := getSeverity(config.debug)
 
 	switch {
-	case config.debug >= 3 || config.logfile == "stderr":
+	case config.debug >= LogLevelTrace2 || config.logfile == "stderr":
 		logger.SetOutput(os.Stderr)
 	case config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file"):
 		file, err := openFileOrCreate(config.logfile)
@@ -38,13 +45,11 @@ func createLogger(config *configurationStruct) {
 
 func getSeverity(input int) string {
 	switch input {
-	case 0:
+	case LogLevelInfo:
 		return "INFO"
-	case 1:
+	case LogLevelDebug:
 		return "DEBUG"
-	case 2:
-		return "TRACE"
-	case 3:
+	case LogLevelTrace, LogLevelTrace2:
 		return "TRACE"
 	}
 	return "ERROR"

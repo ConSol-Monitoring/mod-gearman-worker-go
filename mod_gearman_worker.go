@@ -19,6 +19,14 @@ import (
 const (
 	// VERSION contains the actual lmd version
 	VERSION = "1.1.3"
+
+	// ExitCodeError is used for erronous exits
+	ExitCodeError = 2
+
+	// ExitCodeUnknown is used for unknown exits
+	ExitCodeUnknown = 3
+
+	ConnectionRetryInterval = 3
 )
 
 // MainStateType is used to set different states of the main loop
@@ -55,7 +63,7 @@ func Worker(build string) {
 	config, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		os.Exit(3)
+		os.Exit(ExitCodeError)
 	}
 
 	if config.daemon {
@@ -140,7 +148,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 			if mainworker.RetryFailedConnections() {
 				mainworker.StopAllWorker(ShutdownGraceFully)
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(ConnectionRetryInterval * time.Second)
 		}
 	}()
 
@@ -203,10 +211,10 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 		switch {
 		case arg == "--help" || arg == "-h":
 			helpFunc()
-			os.Exit(2)
+			os.Exit(ExitCodeUnknown)
 		case arg == "--version" || arg == "-v":
 			printVersion(config)
-			os.Exit(2)
+			os.Exit(ExitCodeUnknown)
 		case arg == "-d" || arg == "--daemon":
 			config.daemon = true
 		case arg == "-r":
@@ -265,7 +273,7 @@ func createPidFile(path string) {
 			if process, err := os.FindProcess(pid); err == nil {
 				if err := process.Signal(syscall.Signal(0)); err == nil {
 					fmt.Fprintf(os.Stderr, "Error: worker already running: %d\n", pid)
-					os.Exit(3)
+					os.Exit(ExitCodeError)
 				}
 			}
 		}
@@ -274,7 +282,7 @@ func createPidFile(path string) {
 	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
-		os.Exit(3)
+		os.Exit(ExitCodeError)
 	}
 	pidFile = path
 }
@@ -344,5 +352,5 @@ func printUsage() {
 	fmt.Print("see README for a detailed explanation of all options.\n")
 	fmt.Print("\n")
 
-	os.Exit(3)
+	os.Exit(ExitCodeUnknown)
 }
