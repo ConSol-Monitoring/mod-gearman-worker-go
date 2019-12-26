@@ -60,33 +60,17 @@ func sendgearmanInit(build string) *configurationStruct {
 }
 
 func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess bool, resultsCounter int, lastAddress string, err error) {
-	scanner := bufio.NewScanner(os.Stdin)
 	read := make([]byte, 1024*1024*1024)
+	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(read, cap(read))
 
 	// send result back to any server
 	var c *client.Client
 	for {
+		// if no host is given from command line arguments, read from stdin
 		if config.host == "" {
 			// read package from stdin
-			timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-				logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
-				os.Exit(ExitCodeError)
-			})
-			if !scanner.Scan() {
-				timeout.Stop()
-				break
-			}
-			timeout.Stop()
-			if scanner.Err() != nil {
-				logger.Errorf("reading stdin failed: %s", scanner.Err().Error())
-				os.Exit(ExitCodeError)
-			}
-			input := scanner.Text()
-			if input == "" {
-				break
-			}
-			if !parseLine2Answer(config, result, input) {
+			if !readStdinData(config, result, scanner) {
 				break
 			}
 		}
@@ -119,6 +103,30 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 		}
 	}
 	return
+}
+
+func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
+	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
+		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
+		os.Exit(ExitCodeError)
+	})
+	if !scanner.Scan() {
+		timeout.Stop()
+		return false
+	}
+	timeout.Stop()
+	if scanner.Err() != nil {
+		logger.Errorf("reading stdin failed: %s", scanner.Err().Error())
+		os.Exit(ExitCodeError)
+	}
+	input := scanner.Text()
+	if input == "" {
+		return false
+	}
+	if !parseLine2Answer(config, result, input) {
+		return false
+	}
+	return true
 }
 
 func createResultFromArgs(config *configurationStruct) *answer {
