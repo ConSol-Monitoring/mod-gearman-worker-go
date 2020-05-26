@@ -35,6 +35,11 @@ issues:
     - 'Magic number: 100\D '
     - 'Magic number: 1024\D '
     - 'Magic number: 1e9\D '
+    - 'Top level comment should end in a period'
+    - 'package should be `modgearman_test` instead of `modgearman`'
+    - 'Expect WriteFile permissions to be 0600 or less'
+    - 'err113:'
+    - 'G204: Subprocess launched with function call as argument or cmd arguments'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
