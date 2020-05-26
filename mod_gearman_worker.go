@@ -269,23 +269,38 @@ func createPidFile(path string) {
 		return
 	}
 	// check existing pid
-	if dat, err := ioutil.ReadFile(path); err == nil {
-		if pid, err := strconv.Atoi(strings.TrimSpace(string(dat))); err == nil {
-			if process, err := os.FindProcess(pid); err == nil {
-				if err := process.Signal(syscall.Signal(0)); err == nil {
-					fmt.Fprintf(os.Stderr, "Error: worker already running: %d\n", pid)
-					os.Exit(ExitCodeError)
-				}
-			}
-		}
+	if checkStalePidFile(path) {
 		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
+
 	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
 		os.Exit(ExitCodeError)
 	}
 	pidFile = path
+}
+
+func checkStalePidFile(path string) bool {
+	dat, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(dat)))
+	if err != nil {
+		return false
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+
+	err = process.Signal(syscall.Signal(0))
+	if err == nil {
+		fmt.Fprintf(os.Stderr, "Error: worker already running: %d\n", pid)
+		os.Exit(ExitCodeError)
+	}
+	return true
 }
 
 func deletePidFile(f string) {
