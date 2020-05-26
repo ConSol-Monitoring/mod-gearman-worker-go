@@ -6,37 +6,34 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-MINGOVERSION:=00010009
-MINGOVERSIONSTR:=1.9
+MINGOVERSION:=00010014
+MINGOVERSIONSTR:=1.14
 
-EXTERNAL_DEPS = \
-	github.com/appscode/g2 \
-	github.com/appscode/g2/worker \
-	github.com/appscode/g2/client \
-	github.com/appscode/g2/pkg/runtime \
-	github.com/kdar/factorlog \
-	github.com/sevlyar/go-daemon \
-	github.com/prometheus/client_golang/prometheus \
-	github.com/prometheus/client_golang/prometheus/promhttp \
-	github.com/davecgh/go-spew/spew \
-	golang.org/x/tools/cmd/goimports \
-	github.com/jmhodges/copyfighter \
-	github.com/golangci/golangci-lint/cmd/golangci-lint \
+all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
-BINPATH = $(shell if test -d "$$GOPATH"; then echo "$$GOPATH/bin"; else echo "~/go/bin"; fi)
 
-all: deps fmt build
-
-deps: versioncheck dump
-	set -e; for DEP in $(EXTERNAL_DEPS); do \
+tools: versioncheck vendor dump
+	go mod download
+	set -e; for DEP in $(shell grep _ buildtools/tools.go | awk '{ print $$2 }'); do \
 		go get $$DEP; \
 	done
+	go mod vendor
+	go mod tidy
 
 updatedeps: versioncheck
-	set -e; for DEP in $(EXTERNAL_DEPS); do \
+	$(MAKE) clean
+	go list -u -m all
+	go mod download
+	set -e; for DEP in $(shell grep _ buildtools/tools.go | awk '{ print $$2 }'); do \
 		go get -u $$DEP; \
 	done
+	go mod tidy
+
+vendor:
+	go mod download
+	go mod vendor
+	go mod tidy
 
 dump:
 	if [ $(shell grep -rc Dump *.go ./cmd/*/*.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
@@ -46,22 +43,22 @@ dump:
 	fi
 	rm -f dump.go.bak
 
-build: dump
+build: vendor
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD; cd ../..; \
 	done
 
-build-linux-amd64: dump
+build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; cd ../..; \
 	done
 
-build-windows-i386:
+build-windows-i386: vendor
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
 	done
 
-build-windows-amd64:
+build-windows-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
 	done
@@ -72,25 +69,27 @@ send_gearman: *.go cmd/send_gearman/*.go
 send_gearman.exe: *.go cmd/send_gearman/*.go
 	cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../send_gearman.exe
 
-debugbuild: deps fmt
+debugbuild: fmt dump vendor
 	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
 	set -e; for CMD in $(CMDS); do \
 		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"; cd ../..; \
 	done
 
-test: fmt dump
+devbuild: debugbuild
+
+test: fmt dump vendor
 	go test -short -v -timeout=1m
 	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
 	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 
-longtest: fmt dump
+longtest: fmt dump vendor
 	go test -v -timeout=1m
 
-citest: deps
+citest: vendor
 	#
 	# Checking gofmt errors
 	#
-	if [ $$(gofmt -s -l . ./cmd/ | wc -l) -gt 0 ]; then \
+	if [ $$(gofmt -s -l *.go ./cmd/ | wc -l) -gt 0 ]; then \
 		echo "found format errors in these files:"; \
 		gofmt -s -l .; \
 		exit 1; \
@@ -134,6 +133,7 @@ citest: deps
 	#
 	# All CI tests successful
 	#
+	go mod tidy
 
 benchmark: fmt
 	go test -timeout=1m -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
@@ -161,9 +161,10 @@ clean:
 	rm -f coverage.html
 	rm -f coverage.txt
 	rm -f mod-gearman*.html
+	rm -rf vendor/
 
-fmt:
-	$(BINPATH)/goimports -w .
+fmt: tools
+	goimports -w .
 	go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
 	set -e; for CMD in $(CMDS); do \
 		go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
@@ -178,28 +179,24 @@ versioncheck:
 		exit 1; \
 	}
 
-copyfighter:
+copyfighter: tools
 	#
 	# Check if there are values better passed as pointer
 	# See https://github.com/jmhodges/copyfighter
 	#
 	mv mod_gearman_worker_windows.go mod_gearman_worker_windows.off; \
 	mv mod_gearman_worker_darwin.go mod_gearman_worker_darwin.off; \
-	$(BINPATH)/copyfighter .; rc=$$?; \
+	copyfighter .; rc=$$?; \
 	mv mod_gearman_worker_windows.off mod_gearman_worker_windows.go; \
 	mv mod_gearman_worker_darwin.off mod_gearman_worker_darwin.go; \
 	exit $$rc
 
-golangci:
+golangci: tools
 	#
 	# golangci combines a few static code analyzer
 	# See https://github.com/golangci/golangci-lint
 	#
-	@if [ $$( printf '%s\n' $(GOVERSION) 00010010 | sort -n | head -n 1 ) != 00010010 ]; then \
-		echo "golangci requires at least go 1.10"; \
-	else \
-		golangci-lint run ./...; \
-	fi
+	golangci-lint run ./...; \
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \

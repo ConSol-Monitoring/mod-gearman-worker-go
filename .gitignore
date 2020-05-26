@@ -4,3 +4,4 @@ send_gearman
 *.linux.amd64
 .vscode
 coverage.txt
+vendor/
