@@ -19,6 +19,7 @@ linters:
     - dupl
     - funlen
     - wsl
+    - gofumpt
   fast: false
 
 issues:
