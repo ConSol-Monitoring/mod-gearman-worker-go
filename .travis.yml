@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - "1.14"
   - "1.x"
+  - "1.14"
 
 addons:
   apt:
@@ -10,4 +10,12 @@ addons:
     - gearman-job-server
 
 script:
+  -  make clean
+  -  make
+  -  make clean
+  -  make build
+  -  make clean
+  -  make debugbuild
+  -  make clean
+  -  '[ $TRAVIS_EVENT_TYPE != "pull_request" ] && make updatedeps'
   -  make citest

@@ -8,6 +8,12 @@ GOVERSION:=$(shell \
 )
 MINGOVERSION:=00010014
 MINGOVERSIONSTR:=1.14
+BUILD:=$(shell git rev-parse --short HEAD)
+# see https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
+# and https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
+TOOLSFOLDER=$(shell pwd)/tools
+export GOBIN := $(TOOLSFOLDER)
+export PATH := $(GOBIN):$(PATH)
 
 all: build
 
@@ -15,25 +21,25 @@ CMDS = $(shell cd ./cmd && ls -1)
 
 tools: versioncheck vendor dump
 	go mod download
-	set -e; for DEP in $(shell grep _ buildtools/tools.go | awk '{ print $$2 }'); do \
-		go get $$DEP; \
+	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
+		go install $$DEP; \
 	done
-	go mod vendor
 	go mod tidy
+	go mod vendor
 
 updatedeps: versioncheck
 	$(MAKE) clean
 	go list -u -m all
 	go mod download
-	set -e; for DEP in $(shell grep _ buildtools/tools.go | awk '{ print $$2 }'); do \
-		go get -u $$DEP; \
+	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
+		go get $$DEP; \
 	done
 	go mod tidy
 
 vendor:
 	go mod download
-	go mod vendor
 	go mod tidy
+	go mod vendor
 
 dump:
 	if [ $(shell grep -rc Dump *.go ./cmd/*/*.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
@@ -45,34 +51,34 @@ dump:
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD; cd ../..; \
+		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD; cd ../..; \
 	done
 
 build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.linux.amd64; cd ../..; \
+		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.linux.amd64; cd ../..; \
 	done
 
 build-windows-i386: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
 	done
 
 build-windows-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
+		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
 	done
 
 send_gearman: *.go cmd/send_gearman/*.go
-	cd ./cmd/send_gearman && go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../send_gearman
+	cd ./cmd/send_gearman && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../send_gearman
 
 send_gearman.exe: *.go cmd/send_gearman/*.go
-	cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -o ../../send_gearman.exe
+	cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../send_gearman.exe
 
 debugbuild: fmt dump vendor
-	go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"
+	go build -race -ldflags "-X main.Build=$(BUILD)"
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(shell git rev-parse --short HEAD)"; cd ../..; \
+		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(BUILD)"; cd ../..; \
 	done
 
 devbuild: debugbuild
@@ -136,7 +142,7 @@ citest: vendor
 	go mod tidy
 
 benchmark: fmt
-	go test -timeout=1m -ldflags "-s -w -X main.Build=$(shell git rev-parse --short HEAD)" -v -bench=B\* -run=^$$ . -benchmem
+	go test -timeout=1m -ldflags "-s -w -X main.Build=$(BUILD)" -v -bench=B\* -run=^$$ . -benchmem
 
 racetest: fmt
 	go test -race -v -timeout=3m -coverprofile=coverage.txt -covermode=atomic
@@ -162,6 +168,7 @@ clean:
 	rm -f coverage.txt
 	rm -f mod-gearman*.html
 	rm -rf vendor/
+	rm -rf $(TOOLSFOLDER)
 
 fmt: tools
 	goimports -w .

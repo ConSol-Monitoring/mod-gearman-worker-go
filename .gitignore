@@ -5,3 +5,4 @@ send_gearman
 .vscode
 coverage.txt
 vendor/
+tools/
