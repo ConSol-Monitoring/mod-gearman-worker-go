@@ -36,9 +36,6 @@ const (
 	// Reload flag if used after a sighup
 	Reload MainStateType = iota
 
-	// Restart is used when all worker should be recreated
-	Restart
-
 	// Shutdown is used when sigint received
 	Shutdown
 
