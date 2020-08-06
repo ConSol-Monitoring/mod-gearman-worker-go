@@ -20,6 +20,7 @@ linters:
     - funlen
     - wsl
     - gofumpt
+    - nlreturn
   fast: false
 
 issues:
