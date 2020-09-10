@@ -8,7 +8,7 @@ import (
 func TestReadSettingsFile(t *testing.T) {
 	var testConfig configurationStruct
 
-	//set default values so we can check if they get overwritten
+	// set default values so we can check if they get overwritten
 	setDefaultValues(&testConfig)
 
 	f, err := os.Create("testConfigFile")
@@ -60,7 +60,7 @@ server=hostname2
 func TestGetFloat(t *testing.T) {
 	disableLogging()
 
-	//int value, float value, string value
+	// int value, float value, string value
 	value := getFloat("1")
 	if value != 1 {
 		t.Errorf("wrong value expected 1 got %f", value)
@@ -83,7 +83,7 @@ func TestGetFloat(t *testing.T) {
 func TestGetInt(t *testing.T) {
 	disableLogging()
 
-	//int value, float value, string value
+	// int value, float value, string value
 	value := getInt("1")
 	if value != 1 {
 		t.Errorf("wrong value expected 1 got %d", value)

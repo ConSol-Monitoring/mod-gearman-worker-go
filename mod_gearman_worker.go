@@ -20,7 +20,7 @@ const (
 	// VERSION contains the actual lmd version
 	VERSION = "1.1.3"
 
-	// ExitCodeError is used for erronous exits
+	// ExitCodeError is used for erroneous exits
 	ExitCodeError = 2
 
 	// ExitCodeUnknown is used for unknown exits
@@ -56,7 +56,7 @@ var pidFile string
 func Worker(build string) {
 	defer logPanicExit()
 
-	//reads the args, check if they are params, if so sends them to the configuration reader
+	// reads the args, check if they are params, if so sends them to the configuration reader
 	config, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
@@ -64,8 +64,8 @@ func Worker(build string) {
 	}
 
 	if config.daemon {
-		cntxt := &daemon.Context{}
-		d, err := cntxt.Reborn()
+		ctx := &daemon.Context{}
+		d, err := ctx.Reborn()
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: unable to start daemon mode")
@@ -73,10 +73,9 @@ func Worker(build string) {
 		if d != nil {
 			return
 		}
-		defer cntxt.Release()
+		defer ctx.Release()
 	}
 
-	//create the PidFile
 	createPidFile(config.pidfile)
 	defer deletePidFile(pidFile)
 
@@ -125,10 +124,10 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	signal.Notify(osSignalChannel, os.Interrupt)
 	signal.Notify(osSignalChannel, syscall.SIGINT)
 
-	//create the logger, everything logged until here gets printed to stdOut
+	// create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
 
-	//create the cipher
+	// create the cipher
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
@@ -199,7 +198,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	config := &configurationStruct{name: name, build: build}
 	setDefaultValues(config)
 	for i := 1; i < len(os.Args); i++ {
-		//is it a param?
+		// is it a param?
 		if !strings.HasPrefix(os.Args[i], "--") && !strings.HasPrefix(os.Args[i], "-") {
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])
 			continue
@@ -233,7 +232,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			if len(sa) == 1 {
 				sa = append(sa, "yes")
 			}
-			//give the param and the value to readSetting
+			// give the param and the value to readSetting
 			readSetting(sa, config)
 		}
 	}
@@ -261,7 +260,7 @@ func checkForReasonableConfig(config *configurationStruct) error {
 }
 
 func createPidFile(path string) {
-	//write the pid id if file path is defined
+	// write the pid id if file path is defined
 	if path == "" || path == "%PIDFILE%" {
 		return
 	}

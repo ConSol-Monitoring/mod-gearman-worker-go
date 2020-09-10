@@ -205,8 +205,8 @@ func readSetting(values []string, result *configurationStruct) {
 	}
 }
 
-//opens the config file and reads all key value pairs, separated through = and commented out with #
-//also reads the config files specified in the config= value
+// opens the config file and reads all key value pairs, separated through = and commented out with #
+// also reads the config files specified in the config= value
 func readSettingsFile(path string, result *configurationStruct) {
 	file, err := os.Open(path)
 
@@ -218,12 +218,12 @@ func readSettingsFile(path string, result *configurationStruct) {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		//get line and remove whitespaces
+		// get line and remove whitespaces
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		//check if not commented out
+		// check if not commented out
 		if len(line) > 0 && line[0] != '#' {
-			//get both values
+			// get both values
 			values := strings.SplitN(line, "=", 2)
 			readSetting(values, result)
 		}
@@ -236,7 +236,7 @@ func getInt(input string) int {
 	}
 	result, err := strconv.Atoi(input)
 	if err != nil {
-		//check if it is an float value
+		// check if it is an float value
 		logger.Debugf("Error converting %s to int, try with float", input)
 		result = int(getFloat(input))
 	}

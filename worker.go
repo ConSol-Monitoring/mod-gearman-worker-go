@@ -20,7 +20,7 @@ type worker struct {
 	dupclient  *client.Client
 }
 
-//creates a new worker and returns a pointer to it
+// creates a new worker and returns a pointer to it
 func newWorker(what string, configuration *configurationStruct, mainWorker *mainWorker) *worker {
 	logger.Tracef("starting new %sworker", what)
 	worker := &worker{
@@ -42,7 +42,7 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 
 	worker.registerFunctions(configuration)
 
-	//listen to this servers
+	// listen to this servers
 	servers := mainWorker.ActiveServerList()
 	if len(servers) == 0 {
 		return nil
@@ -59,14 +59,14 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 		}
 	}
 
-	//check if worker is ready
+	// check if worker is ready
 	if err := w.Ready(); err != nil {
 		logger.Debugf("worker not ready closing again: %s", err.Error())
 		worker.Shutdown()
 		return nil
 	}
 
-	//start the worker
+	// start the worker
 	go func() {
 		defer logPanicExit()
 		w.Work()
@@ -93,14 +93,14 @@ func (worker *worker) registerFunctions(configuration *configurationStruct) {
 			w.AddFunc("notification", worker.doWork, libworker.Unlimited)
 		}
 
-		//register for the hostgroups
+		// register for the hostgroups
 		if len(worker.config.hostgroups) > 0 {
 			for _, element := range worker.config.hostgroups {
 				w.AddFunc("hostgroup_"+element, worker.doWork, libworker.Unlimited)
 			}
 		}
 
-		//register for servicegroups
+		// register for servicegroups
 		if len(worker.config.servicegroups) > 0 {
 			for _, element := range worker.config.servicegroups {
 				w.AddFunc("servicegroup_"+element, worker.doWork, libworker.Unlimited)
@@ -118,7 +118,6 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	res = []byte("")
 	logger.Tracef("worker got a job: %s", job.Handle())
 
-	//set worker to idle
 	worker.idle = false
 
 	defer func() {
@@ -150,7 +149,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	return
 }
 
-//errorHandler gets called if the libworker worker throws an errror
+// errorHandler gets called if the libworker worker throws an error
 func (worker *worker) errorHandler(e error) {
 	switch err := e.(type) {
 	case *libworker.WorkerDisconnectError:
@@ -164,7 +163,7 @@ func (worker *worker) errorHandler(e error) {
 	worker.Shutdown()
 }
 
-//SendResult sends the result back to the result queue
+// SendResult sends the result back to the result queue
 func (worker *worker) SendResult(result *answer) {
 	// send result back to any server
 	sendSuccess := false
@@ -230,7 +229,7 @@ func (worker *worker) SendResultDup(result *answer) {
 	}
 }
 
-//Shutdown and unregister this worker
+// Shutdown and deregister this worker
 func (worker *worker) Shutdown() {
 	logger.Debugf("worker shutting down")
 	defer func() {

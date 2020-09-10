@@ -88,7 +88,7 @@ func decrypt(data []byte, encryption bool) (*receivedStruct, error) {
 
 /*
 *@input: the bytes received from the gearman
-*@return: a received struct conating the values received
+*@return: a received struct containing the values received
  */
 func createReceived(input []byte) (*receivedStruct, error) {
 	var result receivedStruct
@@ -97,10 +97,10 @@ func createReceived(input []byte) (*receivedStruct, error) {
 		return nil, fmt.Errorf("decrypt error, invalid data package received, check encryption key")
 	}
 
-	//create a map with the values
+	// create a map with the values
 	stringMap := createMap(input)
 
-	//then extract them and store them
+	// then extract them and store them
 	result.typ = stringMap["type"]
 	result.resultQueue = stringMap["result_queue"]
 	result.hostName = stringMap["host_name"]
@@ -122,18 +122,18 @@ func parseTimeStringToFloat64(input string) float64 {
 	return floatValue
 }
 
-//takes a byte input, splits it first at every new line
-//then stores every line splitted by an = in a map
-//returns map[(value before = )] = (value after =)
+// takes a byte input, splits it first at every new line
+// then stores every line splitted by an = in a map
+// returns map[(value before = )] = (value after =)
 func createMap(input []byte) map[string]string {
 	stringValue := string(input)
 	splitted := strings.Split(stringValue, "\n")
-	//every command is now in one array field
+	// every command is now in one array field
 
 	resultMap := make(map[string]string)
 
 	for i := 0; i < len(splitted); i++ {
-		//split at = and store in map
+		// split at = and store in map
 		access := strings.SplitN(splitted[i], "=", 2)
 
 		if len(access) > 1 {

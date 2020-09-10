@@ -6,7 +6,7 @@ import (
 	libworker "github.com/appscode/g2/worker"
 )
 
-//creates a new status worker and returns a pointer to it
+// creates a new status worker and returns a pointer to it
 func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker) *worker {
 	return newWorker("status", configuration, mainWorker)
 }

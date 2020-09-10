@@ -17,7 +17,7 @@ func TestEncrypt(t *testing.T) {
 	myCipher = createCipher(getKey(&config), config.encryption)
 	input := "encrypt me please"
 	result := encrypt([]byte(input), true)
-	//base64 encoded so the error message gets readable
+	// base64 encoded so the error message gets readable
 	expectedResult := "xzJEkKA+e/nBusozXOuPBz9hzIgUsEpHrZT0yo+HaPw="
 
 	if string(encodeBase64(result)) != expectedResult {

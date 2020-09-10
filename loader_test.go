@@ -6,10 +6,10 @@ import (
 )
 
 func TestGetKey(t *testing.T) {
-	//set the key in the config struct
+	// set the key in the config struct
 	config := configurationStruct{key: "MeinTestKey", encryption: true}
-	//config.key = "MeinTestKey"
-	//get the key from the method
+
+	// get the key from the method
 	result := getKey(&config)
 
 	if string(result[0:11]) != "MeinTestKey" {
@@ -26,7 +26,7 @@ func TestGetKey(t *testing.T) {
 
 	config.key = ""
 	config.keyfile = "testfile.key"
-	//create the testfile
+	// create the testfile
 	f, err := os.Create(config.keyfile)
 	if err != nil {
 		t.Errorf("could not create testKeyFile %s", err.Error())
@@ -42,7 +42,7 @@ func TestGetKey(t *testing.T) {
 		t.Errorf("getkey from file expected: %s, got:%s", "MeinTestKey", result)
 	}
 
-	//remove the testfile
+	// remove the testfile
 	err = os.Remove(config.keyfile)
 	if err != nil {
 		t.Errorf("could not delete testKeyfile %s", err)

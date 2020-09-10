@@ -15,10 +15,10 @@ const (
 )
 
 func createLogger(config *configurationStruct) {
-	//logging format
+	// logging format
 	frmt := `%{Color \"yellow\" \"WARN\"}%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}[%{Date} %{Time "15:04:05.000"}][%{Severity}][%{File}:%{Line}] %{Message}`
 
-	//check in config file if file is specified
+	// check in config file if file is specified
 	verbosity := getSeverity(config.debug)
 
 	switch {

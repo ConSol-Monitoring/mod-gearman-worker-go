@@ -20,7 +20,7 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 
 	byteAnswer := createAnswer(answer, encrypted)
 
-	//send the data in the background to the right queue
+	// send the data in the background to the right queue
 	_, err := c.DoBg(answer.resultQueue, byteAnswer, runtime.JobNormal)
 
 	return c, err

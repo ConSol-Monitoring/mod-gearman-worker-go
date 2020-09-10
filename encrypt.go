@@ -19,7 +19,7 @@ func encrypt(data []byte, encrypt bool) []byte {
 	if !encrypt {
 		return data
 	}
-	//len(data) needs to be multiple of 16 (EncryptionBlockSize)
+	// len(data) needs to be multiple of 16 (EncryptionBlockSize)
 	if (len(data) % EncryptionBlockSize) != 0 {
 		times := (EncryptionBlockSize - 1) - (len(data) % EncryptionBlockSize)
 

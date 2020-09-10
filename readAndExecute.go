@@ -67,17 +67,17 @@ output=%s
  */
 func readAndExecute(received *receivedStruct, config *configurationStruct) *answer {
 	var result answer
-	//first set the start time
+	// first set the start time
 	result.startTime = float64(time.Now().UnixNano()) / 1e9
 	result.source = "Mod-Gearman Worker @ " + config.identifier
 	result.active = "active"
 
-	//hostname and core start time are the same in the result as in receive
+	// hostname and core start time are the same in the result as in receive
 	result.hostName = received.hostName
 	result.coreStartTime = received.coreTime
 
 	// check if the received assignment is too old
-	//if maxAge set to 0 it does not get checked
+	// if maxAge set to 0 it does not get checked
 	if config.maxAge > 0 {
 		if result.startTime-result.coreStartTime > float64(config.maxAge) {
 			logger.Debug("worker: readAndExecute: maxAge: job too old")
@@ -93,7 +93,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 		received.timeout = 60
 	}
 
-	//run the command
+	// run the command
 	executeCommand(&result, received, config)
 
 	// if this is a host call, no service_description is needed, else set the description
@@ -102,7 +102,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 		result.serviceDescription = received.serviceDescription
 	}
 
-	//last set the finish time
+	// last set the finish time
 	result.finishTime = float64(time.Now().UnixNano()) / 1e9
 	result.resultQueue = received.resultQueue
 
@@ -114,7 +114,7 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 		return true
 	}
 
-	//check for restricted path
+	// check for restricted path
 	splittedString := strings.Fields(cmdString)
 	for _, v := range restrictPath {
 		if strings.HasPrefix(splittedString[0], v) {
@@ -126,7 +126,7 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 }
 
 func executeInShell(cmdString string) bool {
-	//if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
+	// if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
 	if !strings.HasPrefix(cmdString, "/") && !strings.HasPrefix(cmdString, "./") {
 		return true
 	}
@@ -136,8 +136,8 @@ func executeInShell(cmdString string) bool {
 	return false
 }
 
-//executes a command in the bash, returns whatever gets printed on the bash
-//and as second value a status Code between 0 and 3
+// executes a command in the bash, returns whatever gets printed on the bash
+// and as second value a status Code between 0 and 3
 func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
 	result.returnCode = 3
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
@@ -156,7 +156,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
 	}
 
-	//byte buffer for output
+	// byte buffer for output
 	var errbuf bytes.Buffer
 	var outbuf bytes.Buffer
 	cmd.Stdout = &outbuf
@@ -256,7 +256,6 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 }
 
 func setProcessErrorResult(result *answer, config *configurationStruct, err error) {
-	//if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOENT {
 	if os.IsNotExist(err) {
 		result.output = fmt.Sprintf("UNKNOWN: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
 		result.returnCode = 3

@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	// EncryptionKeySize defines the exact size of the excryption key
+	// EncryptionKeySize defines the exact size of the encryption key
 	EncryptionKeySize = 32
 )
 
-//returns the secret_key as byte array from the location in the worker.cfg
+// returns the secret_key as byte array from the location in the worker.cfg
 func getKey(config *configurationStruct) []byte {
 	if config.encryption {
 		if config.key != "" {
@@ -27,7 +27,7 @@ func getKey(config *configurationStruct) []byte {
 	return nil
 }
 
-//loads the keyfile and extracts the key, if a newline is at the end it gets cut off
+// loads the keyfile and extracts the key, if a newline is at the end it gets cut off
 func readKeyFile(path string) []byte {
 	dat, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -55,7 +55,6 @@ func fixKeySize(key []byte) []byte {
 func openFileOrCreate(path string) (os.File, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		createDirectoryAndFile(path)
-		//open the file
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Errorf("could not open file %s: %s", path, err.Error())
@@ -63,7 +62,6 @@ func openFileOrCreate(path string) (os.File, error) {
 		}
 		return *file, nil
 	}
-	//open the file
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Errorf("could not open file %s: %s", path, err.Error())

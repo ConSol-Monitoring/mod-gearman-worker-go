@@ -20,9 +20,9 @@ func TestReadAndExecute(t *testing.T) {
 	if error != nil {
 		thisHostname = "unknown"
 	}
-	//create the test received only with needed values
+	// create the test received only with needed values
 	var testReceive receivedStruct
-	//result_queue, core_start_time, hostname should always stay the same
+	// result_queue, core_start_time, hostname should always stay the same
 	testReceive.resultQueue = "TestQueue"
 	testReceive.coreTime = 123
 	testReceive.hostName = "TestHost"
@@ -36,14 +36,14 @@ func TestReadAndExecute(t *testing.T) {
 		t.Errorf("got %s but expected: %s", resultValue, "Mod-Gearman Worker @ "+thisHostname+"result_queue = TestQueue, core_start_time = 123, service_description = TestDescription")
 	}
 
-	//same but with identifier in config file
+	// same but with identifier in config file
 	config.identifier = "TestIdentifier"
 	resultValue = readAndExecute(&testReceive, &config)
 	if resultValue.source != "Mod-Gearman Worker @ TestIdentifier" {
 		t.Errorf("got %s but expected: %s", resultValue.source, "Mod-Gearman Worker @ TestIdentifier")
 	}
 
-	//check for max age
+	// check for max age
 	config.maxAge = 1
 	testReceive.coreTime = float64(time.Now().UnixNano())/1e9 - 2
 	resultValue = readAndExecute(&testReceive, &config)
@@ -63,7 +63,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "readAndExecute_test.go", 0)
 	}
 
-	//check for timeout:
+	// check for timeout:
 	t1 := time.Now()
 	config.timeoutReturn = 3
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sleep 2", timeout: 1}, &config)
@@ -97,49 +97,49 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 		t.Errorf("command took %s, which is beyond the expected timeout", duration)
 	}
 
-	//exit(3) fuer exit codes
+	// exit(3) fuer exit codes
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 2'; exit 2\"", timeout: 10}, &config)
 	if result.output != "exit status 2" || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "exit status 2", 2)
 	}
 
-	//stdout & stderr output
+	// stdout & stderr output
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr\nstderr' >&2; echo 'stdout\nstdout'; exit 2\"", timeout: 10}, &config)
 	if result.output != `stdout\nstdout\n[stderr\nstderr]` || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `stdout\nstdout\n[stderr\nstderr]`, 2)
 	}
 
-	//stderr output only
+	// stderr output only
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr' >&2; exit 2\"", timeout: 10}, &config)
 	if result.output != "[stderr]" || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "[stderr]", 2)
 	}
 
-	//quotes in output
+	// quotes in output
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo '\\\"'\"", timeout: 10}, &config)
 	if result.output != "\"" || result.returnCode != 0 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "\"", 0)
 	}
 
-	//none-existing command
+	// none-existing command
 	executeCommand(result, &receivedStruct{commandLine: "/not-there", timeout: 3}, &config)
 	if !strings.HasPrefix(result.output, "UNKNOWN: Return code of 127 is out of bounds.") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "UNKNOWN: Return code of 127 is out of bounds.", 3)
 	}
 
-	//none-existing command II
+	// none-existing command II
 	executeCommand(result, &receivedStruct{commandLine: "/not-there \"\"", timeout: 3}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 127 is out of bounds.") || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 127 is out of bounds.", 2)
 	}
 
-	//other exit codes
+	// other exit codes
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 42'; exit 42\"", timeout: 10}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 42 is out of bounds.") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 42 is out of bounds.", 3)
 	}
 
-	//signals
+	// signals
 	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'killing\nme...'; echo 'stderr\nstderr' >&2; kill $$\"", timeout: 10}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 15 is out of bounds.") || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 15 is out of bounds.", 2)
@@ -228,10 +228,8 @@ func TestGetCommandBasename(t *testing.T) {
 	}
 }
 
-//Benchmark
 func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 	config := configurationStruct{}
-	//set the default timeout time
 	config.debug = 0
 	createLogger(&config)
 	for n := 0; n < b.N; n++ {
@@ -241,7 +239,6 @@ func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 
 func BenchmarkReadAndExecuteShell(b *testing.B) {
 	config := configurationStruct{}
-	//set the default timeout time
 	config.debug = 0
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd \"\"", timeout: 10}
@@ -252,7 +249,6 @@ func BenchmarkReadAndExecuteShell(b *testing.B) {
 
 func BenchmarkReadAndExecuteExec(b *testing.B) {
 	config := configurationStruct{}
-	//set the default timeout time
 	config.debug = 0
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd", timeout: 10}

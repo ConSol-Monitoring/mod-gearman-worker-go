@@ -39,17 +39,17 @@ func TestCreateLogger(t *testing.T) {
 		t.Errorf("could not remove loggertest")
 	}
 
-	//test with file that does not exist
+	// test with file that does not exist
 	logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 	createLogger(&config)
-	//remove the file again
+	// remove the file again
 	err = os.Remove("loggertest")
 	if err != nil {
 		t.Errorf("could not remove loggertest")
 	}
 
-	//test logmode
-	config.debug = 0 //only errors
+	// test logmode
+	config.debug = 0 // only errors
 	createLogger(&config)
 
 	logger.Error("TestError")

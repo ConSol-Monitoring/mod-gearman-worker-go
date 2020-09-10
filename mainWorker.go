@@ -77,7 +77,7 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 	workingWorkerCount.Set(float64(activeWorkers))
 	idleWorkerCount.Set(float64(totalWorker - activeWorkers))
 
-	//as long as there are to few workers start them without a limit
+	// as long as there are to few workers start them without a limit
 	minWorker := w.config.minWorker
 	if initialStart > 0 {
 		minWorker = initialStart
@@ -90,14 +90,14 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 		w.idleSince = time.Now()
 	}
 
-	//check if we have too many workers
+	// check if we have too many workers
 	w.adjustWorkerBottomLevel()
 
-	//check if we need more workers
+	// check if we need more workers
 	w.adjustWorkerTopLevel()
 }
 
-//check if we need more workers and start new ones
+// check if we need more workers and start new ones
 func (w *mainWorker) adjustWorkerTopLevel() {
 	// only if all are busy
 	if w.activeWorkers < len(w.workerMap) {
@@ -112,7 +112,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 		return
 	}
 
-	//start new workers at spawn speed
+	// start new workers at spawn speed
 	for i := 0; i < w.config.spawnRate; i++ {
 		if len(w.workerMap) >= w.config.maxWorker {
 			break
@@ -124,7 +124,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 	}
 }
 
-//check if we have too many workers (less than 90% UtilizationWatermakeLow) active and above minWorker)
+// check if we have too many workers (less than 90% UtilizationWatermakeLow) active and above minWorker)
 func (w *mainWorker) adjustWorkerBottomLevel() {
 	if len(w.workerMap) == 0 {
 		return
@@ -142,7 +142,7 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		return
 	}
 
-	//reduce workers at spawnrate
+	// reduce workers at spawnrate
 	for i := 0; i < w.config.spawnRate; i++ {
 		if len(w.workerMap) <= w.config.minWorker {
 			break
@@ -217,7 +217,7 @@ func (w *mainWorker) getLoadAvg() {
 		return
 	}
 	scanner := bufio.NewScanner(file)
-	//read first line:
+	// read first line:
 	scanner.Scan()
 	firstline := scanner.Text()
 	values := strings.Fields(firstline)
@@ -227,7 +227,7 @@ func (w *mainWorker) getLoadAvg() {
 	w.min15 = getFloat(values[2])
 }
 
-//checks if all the loadlimits get checked, when values are set
+// checks if all the loadlimits get checked, when values are set
 func (w *mainWorker) checkLoads() bool {
 	if w.config.loadLimit1 <= 0 && w.config.loadLimit5 <= 0 && w.config.loadLimit15 <= 0 {
 		return true

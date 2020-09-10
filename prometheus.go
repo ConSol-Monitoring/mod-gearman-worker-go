@@ -97,7 +97,7 @@ func registerMetrics() {
 	}
 	prometheusRegistered = true
 
-	//register the metrics
+	// register the metrics
 	if err := prometheus.Register(infoCount); err != nil {
 		fmt.Println(err)
 	}

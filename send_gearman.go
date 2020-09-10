@@ -35,20 +35,19 @@ func Sendgearman(build string) {
 }
 
 func sendgearmanInit(build string) *configurationStruct {
-	//reads the args, check if they are params, if so sends them to the configuration reader
+	// reads the args, check if they are params, if so sends them to the configuration reader
 	config, err := initConfiguration("mod_gearman_worker", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 		os.Exit(ExitCodeUnknown)
 	}
 
-	//create the logger, everything logged until here gets printed to stdOut
+	// create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
 	logger.SetOutput(os.Stderr)
-	frmt := `[%{Severity}] %{Message}`
-	logger.SetFormatter(factorlog.NewStdFormatter(frmt))
+	logger.SetFormatter(factorlog.NewStdFormatter(`[%{Severity}] %{Message}`))
 
-	//create the cipher
+	// create the cipher
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
