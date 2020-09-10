@@ -54,8 +54,6 @@ var pidFile string
 
 // Worker starts the mod_gearman_worker program
 func Worker(build string) {
-	defer logPanicExit()
-
 	// reads the args, check if they are params, if so sends them to the configuration reader
 	config, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
 	if err != nil {
@@ -63,6 +61,7 @@ func Worker(build string) {
 		os.Exit(ExitCodeError)
 	}
 
+	defer logPanicExit()
 	if config.daemon {
 		ctx := &daemon.Context{}
 		d, err := ctx.Reborn()

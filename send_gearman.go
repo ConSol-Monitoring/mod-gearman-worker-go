@@ -15,8 +15,6 @@ const ServiceAnswerSize = 4
 
 // Sendgearman starts the mod_gearman_worker program
 func Sendgearman(build string) {
-	defer logPanicExit()
-
 	config := sendgearmanInit(build)
 
 	result := createResultFromArgs(config)
