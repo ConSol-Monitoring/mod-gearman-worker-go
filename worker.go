@@ -149,7 +149,6 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		} else {
 			worker.SendResultDup(result)
 		}
-
 	}
 	return
 }
