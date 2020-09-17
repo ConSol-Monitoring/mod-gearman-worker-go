@@ -37,6 +37,7 @@ type configurationStruct struct {
 	loadLimit15              float64
 	showErrorOutput          bool
 	dupResultsArePassive     bool
+	sendDupResultsAsync      bool
 	gearmanConnectionTimeout int
 	restrictPath             []string
 	server                   []string
@@ -64,6 +65,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.debug = 0
 	result.logmode = "automatic"
 	result.dupResultsArePassive = true
+	result.sendDupResultsAsync = false
 	result.gearmanConnectionTimeout = -1
 	result.timeoutReturn = 2
 	result.jobTimeout = 60
@@ -176,6 +178,8 @@ func readSetting(values []string, result *configurationStruct) {
 		result.showErrorOutput = getBool(value)
 	case "dup_results_are_passive":
 		result.dupResultsArePassive = getBool(value)
+	case "send_dup_results_async":
+		result.sendDupResultsAsync = getBool(value)
 	case "gearman_connection_timeout":
 		result.gearmanConnectionTimeout = getInt(value)
 	case "restrict_path":

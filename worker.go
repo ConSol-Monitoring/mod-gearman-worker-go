@@ -144,7 +144,12 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
-		go worker.SendResultDup(result)
+		if worker.config.sendDupResultsAsync {
+			go worker.SendResultDup(result)
+		} else {
+			worker.SendResultDup(result)
+		}
+
 	}
 	return
 }
