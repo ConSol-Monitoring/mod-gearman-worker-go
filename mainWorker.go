@@ -75,7 +75,7 @@ func runDupServerConsumer(dupserver []string, config *configurationStruct) {
 			dupserverlist.mutex.Unlock()
 		} else {
 			logger.Debugf("Not sending anything")
-			time.Sleep(1)
+			time.Sleep(1000)
 		}
 	}
 }
