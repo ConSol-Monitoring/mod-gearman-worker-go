@@ -16,7 +16,7 @@ type safelist struct {
 	mutex sync.Mutex
 }
 
-var dupserverlist = safelist{list: list.New()}
+var dupjobsToSendPerServer = map[string]safelist{}
 
 type worker struct {
 	id         string
@@ -155,9 +155,13 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
 
-		dupserverlist.mutex.Lock()
-		dupserverlist.list.PushBack(result)
-		dupserverlist.mutex.Unlock()
+		for _, dupAddress := range worker.config.dupserver {
+			var safeList = dupjobsToSendPerServer[dupAddress]
+			safeList.mutex.Lock()
+			safeList.list.PushBack(result)
+			safeList.mutex.Unlock()
+		}
+
 	}
 	return
 }

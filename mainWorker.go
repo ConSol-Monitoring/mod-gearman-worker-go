@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bufio"
+	"container/list"
 	"net"
 	"os"
 	"strings"
@@ -53,32 +54,34 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	w.RetryFailedConnections()
 
 	if len(w.config.dupserver) > 0 {
-		logger.Debugf("running dupserverConsumer")
-		go runDupServerConsumer(w.config.dupserver, w.config)
+		for _, dupAddress := range w.config.dupserver {
+			dupjobsToSendPerServer[dupAddress] = safelist{list: list.New()}
+			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], w.config)
+		}
 	}
 	return w
 }
 
-func runDupServerConsumer(dupserver []string, config *configurationStruct) {
+func runDupServerConsumer(dupAddress string, list safelist, config *configurationStruct) {
 	for {
-		dupserverlist.mutex.Lock()
-		item := dupserverlist.list.Front()
-		dupserverlist.mutex.Unlock()
+		list.mutex.Lock()
+		item := list.list.Front()
+		list.mutex.Unlock()
 
 		if item != nil {
-			for _, dupAddress := range dupserver {
-				sendResultDup(item.Value.(*answer), dupAddress, config)
+			var error = sendResultDup(item.Value.(*answer), dupAddress, config)
+			if error != nil {
+				list.mutex.Lock()
+				list.list.Remove(item)
+				list.mutex.Unlock()
 			}
-			dupserverlist.mutex.Lock()
-			dupserverlist.list.Remove(item)
-			dupserverlist.mutex.Unlock()
 		} else {
 			time.Sleep(1 * time.Second)
 		}
 	}
 }
 
-func sendResultDup(item *answer, dupAddress string, config *configurationStruct) {
+func sendResultDup(item *answer, dupAddress string, config *configurationStruct) error {
 
 	var err error
 	var client *client.Client
@@ -96,6 +99,7 @@ func sendResultDup(item *answer, dupAddress string, config *configurationStruct)
 	if err != nil {
 		logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
 	}
+	return err
 }
 
 func (w *mainWorker) manageWorkers(initialStart int) {
