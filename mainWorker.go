@@ -53,6 +53,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	w.RetryFailedConnections()
 
 	if len(w.config.dupserver) > 0 {
+		logger.Debugf("running dupserverConsumer")
 		go runDupServerConsumer(w.config.dupserver, w.config)
 	}
 	return w
@@ -71,6 +72,9 @@ func runDupServerConsumer(dupserver []string, config *configurationStruct) {
 		} else {
 			time.Sleep(1)
 		}
+		dupserverlist.mutex.Lock()
+		dupserverlist.list.Remove(item)
+		dupserverlist.mutex.Unlock()
 	}
 }
 
