@@ -3,20 +3,22 @@ package modgearman
 import (
 	"fmt"
 	"runtime/debug"
-	"sync"
 	"time"
+
+	"container/list"
 
 	"github.com/appscode/g2/client"
 	libworker "github.com/appscode/g2/worker"
 )
 
-type safecounter struct {
-	value int
+var dupServerList = list.New()
+
+/*
+type safelist struct {
+	value list
 	mutex sync.Mutex
 }
-
-var currentNumberOfInFlightAsyncRequests = safecounter{value: 0}
-
+*/
 type worker struct {
 	id         string
 	what       string
@@ -154,15 +156,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
 
-		if worker.config.sendDupResultsAsync {
-			if currentNumberOfInFlightAsyncRequests.value < worker.config.maxNumberOfAsyncRequests {
-				go worker.SendResultDup(result)
-			} else {
-				logger.Debugf("Not attempting SendResultDup because there are %i requests in flight vs maxNumberOfAsyncRequests: %i", currentNumberOfInFlightAsyncRequests.value, worker.config.maxNumberOfAsyncRequests)
-			}
-		} else {
-			worker.SendResultDup(result)
-		}
+		dupServerList.PushBack(result)
 	}
 	return
 }
@@ -225,9 +219,7 @@ func (worker *worker) SendResultDup(result *answer) {
 	if len(worker.config.dupserver) == 0 {
 		return
 	}
-	currentNumberOfInFlightAsyncRequests.mutex.Lock()
-	currentNumberOfInFlightAsyncRequests.value++
-	currentNumberOfInFlightAsyncRequests.mutex.Unlock()
+
 	var err error
 	var c *client.Client
 	for _, dupAddress := range worker.config.dupserver {
@@ -247,9 +239,6 @@ func (worker *worker) SendResultDup(result *answer) {
 	if err != nil {
 		logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
 	}
-	currentNumberOfInFlightAsyncRequests.mutex.Lock()
-	currentNumberOfInFlightAsyncRequests.value--
-	currentNumberOfInFlightAsyncRequests.mutex.Unlock()
 }
 
 // Shutdown and deregister this worker
