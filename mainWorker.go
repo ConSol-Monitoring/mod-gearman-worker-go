@@ -67,14 +67,12 @@ func runDupServerConsumer(dupserver []string, config *configurationStruct) {
 
 		if item != nil {
 			for _, dupAddress := range dupserver {
-				logger.Debugf("Sending item")
 				sendResultDup(item.Value.(*answer), dupAddress, config)
 			}
 			dupserverlist.mutex.Lock()
 			dupserverlist.list.Remove(item)
 			dupserverlist.mutex.Unlock()
 		} else {
-			logger.Debugf("Not sending anything")
 			time.Sleep(1 * time.Second)
 		}
 	}
