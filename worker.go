@@ -16,7 +16,7 @@ type safelist struct {
 	mutex sync.Mutex
 }
 
-var dupjobsToSendPerServer = map[string]safelist{}
+var dupjobsToSendPerServer = map[string]*safelist{}
 
 type worker struct {
 	id         string

@@ -56,14 +56,14 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	if len(w.config.dupserver) > 0 {
 		for _, dupAddress := range w.config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
-			dupjobsToSendPerServer[dupAddress] = safelist{list: list.New()}
+			dupjobsToSendPerServer[dupAddress] = &safelist{list: list.New()}
 			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], w.config)
 		}
 	}
 	return w
 }
 
-func runDupServerConsumer(dupAddress string, list safelist, config *configurationStruct) {
+func runDupServerConsumer(dupAddress string, list *safelist, config *configurationStruct) {
 	for {
 		list.mutex.Lock()
 		item := list.list.Front()
