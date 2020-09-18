@@ -155,8 +155,10 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		worker.SendResult(result)
 
 		if worker.config.sendDupResultsAsync {
-			if currentNumberOfInFlightAsyncRequests.value < 1000 {
+			if currentNumberOfInFlightAsyncRequests.value < worker.config.maxNumberOfAsyncRequests {
 				go worker.SendResultDup(result)
+			} else {
+				logger.Debugf("Not attempting SendResultDup because there are %i requests in flight vs maxNumberOfAsyncRequests: %i", currentNumberOfInFlightAsyncRequests.value, worker.config.maxNumberOfAsyncRequests)
 			}
 		} else {
 			worker.SendResultDup(result)
