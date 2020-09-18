@@ -54,7 +54,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 
 	if len(w.config.dupserver) > 0 {
 		logger.Debugf("running dupserverConsumer")
-		go runDupServerConsumer(w.config.dupserver, w.config)
+		//go runDupServerConsumer(w.config.dupserver, w.config)
 	}
 	return w
 }
