@@ -1,24 +1,23 @@
 package modgearman
 
 import (
+	"container/list"
 	"fmt"
 	"runtime/debug"
+	"sync"
 	"time"
-
-	"container/list"
 
 	"github.com/appscode/g2/client"
 	libworker "github.com/appscode/g2/worker"
 )
 
-var dupServerList = list.New()
-
-/*
 type safelist struct {
-	value list
+	list  *list.List
 	mutex sync.Mutex
 }
-*/
+
+var dupserverlist = safelist{list: list.New()}
+
 type worker struct {
 	id         string
 	what       string
@@ -156,7 +155,9 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
 
-		dupServerList.PushBack(result)
+		dupserverlist.mutex.Lock()
+		dupserverlist.list.PushBack(result)
+		dupserverlist.mutex.Unlock()
 	}
 	return
 }
