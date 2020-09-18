@@ -55,6 +55,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 
 	if len(w.config.dupserver) > 0 {
 		for _, dupAddress := range w.config.dupserver {
+			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			dupjobsToSendPerServer[dupAddress] = safelist{list: list.New()}
 			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], w.config)
 		}
@@ -69,12 +70,17 @@ func runDupServerConsumer(dupAddress string, list safelist, config *configuratio
 		list.mutex.Unlock()
 
 		if item != nil {
+			logger.Debugf("pushing item: %i", item)
+
 			var error = sendResultDup(item.Value.(*answer), dupAddress, config)
 			if error != nil {
-				list.mutex.Lock()
-				list.list.Remove(item)
-				list.mutex.Unlock()
+				logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
+				time.Sleep(1 * time.Second)
+				continue
 			}
+			list.mutex.Lock()
+			list.list.Remove(item)
+			list.mutex.Unlock()
 		} else {
 			time.Sleep(1 * time.Second)
 		}
