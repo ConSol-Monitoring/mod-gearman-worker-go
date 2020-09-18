@@ -88,7 +88,6 @@ func runDupServerConsumer(dupAddress string, list *safelist, config *configurati
 }
 
 func sendResultDup(item *answer, dupAddress string, config *configurationStruct) error {
-
 	var err error
 	var client *client.Client
 
