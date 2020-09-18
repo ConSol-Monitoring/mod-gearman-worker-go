@@ -159,6 +159,14 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 			var safeList = dupjobsToSendPerServer[dupAddress]
 			safeList.mutex.Lock()
 			safeList.list.PushBack(result)
+			for {
+				if safeList.list.Len() <= worker.config.maxNumberOfAsyncRequests {
+					break
+				}
+
+				var item = safeList.list.Front()
+				safeList.list.Remove(item)
+			}
 			safeList.mutex.Unlock()
 		}
 
