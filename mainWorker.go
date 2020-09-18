@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	time "time"
+
+	"github.com/appscode/g2/client"
 )
 
 const (
@@ -49,7 +51,47 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		serverStatus:  make(map[string]string),
 	}
 	w.RetryFailedConnections()
+
+	if len(w.config.dupserver) > 0 {
+		go runDupServerConsumer(w.config.dupserver, w.config)
+	}
 	return w
+}
+
+func runDupServerConsumer(dupserver []string, config *configurationStruct) {
+	for {
+		dupserverlist.mutex.Lock()
+		item := dupserverlist.list.Front()
+		dupserverlist.mutex.Unlock()
+
+		if item != nil {
+			for _, dupAddress := range dupserver {
+				sendResultDup(item.Value.(*answer), dupAddress, config)
+			}
+		} else {
+			time.Sleep(1)
+		}
+	}
+}
+
+func sendResultDup(item *answer, dupAddress string, config *configurationStruct) {
+
+	var err error
+	var client *client.Client
+
+	if config.dupResultsArePassive {
+		item.active = "passive"
+	}
+
+	client, err = sendAnswer(client, item, dupAddress, config.encryption)
+
+	if client != nil {
+		client.Close()
+	}
+
+	if err != nil {
+		logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
+	}
 }
 
 func (w *mainWorker) manageWorkers(initialStart int) {
