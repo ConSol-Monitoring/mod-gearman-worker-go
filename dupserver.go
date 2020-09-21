@@ -1,8 +1,6 @@
 package modgearman
 
 import (
-	time "time"
-
 	"github.com/appscode/g2/client"
 )
 
@@ -24,7 +22,6 @@ func runDupServerConsumer(dupAddress string, channel chan *answer, config *confi
 		var error = sendResultDup(item, dupAddress, config)
 		if error != nil {
 			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
-			time.Sleep(1 * time.Second)
 			continue
 		}
 	}
