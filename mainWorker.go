@@ -2,7 +2,6 @@ package modgearman
 
 import (
 	"bufio"
-	"container/list"
 	"net"
 	"os"
 	"strings"
@@ -50,14 +49,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		serverStatus:  make(map[string]string),
 	}
 	w.RetryFailedConnections()
-
-	if len(w.config.dupserver) > 0 {
-		for _, dupAddress := range w.config.dupserver {
-			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
-			dupjobsToSendPerServer[dupAddress] = &safelist{list: list.New()}
-			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], w.config)
-		}
-	}
+	initialiseDupServerConsumers(w.config)
 	return w
 }
 

@@ -144,7 +144,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
-		enQueueDupserver(worker.config, result)
+		enqueueDupServerResult(worker.config, result)
 	}
 	return
 }

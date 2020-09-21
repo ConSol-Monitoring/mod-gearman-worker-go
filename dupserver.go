@@ -15,6 +15,16 @@ type safelist struct {
 
 var dupjobsToSendPerServer = map[string]*safelist{}
 
+func initialiseDupServerConsumers(config *configurationStruct) {
+	if len(config.dupserver) > 0 {
+		for _, dupAddress := range config.dupserver {
+			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
+			dupjobsToSendPerServer[dupAddress] = &safelist{list: list.New()}
+			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], config)
+		}
+	}
+}
+
 func runDupServerConsumer(dupAddress string, list *safelist, config *configurationStruct) {
 	for {
 		list.mutex.Lock()
@@ -57,7 +67,7 @@ func sendResultDup(item *answer, dupAddress string, config *configurationStruct)
 	return err
 }
 
-func enQueueDupserver(config *configurationStruct, result *answer) {
+func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
 		var safeList = dupjobsToSendPerServer[dupAddress]
 		safeList.mutex.Lock()
