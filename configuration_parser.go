@@ -8,42 +8,42 @@ import (
 )
 
 type configurationStruct struct {
-	name                     string
-	build                    string
-	identifier               string
-	debug                    int
-	logfile                  string
-	logmode                  string
-	dupserver                []string
-	eventhandler             bool
-	notifications            bool
-	services                 bool
-	hosts                    bool
-	hostgroups               []string
-	servicegroups            []string
-	encryption               bool
-	key                      string
-	keyfile                  string
-	pidfile                  string
-	jobTimeout               int
-	minWorker                int
-	maxWorker                int
-	idleTimeout              int
-	maxAge                   int
-	spawnRate                int
-	forkOnExec               bool
-	loadLimit1               float64
-	loadLimit5               float64
-	loadLimit15              float64
-	showErrorOutput          bool
-	dupResultsArePassive     bool
-	maxNumberOfAsyncRequests int
-	gearmanConnectionTimeout int
-	restrictPath             []string
-	server                   []string
-	timeoutReturn            int
-	daemon                   bool
-	prometheusServer         string
+	name                      string
+	build                     string
+	identifier                string
+	debug                     int
+	logfile                   string
+	logmode                   string
+	dupserver                 []string
+	eventhandler              bool
+	notifications             bool
+	services                  bool
+	hosts                     bool
+	hostgroups                []string
+	servicegroups             []string
+	encryption                bool
+	key                       string
+	keyfile                   string
+	pidfile                   string
+	jobTimeout                int
+	minWorker                 int
+	maxWorker                 int
+	idleTimeout               int
+	maxAge                    int
+	spawnRate                 int
+	forkOnExec                bool
+	loadLimit1                float64
+	loadLimit5                float64
+	loadLimit15               float64
+	showErrorOutput           bool
+	dupResultsArePassive      bool
+	dupServerBacklogQueueSize int
+	gearmanConnectionTimeout  int
+	restrictPath              []string
+	server                    []string
+	timeoutReturn             int
+	daemon                    bool
+	prometheusServer          string
 	// send_gearman specific
 	timeout     int
 	delimiter   string
@@ -65,7 +65,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.debug = 0
 	result.logmode = "automatic"
 	result.dupResultsArePassive = true
-	result.maxNumberOfAsyncRequests = 1000
+	result.dupServerBacklogQueueSize = 1000
 	result.gearmanConnectionTimeout = -1
 	result.timeoutReturn = 2
 	result.jobTimeout = 60
@@ -178,8 +178,8 @@ func readSetting(values []string, result *configurationStruct) {
 		result.showErrorOutput = getBool(value)
 	case "dup_results_are_passive":
 		result.dupResultsArePassive = getBool(value)
-	case "max_number_of_async_requests":
-		result.maxNumberOfAsyncRequests = getInt(value)
+	case "dupserver_backlog_queue_size":
+		result.dupServerBacklogQueueSize = getInt(value)
 	case "gearman_connection_timeout":
 		result.gearmanConnectionTimeout = getInt(value)
 	case "restrict_path":

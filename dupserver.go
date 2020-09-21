@@ -19,7 +19,7 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 	if len(config.dupserver) > 0 {
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
-			dupjobsToSendPerServer[dupAddress] = make(chan *answer, config.maxNumberOfAsyncRequests)
+			dupjobsToSendPerServer[dupAddress] = make(chan *answer, config.dupServerBacklogQueueSize)
 			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], config)
 		}
 	}
