@@ -1,22 +1,13 @@
 package modgearman
 
 import (
-	"container/list"
 	"fmt"
 	"runtime/debug"
-	"sync"
 	"time"
 
 	"github.com/appscode/g2/client"
 	libworker "github.com/appscode/g2/worker"
 )
-
-type safelist struct {
-	list  *list.List
-	mutex sync.Mutex
-}
-
-var dupjobsToSendPerServer = map[string]*safelist{}
 
 type worker struct {
 	id         string
@@ -153,21 +144,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
-
-		for _, dupAddress := range worker.config.dupserver {
-			var safeList = dupjobsToSendPerServer[dupAddress]
-			safeList.mutex.Lock()
-			safeList.list.PushBack(result)
-			for {
-				if safeList.list.Len() <= worker.config.maxNumberOfAsyncRequests {
-					break
-				}
-
-				var item = safeList.list.Front()
-				safeList.list.Remove(item)
-			}
-			safeList.mutex.Unlock()
-		}
+		enQueueDupserver(worker.config, result)
 	}
 	return
 }
