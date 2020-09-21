@@ -60,7 +60,8 @@ func sendResultDup(item *answer, dupAddress string, config *configurationStruct)
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
 		var channel = dupjobsToSendPerServer[dupAddress]
-		channel <- result
-		//todo when the channel is full; we need to find a way to not block here
+		if len(channel) < config.maxNumberOfAsyncRequests {
+			channel <- result
+		}
 	}
 }
