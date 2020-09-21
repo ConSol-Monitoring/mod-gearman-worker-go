@@ -51,17 +51,16 @@ func sendResultDup(item *answer, dupAddress string, config *configurationStruct)
 		client.Close()
 	}
 
-	if err != nil {
-		logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
-	}
 	return err
 }
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
 		var channel = dupjobsToSendPerServer[dupAddress]
-		if len(channel) < config.maxNumberOfAsyncRequests {
-			channel <- result
+		select {
+		case channel <- result:
+		default:
+			logger.Debugf("channel is at capacity, dropping message (to dupserver): %s", dupAddress)
 		}
 	}
 }
