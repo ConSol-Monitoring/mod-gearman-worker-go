@@ -22,8 +22,6 @@ func runDupServerConsumer(dupAddress string, list *safelist, config *configurati
 		list.mutex.Unlock()
 
 		if item != nil {
-			logger.Debugf("pushing item: %i", item)
-
 			var error = sendResultDup(item.Value.(*answer), dupAddress, config)
 			if error != nil {
 				logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
