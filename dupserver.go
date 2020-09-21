@@ -13,36 +13,26 @@ type safelist struct {
 	mutex sync.Mutex
 }
 
-var dupjobsToSendPerServer = map[string]*safelist{}
+var dupjobsToSendPerServer = make(map[string](chan *answer))
 
 func initialiseDupServerConsumers(config *configurationStruct) {
 	if len(config.dupserver) > 0 {
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
-			dupjobsToSendPerServer[dupAddress] = &safelist{list: list.New()}
+			dupjobsToSendPerServer[dupAddress] = make(chan *answer, config.maxNumberOfAsyncRequests)
 			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], config)
 		}
 	}
 }
 
-func runDupServerConsumer(dupAddress string, list *safelist, config *configurationStruct) {
+func runDupServerConsumer(dupAddress string, channel chan *answer, config *configurationStruct) {
 	for {
-		list.mutex.Lock()
-		item := list.list.Front()
-		list.mutex.Unlock()
-
-		if item != nil {
-			var error = sendResultDup(item.Value.(*answer), dupAddress, config)
-			if error != nil {
-				logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			list.mutex.Lock()
-			list.list.Remove(item)
-			list.mutex.Unlock()
-		} else {
+		item := <-channel
+		var error = sendResultDup(item, dupAddress, config)
+		if error != nil {
+			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
 			time.Sleep(1 * time.Second)
+			continue
 		}
 	}
 }
@@ -69,17 +59,8 @@ func sendResultDup(item *answer, dupAddress string, config *configurationStruct)
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
-		var safeList = dupjobsToSendPerServer[dupAddress]
-		safeList.mutex.Lock()
-		safeList.list.PushBack(result)
-		for {
-			if safeList.list.Len() <= config.maxNumberOfAsyncRequests {
-				break
-			}
-
-			var item = safeList.list.Front()
-			safeList.list.Remove(item)
-		}
-		safeList.mutex.Unlock()
+		var channel = dupjobsToSendPerServer[dupAddress]
+		channel <- result
+		//todo when the channel is full; we need to find a way to not block here
 	}
 }
