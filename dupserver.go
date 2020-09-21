@@ -50,7 +50,7 @@ func enqueueDupServerResult(config *configurationStruct, result *answer) {
 		select {
 		case channel <- result:
 		default:
-			logger.Debugf("channel is at capacity (%i), dropping message (to dupserver): %s", config.dupServerBacklogQueueSize, dupAddress)
+			logger.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s", config.dupServerBacklogQueueSize, dupAddress)
 		}
 	}
 }
