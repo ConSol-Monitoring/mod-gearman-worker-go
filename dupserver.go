@@ -1,17 +1,10 @@
 package modgearman
 
 import (
-	"container/list"
-	"sync"
 	time "time"
 
 	"github.com/appscode/g2/client"
 )
-
-type safelist struct {
-	list  *list.List
-	mutex sync.Mutex
-}
 
 var dupjobsToSendPerServer = make(map[string](chan *answer))
 
