@@ -14,10 +14,11 @@ type dupServerConsumer struct {
 	config              *configurationStruct
 }
 
-var dupServerConsumers = make(map[string]*dupServerConsumer)
+var dupServerConsumers map[string]*dupServerConsumer
 
 func initialiseDupServerConsumers(config *configurationStruct) {
 	if len(config.dupserver) > 0 {
+		dupServerConsumers = make(map[string]*dupServerConsumer)
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			consumer := dupServerConsumer{
@@ -39,6 +40,7 @@ func terminateDupServerConsumers() bool {
 		consumer.terminationRequest <- true
 		<-consumer.terminationResponse
 	}
+	dupServerConsumers = nil
 	return true
 }
 
