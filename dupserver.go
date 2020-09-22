@@ -19,7 +19,7 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 func runDupServerConsumer(dupAddress string, channel chan *answer, config *configurationStruct) {
 	for {
 		item := <-channel
-		var error = sendResultDup(item, dupAddress, config)
+		error := sendResultDup(item, dupAddress, config)
 		if error != nil {
 			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
 			continue
