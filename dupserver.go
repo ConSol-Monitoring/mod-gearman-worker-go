@@ -35,22 +35,23 @@ func terminateDupServerConsumers() bool {
 
 func runDupServerConsumer(dupAddress string, channel chan *answer, config *configurationStruct) {
 	var client *client.Client
+	var item *answer
+	var error error
+
 	for {
-		select {
-		case <-terminationRequest[dupAddress]:
-			terminationResponse[dupAddress] <- true
-			return
-		case item := <-channel:
-			for {
-				error := sendResultDup(client, item, dupAddress, config)
-				if error != nil {
-					client = nil
-					logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
-					time.Sleep(ConnectionRetryInterval * time.Second)
-					continue
-				}
-				break
+		if error == nil {
+			select {
+			case <-terminationRequest[dupAddress]:
+				terminationResponse[dupAddress] <- true
+				return
+			case item = <-channel:
 			}
+		}
+		error := sendResultDup(client, item, dupAddress, config)
+		if error != nil {
+			client = nil
+			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
+			time.Sleep(ConnectionRetryInterval * time.Second)
 		}
 	}
 }
