@@ -52,24 +52,29 @@ func terminateDupServerConsumers() bool {
 func runDupServerConsumer(dupServer dupServerConsumer) {
 	var client *client.Client
 	var item *answer
-	var error error
 
 	for {
 		select {
 		case <-dupServer.terminationRequest:
 			dupServer.terminationResponse <- true
 			return
-		default:
-			if error == nil {
-				item = <-dupServer.queue
+		case item = <-dupServer.queue:
+			for {
+				error := sendResultDup(client, item, dupServer.address, dupServer.config)
+				if error != nil {
+					client = nil
+					logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
+					select {
+					case <-dupServer.terminationRequest:
+						dupServer.terminationResponse <- true
+						return
+					default:
+						time.Sleep(ConnectionRetryInterval * time.Second)
+						continue
+					}
+				}
+				break
 			}
-		}
-
-		error := sendResultDup(client, item, dupServer.address, dupServer.config)
-		if error != nil {
-			client = nil
-			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
-			time.Sleep(ConnectionRetryInterval * time.Second)
 		}
 	}
 }
