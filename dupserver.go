@@ -48,14 +48,16 @@ func runDupServerConsumer(dupServer dupServerConsumer) {
 	var error error
 
 	for {
-		if error == nil {
-			select {
-			case <-dupServer.terminationRequest:
-				dupServer.terminationResponse <- true
-				return
-			case item = <-dupServer.queue:
+		select {
+		case <-dupServer.terminationRequest:
+			dupServer.terminationResponse <- true
+			return
+		default:
+			if error == nil {
+				item = <-dupServer.queue
 			}
 		}
+
 		error := sendResultDup(client, item, dupServer.address, dupServer.config)
 		if error != nil {
 			client = nil
