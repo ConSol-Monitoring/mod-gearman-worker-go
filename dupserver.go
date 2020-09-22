@@ -93,7 +93,7 @@ func sendResultDup(client *client.Client, item *answer, dupAddress string, confi
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
-		var channel = dupServerConsumers[dupAddress].queue
+		channel := dupServerConsumers[dupAddress].queue
 		select {
 		case channel <- result:
 		default:
