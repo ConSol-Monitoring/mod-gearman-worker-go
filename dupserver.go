@@ -27,7 +27,7 @@ func runDupServerConsumer(dupAddress string, channel chan *answer, config *confi
 			if error != nil {
 				client = nil
 				logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
-				time.Sleep(5 * time.Second)
+				time.Sleep(ConnectionRetryInterval * time.Second)
 				continue
 			}
 			break
