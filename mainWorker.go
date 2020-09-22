@@ -183,6 +183,8 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 		restartRequired = true
 	case strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n"):
 		restartRequired = true
+	case config.dupServerBacklogQueueSize != w.config.dupServerBacklogQueueSize:
+		restartRequired = true
 	case config.host != w.config.host:
 		restartRequired = true
 	case config.service != w.config.service:
