@@ -6,34 +6,43 @@ import (
 	"github.com/appscode/g2/client"
 )
 
-var dupjobsToSendPerServer = make(map[string](chan *answer))
-var terminationRequest map[string](chan bool)
-var terminationResponse map[string](chan bool)
-var dupServers []string
+type dupServerConsumer struct {
+	queue               chan *answer
+	address             string
+	terminationRequest  chan bool
+	terminationResponse chan bool
+	config              *configurationStruct
+}
+
+var dupServerConsumers = make(map[string]*dupServerConsumer)
 
 func initialiseDupServerConsumers(config *configurationStruct) {
 	if len(config.dupserver) > 0 {
-		terminationRequest = make(map[string](chan bool))
-		terminationResponse = make(map[string](chan bool))
-		dupServers = config.dupserver
-
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
-			dupjobsToSendPerServer[dupAddress] = make(chan *answer, config.dupServerBacklogQueueSize)
-			go runDupServerConsumer(dupAddress, dupjobsToSendPerServer[dupAddress], config)
+			consumer := dupServerConsumer{
+				terminationRequest:  make(chan bool),
+				terminationResponse: make(chan bool),
+				queue:               make(chan *answer, config.dupServerBacklogQueueSize),
+				address:             dupAddress,
+				config:              config,
+			}
+
+			dupServerConsumers[dupAddress] = &consumer
+			go runDupServerConsumer(consumer)
 		}
 	}
 }
 
 func terminateDupServerConsumers() bool {
-	for _, dupAddress := range dupServers {
-		terminationRequest[dupAddress] <- true
-		<-terminationResponse[dupAddress]
+	for _, consumer := range dupServerConsumers {
+		consumer.terminationRequest <- true
+		<-consumer.terminationResponse
 	}
 	return true
 }
 
-func runDupServerConsumer(dupAddress string, channel chan *answer, config *configurationStruct) {
+func runDupServerConsumer(dupServer dupServerConsumer) {
 	var client *client.Client
 	var item *answer
 	var error error
@@ -41,13 +50,13 @@ func runDupServerConsumer(dupAddress string, channel chan *answer, config *confi
 	for {
 		if error == nil {
 			select {
-			case <-terminationRequest[dupAddress]:
-				terminationResponse[dupAddress] <- true
+			case <-dupServer.terminationRequest:
+				dupServer.terminationResponse <- true
 				return
-			case item = <-channel:
+			case item = <-dupServer.queue:
 			}
 		}
-		error := sendResultDup(client, item, dupAddress, config)
+		error := sendResultDup(client, item, dupServer.address, dupServer.config)
 		if error != nil {
 			client = nil
 			logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
@@ -70,7 +79,7 @@ func sendResultDup(client *client.Client, item *answer, dupAddress string, confi
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
 	for _, dupAddress := range config.dupserver {
-		var channel = dupjobsToSendPerServer[dupAddress]
+		var channel = dupServerConsumers[dupAddress].queue
 		select {
 		case channel <- result:
 		default:
