@@ -22,8 +22,8 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			consumer := dupServerConsumer{
-				terminationRequest:  make(chan bool),
-				terminationResponse: make(chan bool),
+				terminationRequest:  make(chan bool, 1),
+				terminationResponse: make(chan bool, 1),
 				queue:               make(chan *answer, config.dupServerBacklogQueueSize),
 				address:             dupAddress,
 				config:              config,
