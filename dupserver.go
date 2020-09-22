@@ -19,33 +19,30 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 }
 
 func runDupServerConsumer(dupAddress string, channel chan *answer, config *configurationStruct) {
+	var client *client.Client
 	for {
 		item := <-channel
 		for {
-			error := sendResultDup(item, dupAddress, config)
-			if error == nil {
-				break
-			} else {
+			error := sendResultDup(client, item, dupAddress, config)
+			if error != nil {
+				client = nil
 				logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
 				time.Sleep(5 * time.Second)
+				continue
 			}
+			break
 		}
 	}
 }
 
-func sendResultDup(item *answer, dupAddress string, config *configurationStruct) error {
+func sendResultDup(client *client.Client, item *answer, dupAddress string, config *configurationStruct) error {
 	var err error
-	var client *client.Client
 
 	if config.dupResultsArePassive {
 		item.active = "passive"
 	}
 
-	client, err = sendAnswer(client, item, dupAddress, config.encryption)
-
-	if client != nil {
-		client.Close()
-	}
+	_, err = sendAnswer(client, item, dupAddress, config.encryption)
 
 	return err
 }
