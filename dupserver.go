@@ -36,10 +36,15 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 }
 
 func terminateDupServerConsumers() bool {
+	logger.Debugf("Terminating DupServers")
 	for _, consumer := range dupServerConsumers {
+		logger.Debugf("Sending TerminationRequest %s", consumer.address)
 		consumer.terminationRequest <- true
+		logger.Debugf("Awaiting TerminationRepsonse %s", consumer.address)
 		<-consumer.terminationResponse
+		logger.Debugf("Response Received %s", consumer.address)
 	}
+	logger.Debugf("Completed all consumers")
 	dupServerConsumers = nil
 	return true
 }
