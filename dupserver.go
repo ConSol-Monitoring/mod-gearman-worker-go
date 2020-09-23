@@ -10,7 +10,6 @@ type dupServerConsumer struct {
 	queue               chan *answer
 	address             string
 	terminationRequest  chan bool
-	terminationResponse chan bool
 	config              *configurationStruct
 }
 
@@ -22,8 +21,7 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			consumer := dupServerConsumer{
-				terminationRequest:  make(chan bool, 1),
-				terminationResponse: make(chan bool, 1),
+				terminationRequest:  make(chan bool),
 				queue:               make(chan *answer, config.dupServerBacklogQueueSize),
 				address:             dupAddress,
 				config:              config,
@@ -40,9 +38,7 @@ func terminateDupServerConsumers() bool {
 	for _, consumer := range dupServerConsumers {
 		logger.Debugf("Sending DupServer TerminationRequest %s", consumer.address)
 		consumer.terminationRequest <- true
-		logger.Debugf("Awaiting DupServer TerminationResponse %s", consumer.address)
-		<-consumer.terminationResponse
-		logger.Debugf("Response DupServer Received %s", consumer.address)
+		logger.Debugf("DupServer Terminated %s", consumer.address)
 	}
 	logger.Debugf("Completed all consumer termination")
 	dupServerConsumers = nil
@@ -56,7 +52,6 @@ func runDupServerConsumer(dupServer dupServerConsumer) {
 	for {
 		select {
 		case <-dupServer.terminationRequest:
-			dupServer.terminationResponse <- true
 			return
 		case item = <-dupServer.queue:
 			for {
@@ -66,7 +61,6 @@ func runDupServerConsumer(dupServer dupServerConsumer) {
 					logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
 					select {
 					case <-dupServer.terminationRequest:
-						dupServer.terminationResponse <- true
 						return
 					default:
 						time.Sleep(ConnectionRetryInterval * time.Second)
