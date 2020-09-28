@@ -49,6 +49,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		serverStatus:  make(map[string]string),
 	}
 	w.RetryFailedConnections()
+	initialiseDupServerConsumers(w.config)
 	return w
 }
 
@@ -181,6 +182,8 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 	case strings.Join(config.server, "\n") != strings.Join(w.config.server, "\n"):
 		restartRequired = true
 	case strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n"):
+		restartRequired = true
+	case config.dupServerBacklogQueueSize != w.config.dupServerBacklogQueueSize:
 		restartRequired = true
 	case config.host != w.config.host:
 		restartRequired = true

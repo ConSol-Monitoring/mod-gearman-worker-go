@@ -144,7 +144,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		worker.SendResult(result)
-		worker.SendResultDup(result)
+		enqueueDupServerResult(worker.config, result)
 	}
 	return
 }
@@ -200,32 +200,6 @@ func (worker *worker) SendResult(result *answer) {
 	}
 	if !sendSuccess && lastErr != nil {
 		logger.Debugf("failed to send back result: %s", lastErr.Error())
-	}
-}
-
-func (worker *worker) SendResultDup(result *answer) {
-	if len(worker.config.dupserver) == 0 {
-		return
-	}
-
-	var err error
-	var c *client.Client
-	for _, dupAddress := range worker.config.dupserver {
-		if worker.config.dupResultsArePassive {
-			result.active = "passive"
-		}
-		c, err = sendAnswer(worker.dupclient, result, dupAddress, worker.config.encryption)
-		if err == nil {
-			worker.dupclient = c
-			return
-		}
-		worker.dupclient = nil
-		if c != nil {
-			c.Close()
-		}
-	}
-	if err != nil {
-		logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
 	}
 }
 
