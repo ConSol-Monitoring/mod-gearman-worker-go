@@ -48,6 +48,7 @@ func terminateDupServerConsumers() bool {
 func runDupServerConsumer(dupServer dupServerConsumer) {
 	var client *client.Client
 	var item *answer
+	var error error
 
 	for {
 		select {
@@ -55,7 +56,7 @@ func runDupServerConsumer(dupServer dupServerConsumer) {
 			return
 		case item = <-dupServer.queue:
 			for {
-				error := sendResultDup(client, item, dupServer.address, dupServer.config)
+				client, error = sendResultDup(client, item, dupServer.address, dupServer.config)
 				if error != nil {
 					client = nil
 					logger.Debugf("failed to send back result (to dupserver): %s", error.Error())
@@ -73,16 +74,16 @@ func runDupServerConsumer(dupServer dupServerConsumer) {
 	}
 }
 
-func sendResultDup(client *client.Client, item *answer, dupAddress string, config *configurationStruct) error {
-	var err error
+func sendResultDup(client *client.Client, item *answer, dupAddress string, config *configurationStruct) (*client.Client, error) {
+	var error error
 
 	if config.dupResultsArePassive {
 		item.active = "passive"
 	}
 
-	_, err = sendAnswer(client, item, dupAddress, config.encryption)
+	client, error = sendAnswer(client, item, dupAddress, config.encryption)
 
-	return err
+	return client, error
 }
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
