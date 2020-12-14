@@ -307,7 +307,10 @@ func deletePidFile(f string) {
 
 func logThreaddump() {
 	buf := make([]byte, 1<<16)
-	runtime.Stack(buf, true)
+	n := runtime.Stack(buf, true)
+	if n < len(buf) {
+		buf = buf[:n]
+	}
 	logger.Errorf("threaddump:\n%s", buf)
 }
 
