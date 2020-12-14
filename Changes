@@ -1,5 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+1.1.4    Mon Dec 14 10:49:01 CET 2020
+          - improve dupserver connection handling
+          - improve shutdown
+
 1.1.3    Mon Oct 31 14:54:20 CEST 2019
           - fix null pointer exception on timeouts
 
