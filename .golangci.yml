@@ -19,8 +19,14 @@ linters:
     - dupl
     - funlen
     - wsl
+    - exhaustive
     - gofumpt
     - nlreturn
+    - exhaustivestruct
+    - errorlint
+    - paralleltest
+    - godot
+    - forbidigo
   fast: false
 
 issues:

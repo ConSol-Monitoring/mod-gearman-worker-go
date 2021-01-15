@@ -207,9 +207,9 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// extract stdout and stderr
 	result.output = string(bytes.TrimSpace((bytes.Trim(outbuf.Bytes(), "\x00"))))
 	if config.showErrorOutput && result.returnCode != 0 {
-		error := string(bytes.TrimSpace((bytes.Trim(errbuf.Bytes(), "\x00"))))
-		if error != "" {
-			result.output += "\n[" + error + "]"
+		err := string(bytes.TrimSpace((bytes.Trim(errbuf.Bytes(), "\x00"))))
+		if err != "" {
+			result.output += "\n[" + err + "]"
 		}
 	}
 	if result.returnCode > 3 || result.returnCode < 0 {

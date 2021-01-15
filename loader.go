@@ -1,6 +1,7 @@
 package modgearman
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -58,7 +59,7 @@ func openFileOrCreate(path string) (os.File, error) {
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Errorf("could not open file %s: %s", path, err.Error())
-			return *file, err
+			return *file, fmt.Errorf("open file %s failed: %w", path, err)
 		}
 		return *file, nil
 	}

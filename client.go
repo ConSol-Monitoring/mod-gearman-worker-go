@@ -1,6 +1,8 @@
 package modgearman
 
 import (
+	"fmt"
+
 	"github.com/appscode/g2/client"
 	"github.com/appscode/g2/pkg/runtime"
 )
@@ -13,7 +15,7 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 	if c == nil {
 		cl, err := client.New("tcp", server)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("client: %w", err)
 		}
 		c = cl
 	}
@@ -23,5 +25,8 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 	// send the data in the background to the right queue
 	_, err := c.DoBg(answer.resultQueue, byteAnswer, runtime.JobNormal)
 
-	return c, err
+	if err != nil {
+		return c, fmt.Errorf("bgclient: %w", err)
+	}
+	return c, nil
 }
