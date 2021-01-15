@@ -16,8 +16,8 @@ func TestReadAndExecute(t *testing.T) {
 	config.encryption = false
 	config.jobTimeout = 30
 	setDefaultValues(&config)
-	thisHostname, error := os.Hostname()
-	if error != nil {
+	thisHostname, err := os.Hostname()
+	if err != nil {
 		thisHostname = "unknown"
 	}
 	// create the test received only with needed values
