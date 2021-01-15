@@ -7,10 +7,10 @@ import (
 )
 
 type dupServerConsumer struct {
-	queue               chan *answer
-	address             string
-	terminationRequest  chan bool
-	config              *configurationStruct
+	queue              chan *answer
+	address            string
+	terminationRequest chan bool
+	config             *configurationStruct
 }
 
 var dupServerConsumers map[string]*dupServerConsumer
@@ -21,10 +21,10 @@ func initialiseDupServerConsumers(config *configurationStruct) {
 		for _, dupAddress := range config.dupserver {
 			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			consumer := dupServerConsumer{
-				terminationRequest:  make(chan bool),
-				queue:               make(chan *answer, config.dupServerBacklogQueueSize),
-				address:             dupAddress,
-				config:              config,
+				terminationRequest: make(chan bool),
+				queue:              make(chan *answer, config.dupServerBacklogQueueSize),
+				address:            dupAddress,
+				config:             config,
 			}
 
 			dupServerConsumers[dupAddress] = &consumer
