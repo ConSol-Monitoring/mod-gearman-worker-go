@@ -1,6 +1,6 @@
 # Mod-Gearman-Worker
 
-[![Build Status](https://travis-ci.org/ConSol/mod-gearman-worker-go.svg?branch=master)](https://travis-ci.org/ConSol/mod-gearman-worker-go)
+[![Build Status](https://github.com/ConSol/mod-gearman-worker-go/workflows/citest/badge.svg)](https://github.com/ConSol/mod-gearman-worker-go/actions?query=workflow:citest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ConSol/mod-gearman-worker-go)](https://goreportcard.com/report/github.com/ConSol/mod-gearman-worker-go)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
