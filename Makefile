@@ -15,6 +15,8 @@ TOOLSFOLDER=$(shell pwd)/tools
 export GOBIN := $(TOOLSFOLDER)
 export PATH := $(GOBIN):$(PATH)
 
+.PHONY: vendor
+
 all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
@@ -29,11 +31,12 @@ tools: versioncheck vendor dump
 
 updatedeps: versioncheck
 	$(MAKE) clean
-	go list -u -m all
 	go mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
 		go get $$DEP; \
 	done
+	go get -u ./...
+	go get -t -u ./...
 	go mod tidy
 
 vendor:
