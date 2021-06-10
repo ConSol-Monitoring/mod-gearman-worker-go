@@ -10,8 +10,10 @@ import (
 )
 
 const (
+	// DefaultConnectionTimeout sets the default connection timeout for tcp connections
 	DefaultConnectionTimeout = 30
 
+	// UtilizationWatermakeLow sets the lower mark when deciding if worker should be reduced
 	UtilizationWatermakeLow = 90
 )
 

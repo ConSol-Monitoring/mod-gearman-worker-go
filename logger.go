@@ -7,6 +7,7 @@ import (
 	"github.com/kdar/factorlog"
 )
 
+// define the available log level
 const (
 	LogLevelInfo   = 0
 	LogLevelDebug  = 1

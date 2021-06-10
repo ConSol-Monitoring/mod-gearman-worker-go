@@ -97,10 +97,12 @@ func BenchmarkJobs(b *testing.B) {
 	}
 }
 
-func countResults(job libworker.Job) ([]byte, error) {
-	if job.Err() != nil {
-		return nil, job.Err()
+func countResults(job libworker.Job) (result []byte, err error) {
+	err = job.Err()
+	if err != nil {
+		return
 	}
 	resultChannel <- true
-	return []byte(""), nil
+	result = []byte("")
+	return
 }

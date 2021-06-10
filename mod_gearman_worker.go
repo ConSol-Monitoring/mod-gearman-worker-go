@@ -26,6 +26,7 @@ const (
 	// ExitCodeUnknown is used for unknown exits
 	ExitCodeUnknown = 3
 
+	// ConnectionRetryInterval sets the number seconds in between connection retries
 	ConnectionRetryInterval = 3
 )
 

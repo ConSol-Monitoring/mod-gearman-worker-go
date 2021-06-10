@@ -27,6 +27,9 @@ linters:
     - paralleltest
     - godot
     - forbidigo
+    - ifshort
+    - cyclop
+    - promlinter
   fast: false
 
 issues:

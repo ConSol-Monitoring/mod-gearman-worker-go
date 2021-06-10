@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	ExitCodeNotExecutable = 126
-	ExitCodeFileNotFound  = 127
+	exitCodeNotExecutable = 126
+	exitCodeFileNotFound  = 127
 )
 
 type answer struct {
@@ -219,12 +219,12 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 }
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
-	if result.returnCode == ExitCodeNotExecutable {
+	if result.returnCode == exitCodeNotExecutable {
 		result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
 		result.returnCode = 2
 		return
 	}
-	if result.returnCode == ExitCodeFileNotFound {
+	if result.returnCode == exitCodeFileNotFound {
 		result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
 		result.returnCode = 2
 		return
