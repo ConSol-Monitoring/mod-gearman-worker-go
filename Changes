@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+1.1.5    Thu Jun 10 19:57:11 CEST 2021
+          - cleanup thread dump output
+
 1.1.4    Mon Dec 14 10:49:01 CET 2020
           - improve dupserver connection handling
           - improve shutdown
