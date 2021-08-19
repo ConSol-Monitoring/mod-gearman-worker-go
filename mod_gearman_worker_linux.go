@@ -43,12 +43,14 @@ func setSysProcAttr(cmd *exec.Cmd) {
 }
 
 func processTimeoutKill(p *os.Process) {
-	// kill the process itself and the hole process group
-	syscall.Kill(-p.Pid, syscall.SIGTERM)
-	time.Sleep(1 * time.Second)
+	go func(pid int) {
+		// kill the process itself and the hole process group
+		syscall.Kill(-pid, syscall.SIGTERM)
+		time.Sleep(1 * time.Second)
 
-	syscall.Kill(-p.Pid, syscall.SIGINT)
-	time.Sleep(1 * time.Second)
+		syscall.Kill(-pid, syscall.SIGINT)
+		time.Sleep(1 * time.Second)
 
-	syscall.Kill(-p.Pid, syscall.SIGKILL)
+		syscall.Kill(-pid, syscall.SIGKILL)
+	}(p.Pid)
 }

@@ -168,8 +168,12 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	// https://github.com/golang/go/issues/18874
 	// timeout does not work for child processes and/or if filehandles are still open
+	timeoutWatcherDone := make(chan bool, 1)
 	go func() {
 		defer logPanicExit()
+		defer func() {
+			timeoutWatcherDone <- true
+		}()
 		<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
 		if cmd.Process == nil {
 			return
@@ -185,6 +189,8 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	}()
 
 	err := cmd.Run()
+	cancel()
+	<-timeoutWatcherDone
 	if err != nil && cmd.ProcessState == nil {
 		setProcessErrorResult(result, config, err)
 		return
