@@ -170,18 +170,17 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// timeout does not work for child processes and/or if filehandles are still open
 	go func() {
 		defer logPanicExit()
-		<-ctx.Done()
+		<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
+		if cmd.Process == nil {
+			return
+		}
 		switch ctx.Err() {
 		case context.DeadlineExceeded:
 			// timeout
-			if cmd.Process != nil {
-				processTimeoutKill(cmd.Process)
-			}
+			processTimeoutKill(cmd.Process)
 		case context.Canceled:
 			// normal exit
-			if cmd.Process != nil {
-				cmd.Process.Kill()
-			}
+			cmd.Process.Kill()
 		}
 	}()
 
