@@ -100,7 +100,7 @@ citest: vendor
 	#
 	if [ $$(gofmt -s -l *.go ./cmd/ | wc -l) -gt 0 ]; then \
 		echo "found format errors in these files:"; \
-		gofmt -s -l .; \
+		gofmt -s -l *.go ./cmd/; \
 		exit 1; \
 	fi
 	#
