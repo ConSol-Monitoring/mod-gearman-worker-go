@@ -174,12 +174,12 @@ clean:
 	rm -rf $(TOOLSFOLDER)
 
 fmt: tools
-	goimports -w .
+	goimports -w *.go ./cmd/
 	go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
 	set -e; for CMD in $(CMDS); do \
 		go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
 	done
-	gofmt -w -s .
+	gofmt -w -s *.go ./cmd/
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
