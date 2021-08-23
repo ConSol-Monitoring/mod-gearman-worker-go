@@ -118,7 +118,6 @@ citest: vendor
 	#
 	# Run other subtests
 	#
-	$(MAKE) copyfighter
 	$(MAKE) golangci
 	$(MAKE) fmt
 	#
@@ -188,13 +187,6 @@ versioncheck:
 		echo "**** this is: $$(go version)"; \
 		exit 1; \
 	}
-
-copyfighter: tools
-	#
-	# Check if there are values better passed as pointer
-	# See https://github.com/jmhodges/copyfighter
-	#
-	#copyfighter .
 
 golangci: tools
 	#
