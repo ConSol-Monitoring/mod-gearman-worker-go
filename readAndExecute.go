@@ -166,35 +166,37 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	// prevent child from receiving signals meant for the worker only
 	setSysProcAttr(cmd)
 
+	err := cmd.Start()
+	if err != nil && cmd.ProcessState == nil {
+		setProcessErrorResult(result, config, err)
+		return
+	}
+
 	// https://github.com/golang/go/issues/18874
 	// timeout does not work for child processes and/or if filehandles are still open
-	timeoutWatcherDone := make(chan bool, 1)
-	go func() {
+	go func(proc *os.Process) {
 		defer logPanicExit()
-		defer func() {
-			timeoutWatcherDone <- true
-		}()
 		<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
-		if cmd.Process == nil {
+		if proc == nil {
 			return
 		}
 		switch ctx.Err() {
 		case context.DeadlineExceeded:
 			// timeout
-			processTimeoutKill(cmd.Process)
+			processTimeoutKill(proc)
 		case context.Canceled:
 			// normal exit
-			cmd.Process.Kill()
+			proc.Kill()
 		}
-	}()
+	}(cmd.Process)
 
-	err := cmd.Run()
+	err = cmd.Wait()
 	cancel()
-	<-timeoutWatcherDone
 	if err != nil && cmd.ProcessState == nil {
 		setProcessErrorResult(result, config, err)
 		return
 	}
+
 	state := cmd.ProcessState
 	if config.prometheusServer != "" {
 		prometheusUserAndSystemTime(received.commandLine, state)
@@ -217,13 +219,15 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 			result.output += "\n[" + err + "]"
 		}
 	}
-	if result.returnCode > 3 || result.returnCode < 0 {
-		fixReturnCodes(result, config, state)
-	}
+
+	fixReturnCodes(result, config, state)
 	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
 }
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
+	if result.returnCode >= 0 && result.returnCode <= 3 {
+		return
+	}
 	if result.returnCode == exitCodeNotExecutable {
 		result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
 		result.returnCode = 2
