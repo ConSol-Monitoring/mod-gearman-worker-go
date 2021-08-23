@@ -46,9 +46,9 @@ vendor:
 
 dump:
 	if [ $(shell grep -rc Dump *.go ./cmd/*/*.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
-		sed -i.bak 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
+		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
 	else \
-		sed -i.bak 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
+		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
 	fi
 	rm -f dump.go.bak
 
