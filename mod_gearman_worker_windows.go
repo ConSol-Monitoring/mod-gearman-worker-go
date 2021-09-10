@@ -36,3 +36,7 @@ func setSysProcAttr(cmd *exec.Cmd) {
 func processTimeoutKill(p *os.Process) {
 	p.Kill()
 }
+
+func getMaxOpenFiles() uint64 {
+	return 0
+}

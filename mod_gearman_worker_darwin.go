@@ -54,3 +54,12 @@ func processTimeoutKill(p *os.Process) {
 		syscall.Kill(-pid, syscall.SIGKILL)
 	}(p.Pid)
 }
+
+func getMaxOpenFiles() uint64 {
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		logger.Warnf("cannot fetch open files limit: %w", err)
+	}
+	return rLimit.Cur
+}
