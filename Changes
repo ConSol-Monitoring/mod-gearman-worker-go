@@ -2,6 +2,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
           - log max open files on startup
+          - automatically adjust maxWorker setting if open files ulimit is to low
 
 1.1.5    Thu Jun 10 19:57:11 CEST 2021
           - cleanup thread dump output

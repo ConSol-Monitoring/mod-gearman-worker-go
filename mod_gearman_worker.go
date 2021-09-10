@@ -28,6 +28,12 @@ const (
 
 	// ConnectionRetryInterval sets the number seconds in between connection retries
 	ConnectionRetryInterval = 3
+
+	// OpenFilesBase sets the approximate number of open files excluded open files from worker
+	OpenFilesBase = 30
+
+	// OpenFilesPerWorker sets the expected number of filehandles per worker
+	OpenFilesPerWorker = 4
 )
 
 // MainStateType is used to set different states of the main loop
@@ -131,7 +137,16 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	key := getKey(config)
 	myCipher = createCipher(key, config.encryption)
 
-	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), getMaxOpenFiles())
+	maxOpenFiles := getMaxOpenFiles()
+	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
+
+	expectedOpenFiles := uint64(config.maxWorker*OpenFilesPerWorker + OpenFilesBase)
+	if expectedOpenFiles > maxOpenFiles {
+		preMaxWorker := config.maxWorker
+		config.maxWorker = int((maxOpenFiles - OpenFilesBase) / OpenFilesPerWorker)
+		logger.Warnf("current max worker setting (%d) requires open files ulimit of at least %d, current value is %d. Setting max worker limit to ", preMaxWorker, expectedOpenFiles, maxOpenFiles, config.maxWorker)
+	}
+
 	mainworker := newMainWorker(config, key, workerMap)
 	mainworker.running = true
 	defer func() { mainworker.running = false }()
