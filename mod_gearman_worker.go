@@ -144,7 +144,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	if expectedOpenFiles > maxOpenFiles {
 		preMaxWorker := config.maxWorker
 		config.maxWorker = int((maxOpenFiles - OpenFilesBase) / OpenFilesPerWorker)
-		logger.Warnf("current max worker setting (%d) requires open files ulimit of at least %d, current value is %d. Setting max worker limit to ", preMaxWorker, expectedOpenFiles, maxOpenFiles, config.maxWorker)
+		logger.Warnf("current max worker setting (%d) requires open files ulimit of at least %d, current value is %d. Setting max worker limit to %d", preMaxWorker, expectedOpenFiles, maxOpenFiles, config.maxWorker)
 	}
 
 	mainworker := newMainWorker(config, key, workerMap)
