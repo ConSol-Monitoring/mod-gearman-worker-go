@@ -11,15 +11,15 @@ require (
 	github.com/golangci/golangci-lint v1.42.1
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
-	github.com/kdar/factorlog v0.0.0-20140929220826-d5b6afb8b4fe
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
+	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.30.0 // indirect
+	github.com/prometheus/common v0.31.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sevlyar/go-daemon v0.1.5
-	golang.org/x/sys v0.0.0-20210909193231-528a39cd75f3 // indirect
-	golang.org/x/tools v0.1.5
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
+	golang.org/x/tools v0.1.7
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
 )
