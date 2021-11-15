@@ -30,6 +30,7 @@ linters:
     - ifshort
     - cyclop
     - promlinter
+    - varnamelen
   fast: false
 
 issues:
@@ -55,7 +56,7 @@ issues:
     - 'package should be `modgearman_test` instead of `modgearman`'
     - 'Expect WriteFile permissions to be 0600 or less'
     - 'err113:'
-    - 'G204: Subprocess launched with function call as argument or cmd arguments'
+    - 'G204: Subprocess launched'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
