@@ -351,7 +351,12 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 	workerMap := w.workerMap
 	workerNum := len(workerMap)
 	w.workerMapLock.RUnlock()
-	exited := make(chan int, 1)
+
+	if workerNum == 0 {
+		return
+	}
+
+	exited := make(chan int, workerNum)
 	for _, wo := range workerMap {
 		logger.Tracef("worker removed...")
 		go func(wo *worker, ch chan int) {
@@ -363,7 +368,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 	}
 
 	// do not wait on shutdown via sigint
-	wait := 10 * time.Second
+	wait := 30 * time.Second
 	if state == Shutdown {
 		wait = 1 * time.Second
 	}
