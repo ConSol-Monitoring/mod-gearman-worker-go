@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.1.6    Mon Jul  4 09:07:29 CEST 2022
           - log max open files on startup
           - automatically adjust maxWorker setting if open files ulimit is to low
           - fix potential race condition during reload while long running plugins are active
