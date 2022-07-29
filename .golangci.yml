@@ -23,6 +23,7 @@ linters:
     - gofumpt
     - nlreturn
     - exhaustivestruct
+    - exhaustruct
     - errorlint
     - paralleltest
     - godot
@@ -31,6 +32,7 @@ linters:
     - cyclop
     - promlinter
     - varnamelen
+    - nonamedreturns
   fast: false
 
 issues:
@@ -58,6 +60,10 @@ issues:
     - 'Expect WriteFile permissions to be 0600 or less'
     - 'err113:'
     - 'G204: Subprocess launched'
+    - 'RLIMIT_NOFILE contains underscore'
+    - 'O_APPEND contains underscore'
+    - 'O_WRONLY contains underscore'
+    - 'O_CREATE contains underscore'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go

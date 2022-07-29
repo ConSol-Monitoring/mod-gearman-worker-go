@@ -39,7 +39,7 @@ func BenchmarkJobs(b *testing.B) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		b.Skip(fmt.Sprintf("skipping test, could not start gearmand: %s.", err.Error()))
+		b.Skipf("skipping test, could not start gearmand: %s.", err.Error())
 	}
 	defer cmd.Process.Kill()
 	time.Sleep(1 * time.Second)
