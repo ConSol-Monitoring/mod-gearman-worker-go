@@ -145,8 +145,12 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		return
 	}
 
-	// reduce workers at spawnrate
-	for i := 0; i < w.config.spawnRate; i++ {
+	// reduce workers at sinkrate
+	sinkRate := w.config.sinkRate
+	if sinkRate <= 0 {
+		sinkRate = w.config.spawnRate
+	}
+	for i := 0; i < sinkRate; i++ {
 		if len(w.workerMap) <= w.config.minWorker {
 			break
 		}

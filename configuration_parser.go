@@ -31,6 +31,7 @@ type configurationStruct struct {
 	idleTimeout               int
 	maxAge                    int
 	spawnRate                 int
+	sinkRate                  int
 	forkOnExec                bool
 	loadLimit1                float64
 	loadLimit5                float64
@@ -74,6 +75,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.minWorker = 1
 	result.maxWorker = 20
 	result.spawnRate = 1
+	result.sinkRate = -1
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
 	if result.identifier == "" {
@@ -166,6 +168,8 @@ func readSetting(values []string, result *configurationStruct) {
 		result.maxAge = getInt(value)
 	case "spawn-rate":
 		result.spawnRate = getInt(value)
+	case "sink-rate":
+		result.sinkRate = getInt(value)
 	case "fork_on_exec":
 		result.forkOnExec = getBool(value)
 	case "load_limit1":
