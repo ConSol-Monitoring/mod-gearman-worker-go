@@ -26,22 +26,25 @@ const (
  */
 
 type mainWorker struct {
-	activeWorkers     int
-	workerUtilization int
-	workerMap         map[string]*worker
-	workerMapLock     *sync.RWMutex
-	statusWorker      *worker
-	min1              float64
-	min5              float64
-	min15             float64
-	memTotal          int
-	memFree           int
-	config            *configurationStruct
-	key               []byte
-	tasks             int
-	idleSince         time.Time
-	serverStatus      map[string]string
-	running           bool
+	activeWorkers      int
+	workerUtilization  int
+	workerMap          map[string]*worker
+	workerMapLock      *sync.RWMutex
+	statusWorker       *worker
+	min1               float64
+	min5               float64
+	min15              float64
+	memTotal           int
+	memFree            int
+	maxOpenFiles       uint64
+	maxPossibleWorker  int
+	curBalooningWorker int
+	config             *configurationStruct
+	key                []byte
+	tasks              int
+	idleSince          time.Time
+	serverStatus       map[string]string
+	running            bool
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {

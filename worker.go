@@ -129,7 +129,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	taskCounter.WithLabelValues(received.typ).Inc()
 	worker.mainWorker.tasks++
 
-	logger.Debugf("incoming %s job: %s", received.typ, job.Handle())
+	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
 	logger.Trace(received)
 
 	if worker.useBalooning() {
@@ -137,6 +137,9 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		go func() {
 			worker.executeJob(received)
 			worker.activeJobs--
+			if received.ballooning {
+				worker.mainWorker.curBalooningWorker--
+			}
 			finChan <- true
 		}()
 
@@ -147,6 +150,8 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 			timeout.Stop()
 		case <-timeout.C:
 			logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
+			worker.mainWorker.curBalooningWorker++
+			received.ballooning = true
 		}
 	} else {
 		worker.executeJob(received)
@@ -172,6 +177,11 @@ func (worker *worker) useBalooning() bool {
 
 	// only if 70% of our workers are utilized
 	if worker.mainWorker.workerUtilization < BalooningUtilizationThreshold {
+		return false
+	}
+
+	// are there open files left for balooning
+	if worker.mainWorker.curBalooningWorker >= (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker) {
 		return false
 	}
 

@@ -32,8 +32,8 @@ const (
 	// OpenFilesBase sets the approximate number of open files excluded open files from worker
 	OpenFilesBase = 50
 
-	// OpenFilesPerWorker sets the expected number of filehandles per worker
-	OpenFilesPerWorker = 2
+	// OpenFilesPerWorker sets the expected number of filehandles per worker (1 gearman connection + 2 fifo pipes for stderr/stdout)
+	OpenFilesPerWorker = 3
 
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
 	OpenFilesExtraPercent = 1.2
@@ -153,14 +153,17 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
 
 	expectedOpenFiles := uint64(float64((config.maxWorker*OpenFilesPerWorker + OpenFilesBase)) * OpenFilesExtraPercent)
+	maxPossibleWorker := int(((float64(maxOpenFiles) / OpenFilesExtraPercent) - OpenFilesBase) / OpenFilesPerWorker)
 	if expectedOpenFiles > maxOpenFiles {
 		preMaxWorker := config.maxWorker
-		config.maxWorker = int(((float64(maxOpenFiles) / OpenFilesExtraPercent) - OpenFilesBase) / OpenFilesPerWorker)
+		config.maxWorker = maxPossibleWorker
 		logger.Warnf("current max worker setting (%d) requires open files ulimit of at least %d, current value is %d. Setting max worker limit to %d", preMaxWorker, expectedOpenFiles, maxOpenFiles, config.maxWorker)
 	}
 
 	mainworker := newMainWorker(config, key, workerMap)
 	mainworker.running = true
+	mainworker.maxOpenFiles = maxOpenFiles
+	mainworker.maxPossibleWorker = maxPossibleWorker
 	defer func() { mainworker.running = false }()
 	mainLoopExited := make(chan bool)
 

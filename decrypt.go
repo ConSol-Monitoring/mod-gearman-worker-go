@@ -22,6 +22,7 @@ type receivedStruct struct {
 	coreTime           float64
 	timeout            int
 	commandLine        string
+	ballooning         bool // flag wether this job has been put into background
 }
 
 func (r *receivedStruct) String() string {
