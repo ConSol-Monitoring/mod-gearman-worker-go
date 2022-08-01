@@ -5,7 +5,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/appscode/g2/client"
 	libworker "github.com/appscode/g2/worker"
 )
 
@@ -16,8 +15,6 @@ type worker struct {
 	activeJobs int
 	config     *configurationStruct
 	mainWorker *mainWorker
-	client     *client.Client
-	dupclient  *client.Client
 }
 
 // creates a new worker and returns a pointer to it
@@ -28,8 +25,6 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 		activeJobs: 0,
 		config:     configuration,
 		mainWorker: mainWorker,
-		client:     nil,
-		dupclient:  nil,
 	}
 	worker.id = fmt.Sprintf("%p", worker)
 
@@ -132,46 +127,41 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
 	logger.Trace(received)
 
-	if worker.considerBalooning() {
-		finChan := make(chan bool, 1)
-		go func() {
-			worker.executeJob(received)
-			worker.activeJobs--
-			if received.ballooning {
-				worker.mainWorker.curBalooningWorker--
-				balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
-			}
-			finChan <- true
-		}()
+	if !worker.considerBalooning() {
+		worker.executeJob(received)
+		worker.activeJobs--
+		return
+	}
 
-		timeout := time.NewTimer(time.Duration(worker.config.backgroundingThreshold) * time.Second)
-		ready := false
-		for !ready {
-			select {
-			case <-finChan:
-				logger.Debugf("job: %s finished", job.Handle())
-				timeout.Stop()
-				ready = true
-			case <-timeout.C:
-				// check again if are there open files left for balooning
-				if !worker.startBalooning() {
-					// wait another x seconds, all ballooning worker busy
-					timeout = time.NewTimer(time.Duration(worker.config.backgroundingThreshold) * time.Second)
-					continue
-				}
+	finChan := make(chan bool, 1)
+	go func() {
+		worker.executeJob(received)
+		worker.activeJobs--
+		if received.ballooning {
+			worker.mainWorker.curBalooningWorker--
+			balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
+		}
+		finChan <- true
+	}()
+
+	ticker := time.NewTicker(time.Duration(worker.config.backgroundingThreshold) * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-finChan:
+			logger.Debugf("job: %s finished", job.Handle())
+			return
+		case <-ticker.C:
+			// check again if are there open files left for balooning
+			if worker.startBalooning() {
 				logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
 				worker.mainWorker.curBalooningWorker++
 				balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
 				received.ballooning = true
-				ready = true
+				return
 			}
 		}
-	} else {
-		worker.executeJob(received)
-		worker.activeJobs--
 	}
-
-	return
 }
 
 // considerBalooning returns true if balooning is enabled and threshold is reached
@@ -262,14 +252,6 @@ func (worker *worker) Shutdown() {
 		if worker.worker != nil {
 			worker.worker.Close()
 		}
-	}
-	if worker.client != nil {
-		worker.client.Close()
-		worker.client = nil
-	}
-	if worker.dupclient != nil {
-		worker.dupclient.Close()
-		worker.dupclient = nil
 	}
 	worker.worker = nil
 }

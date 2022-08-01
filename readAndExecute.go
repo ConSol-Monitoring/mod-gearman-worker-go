@@ -68,7 +68,7 @@ output=%s
 func readAndExecute(received *receivedStruct, config *configurationStruct) *answer {
 	var result answer
 	// first set the start time
-	result.startTime = float64(time.Now().UnixNano()) / 1e9
+	result.startTime = float64(time.Now().UnixNano() / int64(time.Second))
 	result.source = "Mod-Gearman Worker @ " + config.identifier
 	result.active = "active"
 
@@ -103,7 +103,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	}
 
 	// last set the finish time
-	result.finishTime = float64(time.Now().UnixNano()) / 1e9
+	result.finishTime = float64(time.Now().UnixNano() / int64(time.Second))
 	result.resultQueue = received.resultQueue
 
 	return &result
