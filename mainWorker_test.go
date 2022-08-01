@@ -18,6 +18,7 @@ func TestCheckLoads(t *testing.T) {
 	workerMap := make(map[string]*worker)
 	mainworker := newMainWorker(&config, []byte("key"), &workerMap)
 
+	mainworker.updateLoadAvg()
 	if !mainworker.checkLoads() {
 		t.Errorf("loads are to ok, checkload says they are too hight")
 	}

@@ -13,7 +13,7 @@ type worker struct {
 	id         string
 	what       string
 	worker     *libworker.Worker
-	idle       bool
+	activeJobs int
 	config     *configurationStruct
 	mainWorker *mainWorker
 	client     *client.Client
@@ -25,7 +25,7 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 	logger.Tracef("starting new %sworker", what)
 	worker := &worker{
 		what:       what,
-		idle:       true,
+		activeJobs: 0,
 		config:     configuration,
 		mainWorker: mainWorker,
 		client:     nil,
@@ -115,18 +115,15 @@ func (worker *worker) registerFunctions(configuration *configurationStruct) {
 }
 
 func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
-	res = []byte("")
+	res = []byte("OK")
 	logger.Tracef("worker got a job: %s", job.Handle())
 
-	worker.idle = false
-
-	defer func() {
-		worker.idle = true
-	}()
+	worker.activeJobs++
 
 	received, err := decrypt((decodeBase64(string(job.Data()))), worker.config.encryption)
 	if err != nil {
 		logger.Errorf("decrypt failed: %s", err.Error())
+		worker.activeJobs--
 		return
 	}
 	taskCounter.WithLabelValues(received.typ).Inc()
@@ -135,6 +132,52 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	logger.Debugf("incoming %s job: %s", received.typ, job.Handle())
 	logger.Trace(received)
 
+	if worker.useBalooning() {
+		finChan := make(chan bool, 1)
+		go func() {
+			worker.executeJob(received)
+			worker.activeJobs--
+			finChan <- true
+		}()
+
+		select {
+		case <-finChan:
+			logger.Debugf("job: %s finished", job.Handle())
+		case <-time.After(time.Duration(worker.config.backgroundingThreshold) * time.Second):
+			logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
+		}
+	} else {
+		worker.executeJob(received)
+		worker.activeJobs--
+	}
+
+	return
+}
+
+// useBalooning returns true if conditions for balooning are met (backgrounding jobs after backgroundingThreshold of seconds)
+func (worker *worker) useBalooning() bool {
+	if worker.config.backgroundingThreshold <= 0 {
+		return false
+	}
+
+	if !worker.mainWorker.checkLoads() {
+		return false
+	}
+
+	if !worker.mainWorker.checkMemory() {
+		return false
+	}
+
+	// only if 70% of our workers are utilized
+	if worker.mainWorker.workerUtilization < BalooningUtilizationThreshold {
+		return false
+	}
+
+	return true
+}
+
+// executeJob executes the job and handles sending the result
+func (worker *worker) executeJob(received *receivedStruct) {
 	result := readAndExecute(received, worker.config)
 
 	if result.returnCode > 0 {
@@ -143,10 +186,9 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
-		worker.SendResult(result)
+		enqueueServerResult(result)
 		enqueueDupServerResult(worker.config, result)
 	}
-	return
 }
 
 // errorHandler gets called if the libworker worker throws an error
@@ -163,46 +205,6 @@ func (worker *worker) errorHandler(e error) {
 	worker.Shutdown()
 }
 
-// SendResult sends the result back to the result queue
-func (worker *worker) SendResult(result *answer) {
-	// send result back to any server
-	sendSuccess := false
-	retries := 0
-	var lastErr error
-	for {
-		var err error
-		var c *client.Client
-		for _, address := range worker.config.server {
-			c, err = sendAnswer(worker.client, result, address, worker.config.encryption)
-			if err == nil {
-				worker.client = c
-				sendSuccess = true
-				break
-			}
-			worker.client = nil
-			if c != nil {
-				c.Close()
-			}
-		}
-		if sendSuccess || retries > 120 {
-			break
-		}
-		if err != nil {
-			lastErr = err
-			if retries == 0 {
-				logger.Debugf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
-			} else {
-				logger.Tracef("still failing to send back result: %s", err.Error())
-			}
-		}
-		time.Sleep(1 * time.Second)
-		retries++
-	}
-	if !sendSuccess && lastErr != nil {
-		logger.Debugf("failed to send back result: %s", lastErr.Error())
-	}
-}
-
 // Shutdown and deregister this worker
 func (worker *worker) Shutdown() {
 	logger.Debugf("worker shutting down")
@@ -213,7 +215,7 @@ func (worker *worker) Shutdown() {
 	}()
 	if worker.worker != nil {
 		worker.worker.ErrorHandler = nil
-		if !worker.idle {
+		if worker.activeJobs == 0 {
 			// try to stop gracefully
 			worker.worker.Shutdown()
 		}

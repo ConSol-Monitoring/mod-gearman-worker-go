@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bufio"
+	"bytes"
 	"net"
 	"os"
 	"strings"
@@ -25,19 +26,22 @@ const (
  */
 
 type mainWorker struct {
-	activeWorkers int
-	workerMap     map[string]*worker
-	workerMapLock *sync.RWMutex
-	statusWorker  *worker
-	min1          float64
-	min5          float64
-	min15         float64
-	config        *configurationStruct
-	key           []byte
-	tasks         int
-	idleSince     time.Time
-	serverStatus  map[string]string
-	running       bool
+	activeWorkers     int
+	workerUtilization int
+	workerMap         map[string]*worker
+	workerMapLock     *sync.RWMutex
+	statusWorker      *worker
+	min1              float64
+	min5              float64
+	min15             float64
+	memTotal          int
+	memFree           int
+	config            *configurationStruct
+	key               []byte
+	tasks             int
+	idleSince         time.Time
+	serverStatus      map[string]string
+	running           bool
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {
@@ -51,7 +55,8 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		serverStatus:  make(map[string]string),
 	}
 	w.RetryFailedConnections()
-	initialiseDupServerConsumers(w.config)
+	initializeResultServerConsumers(w.config)
+	initializeDupServerConsumers(w.config)
 	return w
 }
 
@@ -70,7 +75,7 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 	activeWorkers := 0
 	totalWorker := len(w.workerMap)
 	for _, w := range w.workerMap {
-		if !w.idle {
+		if w.activeJobs > 0 {
 			activeWorkers++
 		}
 	}
@@ -93,6 +98,12 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 		w.idleSince = time.Now()
 	}
 
+	if totalWorker > 0 {
+		w.workerUtilization = (activeWorkers * 100) / totalWorker
+	} else {
+		w.workerUtilization = 0
+	}
+
 	// check if we have too many workers
 	w.adjustWorkerBottomLevel()
 
@@ -111,7 +122,14 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 		return
 	}
 	// check load levels
+	w.updateLoadAvg()
 	if !w.checkLoads() {
+		return
+	}
+
+	// check memory levels
+	w.updateMemInfo()
+	if !w.checkMemory() {
 		return
 	}
 
@@ -157,7 +175,7 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		// stop first idle worker
 		logger.Debugf("manageWorkers: stopping one...")
 		for _, worker := range w.workerMap {
-			if worker.idle {
+			if worker.activeJobs == 0 {
 				worker.Shutdown()
 				break
 			}
@@ -220,7 +238,10 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 }
 
 // reads the avg loads from /procs/loadavg
-func (w *mainWorker) getLoadAvg() {
+func (w *mainWorker) updateLoadAvg() {
+	if w.config.loadLimit1 <= 0 && w.config.loadLimit5 <= 0 && w.config.loadLimit15 <= 0 {
+		return
+	}
 	file, err := os.Open("/proc/loadavg")
 	if err != nil {
 		return
@@ -234,6 +255,7 @@ func (w *mainWorker) getLoadAvg() {
 	w.min1 = getFloat(values[0])
 	w.min5 = getFloat(values[1])
 	w.min15 = getFloat(values[2])
+	file.Close()
 }
 
 // checks if all the loadlimits get checked, when values are set
@@ -242,7 +264,6 @@ func (w *mainWorker) checkLoads() bool {
 		return true
 	}
 
-	w.getLoadAvg()
 	if w.config.loadLimit1 > 0 && w.min1 > 0 && w.config.loadLimit1 < w.min1 {
 		logger.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.config.loadLimit1)
 		return false
@@ -261,6 +282,55 @@ func (w *mainWorker) checkLoads() bool {
 	return true
 }
 
+// reads the total/free memory by parsing /proc/meminfo
+func (w *mainWorker) updateMemInfo() {
+	if w.config.memLimit <= 0 {
+		return
+	}
+	file, err := os.Open("/proc/meminfo")
+	if err != nil {
+		return
+	}
+	scanner := bufio.NewScanner(file)
+	n := 2 // number of lines we are interested in
+	for scanner.Scan() && n > 0 {
+		switch {
+		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemFree:`)):
+			values := strings.Fields(scanner.Text())
+			if len(values) >= 1 {
+				w.memFree = getInt(values[1])
+			}
+		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemTotal:`)):
+			values := strings.Fields(scanner.Text())
+			if len(values) >= 1 {
+				w.memTotal = getInt(values[1])
+			}
+		default:
+			continue
+		}
+		n--
+	}
+	file.Close()
+}
+
+// checks the memory threshold in percent
+func (w *mainWorker) checkMemory() bool {
+	if w.config.memLimit <= 0 {
+		return true
+	}
+
+	if w.memTotal <= 0 {
+		return true
+	}
+
+	usedPercent := 100 - (w.memFree*100)/w.memTotal
+	if w.config.memLimit > 0 && w.config.memLimit > usedPercent {
+		logger.Debugf("not starting any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.config.memLimit)
+		return false
+	}
+
+	return true
+}
 func (w *mainWorker) unregisterWorker(worker *worker) {
 	switch worker.what {
 	case "check":

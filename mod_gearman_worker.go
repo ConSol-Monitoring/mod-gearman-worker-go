@@ -30,13 +30,22 @@ const (
 	ConnectionRetryInterval = 3
 
 	// OpenFilesBase sets the approximate number of open files excluded open files from worker
-	OpenFilesBase = 20
+	OpenFilesBase = 50
 
 	// OpenFilesPerWorker sets the expected number of filehandles per worker
-	OpenFilesPerWorker = 4
+	OpenFilesPerWorker = 3
 
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
 	OpenFilesExtraPercent = 1.3
+
+	// ResultServerWorker sets the number of result worker
+	ResultServerWorker = 10
+
+	// ResultServerQueueSize sets the queue size for results
+	ResultServerQueueSize = 1000
+
+	// BalooningUtilizationThreshold sets the minimum utilization in percent at where ballooning will be considered
+	BalooningUtilizationThreshold = 70
 )
 
 // MainStateType is used to set different states of the main loop
@@ -197,6 +206,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 					mainworker.running = false
 					mainworker.StopAllWorker(exitState)
 					terminateDupServerConsumers()
+					terminateResultServerConsumers()
 					mainLoopExited <- true
 				}()
 				// continue waiting for signals or an exited mainloop
@@ -375,9 +385,11 @@ func printUsage() {
 	fmt.Print("       --max-jobs=<nr>                              \n")
 	fmt.Print("       --spawn-rate=<nr>                            \n")
 	fmt.Print("       --fork_on_exec                               \n")
+	fmt.Print("       --backgrounding-threshold=<sec>              \n")
 	fmt.Print("       --load_limit1=load1                          \n")
 	fmt.Print("       --load_limit5=load5                          \n")
 	fmt.Print("       --load_limit15=load15                        \n")
+	fmt.Print("       --mem_limit=<percent>                        \n")
 	fmt.Print("       --show_error_output                          \n")
 
 	fmt.Print("Miscellaneous:\n")

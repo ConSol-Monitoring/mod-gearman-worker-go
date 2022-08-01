@@ -36,6 +36,8 @@ type configurationStruct struct {
 	loadLimit1                float64
 	loadLimit5                float64
 	loadLimit15               float64
+	memLimit                  int
+	backgroundingThreshold    int
 	showErrorOutput           bool
 	dupResultsArePassive      bool
 	dupServerBacklogQueueSize int
@@ -76,6 +78,8 @@ func setDefaultValues(result *configurationStruct) {
 	result.maxWorker = 20
 	result.spawnRate = 1
 	result.sinkRate = -1
+	result.backgroundingThreshold = -1
+	result.memLimit = -1
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
 	if result.identifier == "" {
@@ -178,6 +182,10 @@ func readSetting(values []string, result *configurationStruct) {
 		result.loadLimit5 = getFloat(value)
 	case "load_limit15":
 		result.loadLimit15 = getFloat(value)
+	case "mem_limit":
+		result.memLimit = getInt(value)
+	case "backgrounding-threshold":
+		result.backgroundingThreshold = getInt(value)
 	case "show_error_output":
 		result.showErrorOutput = getBool(value)
 	case "dup_results_are_passive":
