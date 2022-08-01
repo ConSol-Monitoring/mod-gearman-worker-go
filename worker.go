@@ -132,26 +132,39 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
 	logger.Trace(received)
 
-	if worker.useBalooning() {
+	if worker.considerBalooning() {
 		finChan := make(chan bool, 1)
 		go func() {
 			worker.executeJob(received)
 			worker.activeJobs--
 			if received.ballooning {
 				worker.mainWorker.curBalooningWorker--
+				balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
 			}
 			finChan <- true
 		}()
 
 		timeout := time.NewTimer(time.Duration(worker.config.backgroundingThreshold) * time.Second)
-		select {
-		case <-finChan:
-			logger.Debugf("job: %s finished", job.Handle())
-			timeout.Stop()
-		case <-timeout.C:
-			logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
-			worker.mainWorker.curBalooningWorker++
-			received.ballooning = true
+		ready := false
+		for !ready {
+			select {
+			case <-finChan:
+				logger.Debugf("job: %s finished", job.Handle())
+				timeout.Stop()
+				ready = true
+			case <-timeout.C:
+				// check again if are there open files left for balooning
+				if !worker.startBalooning() {
+					// wait another x seconds, all ballooning worker busy
+					timeout = time.NewTimer(time.Duration(worker.config.backgroundingThreshold) * time.Second)
+					continue
+				}
+				logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
+				worker.mainWorker.curBalooningWorker++
+				balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
+				received.ballooning = true
+				ready = true
+			}
 		}
 	} else {
 		worker.executeJob(received)
@@ -161,8 +174,22 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	return
 }
 
-// useBalooning returns true if conditions for balooning are met (backgrounding jobs after backgroundingThreshold of seconds)
-func (worker *worker) useBalooning() bool {
+// considerBalooning returns true if balooning is enabled and threshold is reached
+func (worker *worker) considerBalooning() bool {
+	if worker.config.backgroundingThreshold <= 0 {
+		return false
+	}
+
+	// only if 70% of our workers are utilized
+	if worker.mainWorker.workerUtilization < BalooningUtilizationThreshold {
+		return false
+	}
+
+	return true
+}
+
+// startBalooning returns true if conditions for balooning are met (backgrounding jobs after backgroundingThreshold of seconds)
+func (worker *worker) startBalooning() bool {
 	if worker.config.backgroundingThreshold <= 0 {
 		return false
 	}
@@ -185,6 +212,7 @@ func (worker *worker) useBalooning() bool {
 		return false
 	}
 
+	logger.Debugf("balooning: cur: %d max: %d", worker.mainWorker.curBalooningWorker, (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker))
 	return true
 }
 

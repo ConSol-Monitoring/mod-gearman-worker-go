@@ -32,8 +32,8 @@ const (
 	// OpenFilesBase sets the approximate number of open files excluded open files from worker
 	OpenFilesBase = 50
 
-	// OpenFilesPerWorker sets the expected number of filehandles per worker (1 gearman connection + 2 fifo pipes for stderr/stdout)
-	OpenFilesPerWorker = 3
+	// OpenFilesPerWorker sets the expected number of filehandles per worker (1 gearman connection, 2 fifo pipes for stderr/stdout, one on /dev/null, one sparse)
+	OpenFilesPerWorker = 5
 
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
 	OpenFilesExtraPercent = 1.2

@@ -32,6 +32,11 @@ var (
 		Help: "Total number of busy Workers",
 	})
 
+	balooningWorkerCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "modgearmanworker_workers_balooning",
+		Help: "Total number of extra balooning Workers running",
+	})
+
 	taskCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "modgearmanworker_tasks_completed_total",
