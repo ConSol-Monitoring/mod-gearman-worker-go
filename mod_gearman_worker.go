@@ -33,10 +33,10 @@ const (
 	OpenFilesBase = 50
 
 	// OpenFilesPerWorker sets the expected number of filehandles per worker
-	OpenFilesPerWorker = 3
+	OpenFilesPerWorker = 2
 
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
-	OpenFilesExtraPercent = 1.3
+	OpenFilesExtraPercent = 1.2
 
 	// ResultServerWorker sets the number of result worker
 	ResultServerWorker = 10

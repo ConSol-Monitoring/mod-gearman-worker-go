@@ -140,10 +140,12 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 			finChan <- true
 		}()
 
+		timeout := time.NewTimer(time.Duration(worker.config.backgroundingThreshold) * time.Second)
 		select {
 		case <-finChan:
 			logger.Debugf("job: %s finished", job.Handle())
-		case <-time.After(time.Duration(worker.config.backgroundingThreshold) * time.Second):
+			timeout.Stop()
+		case <-timeout.C:
 			logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
 		}
 	} else {

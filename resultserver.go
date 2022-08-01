@@ -21,7 +21,6 @@ func initializeResultServerConsumers(config *configurationStruct) {
 	if numResultServer > config.maxWorker {
 		numResultServer = config.maxWorker
 	}
-	numResultServer = 0
 
 	logger.Debugf("creating %d result worker for: [%s]", numResultServer, strings.Join(config.server, ", "))
 	resultServerConsumers = make([]*resultServerConsumer, 0, numResultServer)

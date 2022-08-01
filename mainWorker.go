@@ -371,7 +371,8 @@ func (w *mainWorker) RetryFailedConnections() bool {
 		if !ok || status != "" {
 			previous = false
 		}
-		_, err := net.DialTimeout("tcp", address, DefaultConnectionTimeout*time.Second)
+		c, err := net.DialTimeout("tcp", address, DefaultConnectionTimeout*time.Second)
+		c.Close()
 		w.workerMapLock.Lock()
 		if err != nil {
 			w.serverStatus[address] = err.Error()
