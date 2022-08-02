@@ -245,7 +245,7 @@ func (worker *worker) Shutdown() {
 	}()
 	if worker.worker != nil {
 		worker.worker.ErrorHandler = nil
-		if worker.activeJobs == 0 {
+		if worker.activeJobs > 0 {
 			// try to stop gracefully
 			worker.worker.Shutdown()
 		}
