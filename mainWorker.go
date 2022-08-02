@@ -424,6 +424,23 @@ func (w *mainWorker) SetServerStatus(addr, err string) {
 	w.serverStatus[addr] = err
 }
 
+// Shutdown stop main worker
+func (w *mainWorker) Shutdown(exitState MainStateType) {
+	w.running = false
+	w.StopAllWorker(exitState)
+
+	// wait 5 seconds for result queue to empty
+	for x := 0; x <= 5; x++ {
+		if len(resultServerQueue) == 0 {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	terminateDupServerConsumers()
+	terminateResultServerConsumers()
+}
+
 // StopAllWorker stops all check worker and the status worker
 func (w *mainWorker) StopAllWorker(state MainStateType) {
 	w.workerMapLock.RLock()

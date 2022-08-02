@@ -214,10 +214,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 				// stop worker in background, so we can continue listening to signals
 				go func() {
 					defer logPanicExit()
-					mainworker.running = false
-					mainworker.StopAllWorker(exitState)
-					terminateDupServerConsumers()
-					terminateResultServerConsumers()
+					mainworker.Shutdown(exitState)
 					mainLoopExited <- true
 				}()
 				// continue waiting for signals or an exited mainloop
