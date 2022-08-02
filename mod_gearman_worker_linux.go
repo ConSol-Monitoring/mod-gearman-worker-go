@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
+	"runtime/pprof"
 	"syscall"
 	"time"
 )
@@ -12,7 +14,7 @@ func setupUsr1Channel(osSignalUsrChannel chan os.Signal) {
 	signal.Notify(osSignalUsrChannel, syscall.SIGUSR1)
 }
 
-func mainSignalHandler(sig os.Signal) MainStateType {
+func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType {
 	switch sig {
 	case syscall.SIGTERM:
 		logger.Infof("got sigterm, quiting gracefully")
@@ -29,6 +31,22 @@ func mainSignalHandler(sig os.Signal) MainStateType {
 		logger.Errorf("requested thread dump via signal %s", sig)
 		logThreaddump()
 		return Resume
+	case syscall.SIGUSR2:
+		if config.flagMemProfile == "" {
+			logger.Errorf("requested memory profile, but flag -memprofile missing")
+			return (Resume)
+		}
+		f, err := os.Create(config.flagMemProfile)
+		if err != nil {
+			logger.Errorf("could not create memory profile: %s", err.Error())
+		}
+		defer f.Close()
+		runtime.GC()
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			logger.Errorf("could not write memory profile: %s", err.Error())
+		}
+		logger.Warnf("memory profile written to: %s", config.flagMemProfile)
+		return (Resume)
 	default:
 		logger.Warnf("Signal not handled: %v", sig)
 	}

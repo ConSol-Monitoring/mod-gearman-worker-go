@@ -45,6 +45,7 @@ type mainWorker struct {
 	idleSince          time.Time
 	serverStatus       map[string]string
 	running            bool
+	cpuProfileHandler  *os.File
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {

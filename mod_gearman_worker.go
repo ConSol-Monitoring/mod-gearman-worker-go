@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"syscall"
@@ -46,6 +49,9 @@ const (
 
 	// BalooningUtilizationThreshold sets the minimum utilization in percent at where ballooning will be considered
 	BalooningUtilizationThreshold = 70
+
+	// BlockProfileRateInterval sets the profiling interval when started with -profile
+	BlockProfileRateInterval = 10
 )
 
 // MainStateType is used to set different states of the main loop
@@ -104,7 +110,7 @@ func Worker(build string) {
 		defer logPanicExit()
 		for {
 			sig := <-osSignalUsrChannel
-			mainSignalHandler(sig)
+			mainSignalHandler(sig, config)
 		}
 	}()
 
@@ -152,6 +158,8 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	maxOpenFiles := getMaxOpenFiles()
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
 
+	initDebugOptions(config)
+
 	expectedOpenFiles := uint64(float64((config.maxWorker*OpenFilesPerWorker + OpenFilesBase)) * OpenFilesExtraPercent)
 	maxPossibleWorker := int(((float64(maxOpenFiles) / OpenFilesExtraPercent) - OpenFilesBase) / OpenFilesPerWorker)
 	if expectedOpenFiles > maxOpenFiles {
@@ -186,7 +194,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 		case <-ticker.C:
 			mainworker.manageWorkers(0)
 		case sig := <-osSignalChannel:
-			exitState = mainSignalHandler(sig)
+			exitState = mainSignalHandler(sig, config)
 			switch exitState {
 			case Resume:
 				continue
@@ -271,6 +279,40 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	config.removeDuplicates()
 	err := verifyFunc(config)
 	return config, err
+}
+
+func initDebugOptions(config *configurationStruct) {
+	if config.flagProfile != "" {
+		if config.flagCPUProfile != "" || config.flagMemProfile != "" {
+			fmt.Print("ERROR: either use --debug-profile or --cpu/memprofile, not both\n")
+			os.Exit(ExitCodeError)
+		}
+		runtime.SetBlockProfileRate(BlockProfileRateInterval)
+		runtime.SetMutexProfileFraction(BlockProfileRateInterval)
+		go func() {
+			// make sure we log panics properly
+			defer logPanicExit()
+			err := http.ListenAndServe(config.flagProfile, http.DefaultServeMux)
+			if err != nil {
+				logger.Warnf("http.ListenAndServe finished with: %e", err)
+			}
+		}()
+
+		logger.Warnf("pprof profiler listening at http://%s/debug/pprof/", config.flagProfile)
+	}
+
+	if config.flagCPUProfile != "" {
+		runtime.SetBlockProfileRate(BlockProfileRateInterval)
+		cpuProfileHandler, err := os.Create(config.flagCPUProfile)
+		if err != nil {
+			fmt.Printf("ERROR: could not create CPU profile: %s", err.Error())
+			os.Exit(ExitCodeError)
+		}
+		if err := pprof.StartCPUProfile(cpuProfileHandler); err != nil {
+			fmt.Printf("ERROR: could not start CPU profile: %s", err.Error())
+			os.Exit(ExitCodeError)
+		}
+	}
 }
 
 func checkForReasonableConfig(config *configurationStruct) error {
@@ -379,7 +421,7 @@ func printUsage() {
 	fmt.Print("       --hostgroup=<name>                           \n")
 	fmt.Print("       --servicegroup=<name>                        \n")
 	fmt.Print("       --max-age=<sec>                              \n")
-	fmt.Print("       --job_timeout=<sec>                              \n")
+	fmt.Print("       --job_timeout=<sec>                          \n")
 	fmt.Print("\n")
 	fmt.Print("Worker Control:\n")
 	fmt.Print("       --min-worker=<nr>                            \n")
@@ -394,7 +436,12 @@ func printUsage() {
 	fmt.Print("       --load_limit15=load15                        \n")
 	fmt.Print("       --mem_limit=<percent>                        \n")
 	fmt.Print("       --show_error_output                          \n")
-
+	fmt.Print("\n")
+	fmt.Print("Worker Development:\n")
+	fmt.Print("       --debug-profiler=<listen address>            \n")
+	fmt.Print("       --cpuprofile=<file>                          \n")
+	fmt.Print("       --memprofile=<file>                          \n")
+	fmt.Print("\n")
 	fmt.Print("Miscellaneous:\n")
 	fmt.Print("       --workaround_rc_25\n")
 	fmt.Print("\n")

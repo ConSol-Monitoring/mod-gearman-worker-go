@@ -59,6 +59,10 @@ type configurationStruct struct {
 	startTime   float64
 	finishTime  float64
 	latency     float64
+	// worker debug profile
+	flagProfile    string
+	flagCPUProfile string
+	flagMemProfile string
 }
 
 func setDefaultValues(result *configurationStruct) {
@@ -218,6 +222,12 @@ func readSetting(values []string, result *configurationStruct) {
 		result.finishTime = getFloat(value)
 	case "latency":
 		result.latency = getFloat(value)
+	case "debug-profiler":
+		result.flagProfile = value
+	case "cpuprofile":
+		result.flagCPUProfile = value
+	case "memprofile":
+		result.flagMemProfile = value
 	}
 }
 
