@@ -5,6 +5,7 @@ next:
           - add mem_limit (in percent) to set a threshold of used memory after which no worker will be spawned
           - add backgrounding-threshold option to set amount of seconds after
             which a worker will background the current executed plugin and work on the next job.
+          - use shared queue to send results back which saves one connection per worker thread
 
 1.1.6    Mon Jul  4 09:07:29 CEST 2022
           - log max open files on startup
