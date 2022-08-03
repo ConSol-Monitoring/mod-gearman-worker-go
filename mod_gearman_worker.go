@@ -387,7 +387,6 @@ func printUsage() {
 	fmt.Print("       --idle-timeout=<nr>                          \n")
 	fmt.Print("       --max-jobs=<nr>                              \n")
 	fmt.Print("       --spawn-rate=<nr>                            \n")
-	fmt.Print("       --fork_on_exec                               \n")
 	fmt.Print("       --backgrounding-threshold=<sec>              \n")
 	fmt.Print("       --load_limit1=load1                          \n")
 	fmt.Print("       --load_limit5=load5                          \n")
