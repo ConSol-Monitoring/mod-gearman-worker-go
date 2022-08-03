@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
-	"runtime/pprof"
 	"strconv"
 	"strings"
 	"syscall"
@@ -105,7 +102,7 @@ func Worker(build string) {
 
 	// start usr1 routine which prints stacktraces upon request
 	osSignalUsrChannel := make(chan os.Signal, 1)
-	setupUsr1Channel(osSignalUsrChannel)
+	setupUsrSignalChannel(osSignalUsrChannel)
 	go func() {
 		defer logPanicExit()
 		for {
@@ -157,8 +154,6 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	maxOpenFiles := getMaxOpenFiles()
 	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
-
-	initDebugOptions(config)
 
 	expectedOpenFiles := uint64(float64((config.maxWorker*OpenFilesPerWorker + OpenFilesBase)) * OpenFilesExtraPercent)
 	maxPossibleWorker := int(((float64(maxOpenFiles) / OpenFilesExtraPercent) - OpenFilesBase) / OpenFilesPerWorker)
@@ -276,40 +271,6 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	config.removeDuplicates()
 	err := verifyFunc(config)
 	return config, err
-}
-
-func initDebugOptions(config *configurationStruct) {
-	if config.flagProfile != "" {
-		if config.flagCPUProfile != "" || config.flagMemProfile != "" {
-			fmt.Print("ERROR: either use --debug-profile or --cpu/memprofile, not both\n")
-			os.Exit(ExitCodeError)
-		}
-		runtime.SetBlockProfileRate(BlockProfileRateInterval)
-		runtime.SetMutexProfileFraction(BlockProfileRateInterval)
-		go func() {
-			// make sure we log panics properly
-			defer logPanicExit()
-			err := http.ListenAndServe(config.flagProfile, http.DefaultServeMux)
-			if err != nil {
-				logger.Warnf("http.ListenAndServe finished with: %e", err)
-			}
-		}()
-
-		logger.Warnf("pprof profiler listening at http://%s/debug/pprof/", config.flagProfile)
-	}
-
-	if config.flagCPUProfile != "" {
-		runtime.SetBlockProfileRate(BlockProfileRateInterval)
-		cpuProfileHandler, err := os.Create(config.flagCPUProfile)
-		if err != nil {
-			fmt.Printf("ERROR: could not create CPU profile: %s", err.Error())
-			os.Exit(ExitCodeError)
-		}
-		if err := pprof.StartCPUProfile(cpuProfileHandler); err != nil {
-			fmt.Printf("ERROR: could not start CPU profile: %s", err.Error())
-			os.Exit(ExitCodeError)
-		}
-	}
 }
 
 func checkForReasonableConfig(config *configurationStruct) error {

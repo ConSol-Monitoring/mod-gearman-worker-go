@@ -10,8 +10,9 @@ import (
 	"time"
 )
 
-func setupUsr1Channel(osSignalUsrChannel chan os.Signal) {
+func setupUsrSignalChannel(osSignalUsrChannel chan os.Signal) {
 	signal.Notify(osSignalUsrChannel, syscall.SIGUSR1)
+	signal.Notify(osSignalUsrChannel, syscall.SIGUSR2)
 }
 
 func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType {

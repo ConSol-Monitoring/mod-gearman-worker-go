@@ -6,11 +6,11 @@ import (
 	"syscall"
 )
 
-func setupUsr1Channel(osSignalUsrChannel chan os.Signal) {
+func setupUsrSignalChannel(osSignalUsrChannel chan os.Signal) {
 	// not supported on windows
 }
 
-func mainSignalHandler(sig os.Signal) MainStateType {
+func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType {
 	switch sig {
 	case syscall.SIGTERM:
 		logger.Infof("got sigterm, quiting gracefully")

@@ -3,8 +3,13 @@ package modgearman
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"net"
+	"net/http"
+	hpprof "net/http/pprof"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	time "time"
@@ -58,10 +63,47 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		idleSince:     time.Now(),
 		serverStatus:  make(map[string]string),
 	}
+	w.InitDebugOptions()
 	w.RetryFailedConnections()
 	initializeResultServerConsumers(w.config)
 	initializeDupServerConsumers(w.config)
 	return w
+}
+
+func (w *mainWorker) InitDebugOptions() {
+	if w.config.flagProfile != "" {
+		if w.config.flagCPUProfile != "" || w.config.flagMemProfile != "" {
+			fmt.Print("ERROR: either use --debug-profile or --cpu/memprofile, not both\n")
+			os.Exit(ExitCodeError)
+		}
+		runtime.SetBlockProfileRate(BlockProfileRateInterval)
+		runtime.SetMutexProfileFraction(BlockProfileRateInterval)
+		go func() {
+			// make sure we log panics properly
+			defer logPanicExit()
+			_ = hpprof.Handler("/debug/pprof/")
+			err := http.ListenAndServe(w.config.flagProfile, http.DefaultServeMux)
+			if err != nil {
+				logger.Warnf("http.ListenAndServe finished with: %e", err)
+			}
+		}()
+
+		logger.Warnf("pprof profiler listening at http://%s/debug/pprof/", w.config.flagProfile)
+	}
+
+	if w.config.flagCPUProfile != "" {
+		runtime.SetBlockProfileRate(BlockProfileRateInterval)
+		cpuProfileHandler, err := os.Create(w.config.flagCPUProfile)
+		if err != nil {
+			fmt.Printf("ERROR: could not create CPU profile: %s", err.Error())
+			os.Exit(ExitCodeError)
+		}
+		if err := pprof.StartCPUProfile(cpuProfileHandler); err != nil {
+			fmt.Printf("ERROR: could not start CPU profile: %s", err.Error())
+			os.Exit(ExitCodeError)
+		}
+		w.cpuProfileHandler = cpuProfileHandler
+	}
 }
 
 func (w *mainWorker) manageWorkers(initialStart int) {
@@ -437,6 +479,11 @@ func (w *mainWorker) Shutdown(exitState MainStateType) {
 		time.Sleep(1 * time.Second)
 	}
 
+	if w.cpuProfileHandler != nil {
+		pprof.StopCPUProfile()
+		w.cpuProfileHandler.Close()
+		logger.Warnf("cpu profile written to: %s", w.config.flagCPUProfile)
+	}
 	terminateDupServerConsumers()
 	terminateResultServerConsumers()
 }
