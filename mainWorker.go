@@ -418,9 +418,9 @@ func (w *mainWorker) RetryFailedConnections() bool {
 			previous = false
 		}
 		c, err := net.DialTimeout("tcp", address, DefaultConnectionTimeout*time.Second)
-		c.Close()
 		w.workerMapLock.Lock()
 		if err != nil {
+			c.Close()
 			w.serverStatus[address] = err.Error()
 			if previous {
 				changed = true
