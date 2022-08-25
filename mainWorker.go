@@ -370,7 +370,7 @@ func (w *mainWorker) checkMemory() bool {
 	}
 
 	usedPercent := 100 - (w.memFree*100)/w.memTotal
-	if w.config.memLimit > 0 && w.config.memLimit > usedPercent {
+	if w.config.memLimit > 0 && usedPercent >= w.config.memLimit {
 		logger.Debugf("not starting any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.config.memLimit)
 		return false
 	}

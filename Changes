@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - fix checking memory threshold
+
 1.2.1    Wed Aug 10 15:05:24 CEST 2022
           - fix crash if gearmand is unavailable
 
