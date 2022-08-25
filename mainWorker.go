@@ -338,10 +338,18 @@ func (w *mainWorker) updateMemInfo() {
 		return
 	}
 	scanner := bufio.NewScanner(file)
-	n := 2 // number of lines we are interested in
+	n := 3 // number of lines we are interested in
+	w.memFree = 0
+	w.memTotal = 0
 	for scanner.Scan() && n > 0 {
 		switch {
+		// use MemFree as fallback, MemAvailable is the value we want to use
 		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemFree:`)):
+			values := strings.Fields(scanner.Text())
+			if len(values) >= 1 && w.memFree == 0 {
+				w.memFree = getInt(values[1])
+			}
+		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemAvailable:`)):
 			values := strings.Fields(scanner.Text())
 			if len(values) >= 1 {
 				w.memFree = getInt(values[1])
