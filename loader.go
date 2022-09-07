@@ -2,7 +2,6 @@ package modgearman
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -30,7 +29,7 @@ func getKey(config *configurationStruct) []byte {
 
 // loads the keyfile and extracts the key, if a newline is at the end it gets cut off
 func readKeyFile(path string) []byte {
-	dat, err := ioutil.ReadFile(path)
+	dat, err := os.ReadFile(path)
 	if err != nil {
 		log.Panic("could not open keyfile")
 	}

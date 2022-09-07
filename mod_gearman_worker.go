@@ -2,7 +2,6 @@ package modgearman
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -301,7 +300,7 @@ func createPidFile(path string) {
 		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
 
-	err := ioutil.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
+	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
 		os.Exit(ExitCodeError)
@@ -310,7 +309,7 @@ func createPidFile(path string) {
 }
 
 func checkStalePidFile(path string) bool {
-	dat, err := ioutil.ReadFile(path)
+	dat, err := os.ReadFile(path)
 	if err != nil {
 		return false
 	}

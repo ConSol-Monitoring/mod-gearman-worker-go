@@ -60,6 +60,7 @@ issues:
     - 'Expect WriteFile permissions to be 0600 or less'
     - 'err113:'
     - 'G204: Subprocess launched'
+    - 'G114: Use of net/http serve function that has no support for setting timeouts'
     - 'RLIMIT_NOFILE contains underscore'
     - 'O_APPEND contains underscore'
     - 'O_WRONLY contains underscore'
