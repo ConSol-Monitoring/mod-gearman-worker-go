@@ -6,8 +6,8 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-MINGOVERSION:=00010016
-MINGOVERSIONSTR:=1.16
+MINGOVERSION:=00010018
+MINGOVERSIONSTR:=1.18
 BUILD:=$(shell git rev-parse --short HEAD)
 # see https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 # and https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
@@ -119,6 +119,7 @@ citest: vendor
 	# Run other subtests
 	#
 	$(MAKE) golangci
+	$(MAKE) govulncheck
 	$(MAKE) fmt
 	#
 	# Normal test cases
@@ -194,6 +195,9 @@ golangci: tools
 	# See https://github.com/golangci/golangci-lint
 	#
 	golangci-lint run ./...; \
+
+govulncheck: tools
+	govulncheck ./...
 
 version:
 	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
