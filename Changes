@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - adjust memory default threshold
+
 1.2.2    Fri Aug 26 11:39:55 CEST 2022
           - fix checking memory threshold
 

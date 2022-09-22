@@ -81,8 +81,8 @@ func setDefaultValues(result *configurationStruct) {
 	result.maxWorker = 20
 	result.spawnRate = 3
 	result.sinkRate = 1
-	result.backgroundingThreshold = 10
-	result.memLimit = 80
+	result.backgroundingThreshold = 30
+	result.memLimit = 70
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
 	if result.identifier == "" {
