@@ -35,6 +35,7 @@ type configurationStruct struct {
 	loadLimit1                float64
 	loadLimit5                float64
 	loadLimit15               float64
+	loadCPUMulti              float64
 	memLimit                  int
 	backgroundingThreshold    int
 	showErrorOutput           bool
@@ -82,6 +83,7 @@ func setDefaultValues(result *configurationStruct) {
 	result.spawnRate = 3
 	result.sinkRate = 1
 	result.backgroundingThreshold = 30
+	result.loadCPUMulti = 1.5
 	result.memLimit = 70
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
@@ -183,6 +185,8 @@ func readSetting(values []string, result *configurationStruct) {
 		result.loadLimit5 = getFloat(value)
 	case "load_limit15":
 		result.loadLimit15 = getFloat(value)
+	case "load_cpu_multi":
+		result.loadCPUMulti = getFloat(value)
 	case "mem_limit":
 		result.memLimit = getInt(value)
 	case "backgrounding-threshold":

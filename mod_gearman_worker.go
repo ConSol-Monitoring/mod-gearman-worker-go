@@ -287,6 +287,20 @@ func checkForReasonableConfig(config *configurationStruct) error {
 	if config.minWorker > config.maxWorker {
 		config.maxWorker = config.minWorker
 	}
+
+	if config.loadCPUMulti > 0 {
+		cpuCount := runtime.NumCPU()
+		if config.loadLimit1 == 0 {
+			config.loadLimit1 = config.loadCPUMulti * float64(cpuCount)
+		}
+		if config.loadLimit5 == 0 {
+			config.loadLimit5 = config.loadCPUMulti * float64(cpuCount)
+		}
+		if config.loadLimit15 == 0 {
+			config.loadLimit15 = config.loadCPUMulti * float64(cpuCount)
+		}
+	}
+
 	return nil
 }
 

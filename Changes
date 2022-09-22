@@ -2,6 +2,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
           - adjust memory default threshold
+          - add load_cpu_multi option to set load based on number of CPUs (default 1.5)
 
 1.2.2    Fri Aug 26 11:39:55 CEST 2022
           - fix checking memory threshold
