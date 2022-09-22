@@ -14,6 +14,7 @@ func TestReadSettingsFile(t *testing.T) {
 	f, err := os.Create("testConfigFile")
 	if err != nil {
 		t.Errorf("could not create config testfile")
+		return
 	}
 
 	f.Write([]byte(`#ich bin ein kommentar also werde ich ignoriert
@@ -55,6 +56,65 @@ server=hostname2
 	}
 
 	os.Remove("testConfigFile")
+}
+
+func TestReadSettingsPath(t *testing.T) {
+	var testConfig configurationStruct
+
+	// set default values so we can check if they get overwritten
+	setDefaultValues(&testConfig)
+
+	err := os.Mkdir("testConfigFolder", 0755)
+	if err != nil {
+		t.Errorf("could not create config test folder")
+		return
+	}
+
+	f, err := os.Create("testConfigFolder/file.cfg")
+	if err != nil {
+		t.Errorf("could not create config testfile")
+		return
+	}
+
+	f.Write([]byte(`#ich bin ein kommentar also werde ich ignoriert
+debug=2
+servicegroups=a,b,c
+servicegroups=d
+idle-timeout=200
+server=hostname:4730
+server=:4730
+server=hostname
+server=hostname2
+`))
+
+	readSettingsPath("testConfigFolder", &testConfig)
+	testConfig.removeDuplicates()
+
+	if testConfig.debug != 2 {
+		t.Errorf("wrong value expected 2 got %d", testConfig.debug)
+	}
+
+	if len(testConfig.servicegroups) != 4 {
+		t.Errorf("servicegroups len false expected 4 got %d", len(testConfig.servicegroups))
+	}
+
+	if testConfig.idleTimeout != 200 {
+		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idleTimeout)
+	}
+
+	if testConfig.server[0] != "hostname:4730" {
+		t.Errorf("server 1 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[0])
+	}
+
+	if testConfig.server[1] != "0.0.0.0:4730" {
+		t.Errorf("server 2 parsed incorrect: '%s' vs. '0.0.0.0:4730'", testConfig.server[1])
+	}
+
+	if testConfig.server[2] != "hostname2:4730" {
+		t.Errorf("server 3 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[2])
+	}
+
+	os.RemoveAll("testConfigFolder")
 }
 
 func TestGetFloat(t *testing.T) {

@@ -2,7 +2,9 @@ package modgearman
 
 import (
 	"bufio"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -140,7 +142,7 @@ func readSetting(values []string, result *configurationStruct) {
 	case "timeout_return":
 		result.timeoutReturn = getInt(value)
 	case "config":
-		readSettingsFile(value, result)
+		readSettingsPath(value, result)
 	case "debug":
 		result.debug = getInt(value)
 	case "logfile":
@@ -232,13 +234,35 @@ func readSetting(values []string, result *configurationStruct) {
 	}
 }
 
+// read settings from file or folder
+func readSettingsPath(path string, result *configurationStruct) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		logger.Errorf("cannot read %s: %s", path, err.Error())
+		return
+	}
+	if fileInfo.IsDir() {
+		filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+			if !info.IsDir() {
+				if strings.HasSuffix(path, ".cfg") || strings.HasSuffix(path, ".conf") {
+					readSettingsFile(path, result)
+				}
+			}
+			return err
+		})
+		return
+	}
+
+	readSettingsFile(path, result)
+}
+
 // opens the config file and reads all key value pairs, separated through = and commented out with #
 // also reads the config files specified in the config= value
 func readSettingsFile(path string, result *configurationStruct) {
 	file, err := os.Open(path)
 
 	if err != nil {
-		logger.Error("config file not found")
+		logger.Errorf("cannot read file %s: %s", path, err.Error())
 		return
 	}
 
