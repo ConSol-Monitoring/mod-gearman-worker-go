@@ -1,6 +1,6 @@
 module github.com/ConSol/mod-gearman-worker-go
 
-go 1.18
+go 1.19
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
