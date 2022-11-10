@@ -80,8 +80,8 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	// if maxAge set to 0 it does not get checked
 	if config.maxAge > 0 {
 		if result.startTime-result.coreStartTime > float64(config.maxAge) {
-			logger.Debug("worker: readAndExecute: maxAge: job too old")
-			result.output = "Could not Start Check In Time"
+			logger.Warnf("worker: maxAge: job too old: startTime: %s (threshold: %ds)", time.Unix(int64(result.coreStartTime), 0), config.maxAge)
+			result.output = fmt.Sprintf("Could not start check in time (worker: %s)", config.identifier)
 			return &result
 		}
 	}

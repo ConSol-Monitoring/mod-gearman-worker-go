@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -47,8 +48,9 @@ func TestReadAndExecute(t *testing.T) {
 	config.maxAge = 1
 	testReceive.coreTime = float64(time.Now().UnixNano())/1e9 - 2
 	resultValue = readAndExecute(&testReceive, &config)
-	if resultValue.output != "Could not Start Check In Time" {
-		t.Errorf("got %s but expected: %s", resultValue, "Could not Start Check In Time")
+	expectedOutput := fmt.Sprintf("Could not start check in time (worker: %s)", config.identifier)
+	if resultValue.output != expectedOutput {
+		t.Errorf("got %s but expected: %s", resultValue.output, expectedOutput)
 	}
 }
 
