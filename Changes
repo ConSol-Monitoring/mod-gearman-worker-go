@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+1.2.4    Tue Sep 27 10:38:12 CEST 2022
+          - improve worker error output
+
 1.2.3    Tue Sep 27 10:38:12 CEST 2022
           - adjust memory default threshold to 70%
           - add load_cpu_multi option to set load based on number of CPUs (default 1.5)
