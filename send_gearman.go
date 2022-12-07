@@ -2,7 +2,9 @@ package modgearman
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -66,10 +68,14 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 	for {
 		// if no host is given from command line arguments, read from stdin
 		if config.host == "" {
-			// read package from stdin
-			if !readStdinData(config, result, scanner) {
+			// read all fields from stdin
+			if !readStdinLine(config, result, scanner) {
 				break
 			}
+		} else if config.message == "" {
+			// read just the message from stdin
+			readStdinData(config, result, scanner)
+			logger.Debugf("msg: %s", result.output)
 		}
 
 		if config.startTime <= 0 {
@@ -102,7 +108,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 	return
 }
 
-func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
+func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
 		os.Exit(ExitCodeError)
@@ -120,10 +126,32 @@ func readStdinData(config *configurationStruct, result *answer, scanner *bufio.S
 	if input == "" {
 		return false
 	}
-	if !parseLine2Answer(config, result, input) {
-		return false
+	err := parseLine2Answer(config, result, input)
+	return err == nil
+}
+
+func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) {
+	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
+		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
+		os.Exit(ExitCodeError)
+	})
+	lines := make([]string, 0)
+	for {
+		cont := scanner.Scan()
+		input := scanner.Text()
+		lines = append(lines, input)
+		err := scanner.Err()
+		if !cont || (err != nil && errors.Is(err, io.EOF)) {
+			timeout.Stop()
+			result.output = strings.Join(lines, "\\n")
+			return
+		}
+		if err != nil {
+			timeout.Stop()
+			logger.Errorf("reading stdin failed: %s", err)
+			os.Exit(ExitCodeError)
+		}
 	}
-	return true
 }
 
 func createResultFromArgs(config *configurationStruct) *answer {
@@ -156,7 +184,7 @@ func checkForReasonableConfigSendGearman(config *configurationStruct) error {
 	return nil
 }
 
-func parseLine2Answer(config *configurationStruct, result *answer, input string) bool {
+func parseLine2Answer(config *configurationStruct, result *answer, input string) error {
 	fields := strings.Split(input, config.delimiter)
 	if len(fields) >= ServiceAnswerSize {
 		// service result
@@ -172,9 +200,9 @@ func parseLine2Answer(config *configurationStruct, result *answer, input string)
 		result.output = fields[2]
 	}
 	if result.hostName == "" {
-		return false
+		return fmt.Errorf("invalid data, no hostname parsed")
 	}
-	return true
+	return nil
 }
 
 func printUsageSendGearman() {
