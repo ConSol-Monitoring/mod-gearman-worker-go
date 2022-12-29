@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -96,8 +95,8 @@ func setDefaultValues(result *configurationStruct) {
 	result.enableEmbeddedPerl = false
 	result.useEmbeddedPerlImplicitly = false
 	result.usePerlCache = true
-	_, filename, _, ok := runtime.Caller(1)
-	if ok {
+	filename, err := os.Executable()
+	if err == nil {
 		result.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
 	}
 	hostname, _ := os.Hostname()
