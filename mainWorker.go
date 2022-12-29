@@ -19,8 +19,8 @@ const (
 	// DefaultConnectionTimeout sets the default connection timeout for tcp connections
 	DefaultConnectionTimeout = 30
 
-	// UtilizationWatermakeLow sets the lower mark when deciding if worker should be reduced
-	UtilizationWatermakeLow = 90
+	// UtilizationWatermarkLow sets the lower mark when deciding if worker should be reduced
+	UtilizationWatermarkLow = 90
 )
 
 /*
@@ -31,26 +31,26 @@ const (
  */
 
 type mainWorker struct {
-	activeWorkers      int
-	workerUtilization  int
-	workerMap          map[string]*worker
-	workerMapLock      *sync.RWMutex
-	statusWorker       *worker
-	min1               float64
-	min5               float64
-	min15              float64
-	memTotal           int
-	memFree            int
-	maxOpenFiles       uint64
-	maxPossibleWorker  int
-	curBalooningWorker int
-	config             *configurationStruct
-	key                []byte
-	tasks              int
-	idleSince          time.Time
-	serverStatus       map[string]string
-	running            bool
-	cpuProfileHandler  *os.File
+	activeWorkers       int
+	workerUtilization   int
+	workerMap           map[string]*worker
+	workerMapLock       *sync.RWMutex
+	statusWorker        *worker
+	min1                float64
+	min5                float64
+	min15               float64
+	memTotal            int
+	memFree             int
+	maxOpenFiles        uint64
+	maxPossibleWorker   int
+	curBallooningWorker int
+	config              *configurationStruct
+	key                 []byte
+	tasks               int
+	idleSince           time.Time
+	serverStatus        map[string]string
+	running             bool
+	cpuProfileHandler   *os.File
 }
 
 func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {
@@ -74,7 +74,7 @@ func (w *mainWorker) InitDebugOptions() {
 	if w.config.flagProfile != "" {
 		if w.config.flagCPUProfile != "" || w.config.flagMemProfile != "" {
 			fmt.Print("ERROR: either use --debug-profile or --cpu/memprofile, not both\n")
-			os.Exit(ExitCodeError)
+			cleanExit(ExitCodeError)
 		}
 		runtime.SetBlockProfileRate(BlockProfileRateInterval)
 		runtime.SetMutexProfileFraction(BlockProfileRateInterval)
@@ -96,11 +96,11 @@ func (w *mainWorker) InitDebugOptions() {
 		cpuProfileHandler, err := os.Create(w.config.flagCPUProfile)
 		if err != nil {
 			fmt.Printf("ERROR: could not create CPU profile: %s", err.Error())
-			os.Exit(ExitCodeError)
+			cleanExit(ExitCodeError)
 		}
 		if err := pprof.StartCPUProfile(cpuProfileHandler); err != nil {
 			fmt.Printf("ERROR: could not start CPU profile: %s", err.Error())
-			os.Exit(ExitCodeError)
+			cleanExit(ExitCodeError)
 		}
 		w.cpuProfileHandler = cpuProfileHandler
 	}
@@ -191,17 +191,17 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 	}
 }
 
-// check if we have too many workers (less than 90% UtilizationWatermakeLow) active and above minWorker)
+// check if we have too many workers (less than 90% UtilizationWatermarkLow) active and above minWorker)
 func (w *mainWorker) adjustWorkerBottomLevel() {
 	if len(w.workerMap) == 0 {
 		return
 	}
-	// below minmum level
+	// below minimum level
 	if len(w.workerMap) <= w.config.minWorker {
 		return
 	}
-	// above 90% (UtilizationWatermakeLow) utilization
-	if (w.activeWorkers / len(w.workerMap) * 100) >= UtilizationWatermakeLow {
+	// above 90% (UtilizationWatermarkLow) utilization
+	if (w.activeWorkers / len(w.workerMap) * 100) >= UtilizationWatermarkLow {
 		return
 	}
 	// not idling long enough
@@ -245,6 +245,12 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 			(*prometheusListener).Close()
 		}
 		prometheusListener = startPrometheus(config)
+	}
+
+	// restart epn worker if necessary
+	if config.enableEmbeddedPerl != w.config.enableEmbeddedPerl || config.usePerlCache != w.config.usePerlCache || config.debug != w.config.debug {
+		stopEmbeddedPerl()
+		startEmbeddedPerl(config)
 	}
 
 	// do we have to restart our worker routines?

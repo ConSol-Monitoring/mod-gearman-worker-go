@@ -54,7 +54,7 @@ output=%s
 		a.finishTime,
 		a.returnCode,
 		a.source,
-		a.output,
+		strings.ReplaceAll(a.output, "\n", "\\n"),
 	)
 	return result
 }
@@ -153,6 +153,13 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", received.commandLine)
 	} else {
 		splitted := strings.Fields(received.commandLine)
+		if fileUsesEmbeddedPerl(splitted[0], config) {
+			logger.Tracef("using embedded perl for: %s", splitted[0])
+			if executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config) {
+				return
+			}
+			logger.Warnf("embedded perl failed for: %s, continuing with regular exec", splitted[0])
+		}
 		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
 	}
 
@@ -173,7 +180,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	}
 
 	// https://github.com/golang/go/issues/18874
-	// timeout does not work for child processes and/or if filehandles are still open
+	// timeout does not work for child processes and/or if file handles are still open
 	go func(proc *os.Process) {
 		defer logPanicExit()
 		<-ctx.Done() // wait till command runs into timeout or is finished (canceled)

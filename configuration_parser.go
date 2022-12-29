@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -49,6 +51,10 @@ type configurationStruct struct {
 	timeoutReturn             int
 	daemon                    bool
 	prometheusServer          string
+	enableEmbeddedPerl        bool
+	useEmbeddedPerlImplicitly bool
+	usePerlCache              bool
+	p1File                    string
 	// send_gearman specific
 	timeout     int
 	delimiter   string
@@ -87,6 +93,13 @@ func setDefaultValues(result *configurationStruct) {
 	result.backgroundingThreshold = 30
 	result.loadCPUMulti = 1.5
 	result.memLimit = 70
+	result.enableEmbeddedPerl = false
+	result.useEmbeddedPerlImplicitly = false
+	result.usePerlCache = true
+	_, filename, _, ok := runtime.Caller(1)
+	if ok {
+		result.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
+	}
 	hostname, _ := os.Hostname()
 	result.identifier = hostname
 	if result.identifier == "" {
@@ -231,6 +244,14 @@ func readSetting(values []string, result *configurationStruct) {
 		result.flagCPUProfile = value
 	case "memprofile":
 		result.flagMemProfile = value
+	case "enable_embedded_perl":
+		result.enableEmbeddedPerl = getBool(value)
+	case "use_embedded_perl_implicitly":
+		result.useEmbeddedPerlImplicitly = getBool(value)
+	case "use_perl_cache":
+		result.usePerlCache = getBool(value)
+	case "p1_file":
+		result.p1File = value
 	}
 }
 

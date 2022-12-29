@@ -127,7 +127,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
 	logger.Trace(received)
 
-	if !worker.considerBalooning() {
+	if !worker.considerballooning() {
 		worker.executeJob(received)
 		worker.activeJobs--
 		return
@@ -138,8 +138,8 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		worker.executeJob(received)
 		worker.activeJobs--
 		if received.ballooning {
-			worker.mainWorker.curBalooningWorker--
-			balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
+			worker.mainWorker.curBallooningWorker--
+			ballooningWorkerCount.Set(float64(worker.mainWorker.curBallooningWorker))
 		}
 		finChan <- true
 	}()
@@ -152,11 +152,11 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 			logger.Debugf("job: %s finished", job.Handle())
 			return
 		case <-ticker.C:
-			// check again if are there open files left for balooning
-			if worker.startBalooning() {
+			// check again if are there open files left for ballooning
+			if worker.startballooning() {
 				logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
-				worker.mainWorker.curBalooningWorker++
-				balooningWorkerCount.Set(float64(worker.mainWorker.curBalooningWorker))
+				worker.mainWorker.curBallooningWorker++
+				ballooningWorkerCount.Set(float64(worker.mainWorker.curBallooningWorker))
 				received.ballooning = true
 				return
 			}
@@ -164,22 +164,22 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	}
 }
 
-// considerBalooning returns true if balooning is enabled and threshold is reached
-func (worker *worker) considerBalooning() bool {
+// considerballooning returns true if ballooning is enabled and threshold is reached
+func (worker *worker) considerballooning() bool {
 	if worker.config.backgroundingThreshold <= 0 {
 		return false
 	}
 
 	// only if 70% of our workers are utilized
-	if worker.mainWorker.workerUtilization < BalooningUtilizationThreshold {
+	if worker.mainWorker.workerUtilization < ballooningUtilizationThreshold {
 		return false
 	}
 
 	return true
 }
 
-// startBalooning returns true if conditions for balooning are met (backgrounding jobs after backgroundingThreshold of seconds)
-func (worker *worker) startBalooning() bool {
+// startballooning returns true if conditions for ballooning are met (backgrounding jobs after backgroundingThreshold of seconds)
+func (worker *worker) startballooning() bool {
 	if worker.config.backgroundingThreshold <= 0 {
 		return false
 	}
@@ -193,16 +193,16 @@ func (worker *worker) startBalooning() bool {
 	}
 
 	// only if 70% of our workers are utilized
-	if worker.mainWorker.workerUtilization < BalooningUtilizationThreshold {
+	if worker.mainWorker.workerUtilization < ballooningUtilizationThreshold {
 		return false
 	}
 
-	// are there open files left for balooning
-	if worker.mainWorker.curBalooningWorker >= (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker) {
+	// are there open files left for ballooning
+	if worker.mainWorker.curBallooningWorker >= (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker) {
 		return false
 	}
 
-	logger.Debugf("balooning: cur: %d max: %d", worker.mainWorker.curBalooningWorker, (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker))
+	logger.Debugf("ballooning: cur: %d max: %d", worker.mainWorker.curBallooningWorker, (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker))
 	return true
 }
 

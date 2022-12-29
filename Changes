@@ -1,6 +1,7 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
+          - add embedded perl support
           - send_gearman: support reading plugin output from stdin
 
 1.2.4    Tue Sep 27 10:38:12 CEST 2022

@@ -1,6 +1,6 @@
 linters-settings:
   gocyclo:
-    min-complexity: 17
+    min-complexity: 18
   goconst:
     min-len: 3
     min-occurrences: 5
@@ -33,6 +33,7 @@ linters:
     - promlinter
     - varnamelen
     - nonamedreturns
+    - tagliatelle
   fast: false
 
 issues:

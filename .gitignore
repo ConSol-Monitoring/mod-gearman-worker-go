@@ -3,6 +3,7 @@ send_gearman
 *.exe
 *.linux.amd64
 .vscode
+.vstags
 coverage.txt
 vendor/
 tools/

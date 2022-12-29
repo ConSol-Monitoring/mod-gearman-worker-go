@@ -31,7 +31,7 @@ const (
 	// OpenFilesBase sets the approximate number of open files excluded open files from worker
 	OpenFilesBase = 50
 
-	// OpenFilesPerWorker sets the expected number of filehandles per worker (1 gearman connection, 2 fifo pipes for stderr/stdout, one on /dev/null, one sparse)
+	// OpenFilesPerWorker sets the expected number of file handles per worker (1 gearman connection, 2 fifo pipes for stderr/stdout, one on /dev/null, one sparse)
 	OpenFilesPerWorker = 5
 
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
@@ -43,8 +43,8 @@ const (
 	// ResultServerQueueSize sets the queue size for results
 	ResultServerQueueSize = 1000
 
-	// BalooningUtilizationThreshold sets the minimum utilization in percent at where ballooning will be considered
-	BalooningUtilizationThreshold = 70
+	// ballooningUtilizationThreshold sets the minimum utilization in percent at where ballooning will be considered
+	ballooningUtilizationThreshold = 70
 
 	// BlockProfileRateInterval sets the profiling interval when started with -profile
 	BlockProfileRateInterval = 10
@@ -67,8 +67,14 @@ const (
 	Resume
 )
 
-// var config configurationStruct
-var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
+// LogFormat sets the log format
+var LogFormat string
+
+func init() {
+	LogFormat = `[%{Date} %{Time "15:04:05.000"}][%{Severity}][pid:` + fmt.Sprintf("%d", os.Getpid()) + `][%{ShortFile}:%{Line}] %{Message}`
+}
+
+var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter(LogFormat))
 
 var prometheusListener *net.Listener
 var pidFile string
@@ -79,7 +85,7 @@ func Worker(build string) {
 	config, err := initConfiguration("mod_gearman_worker", build, printUsage, checkForReasonableConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	}
 
 	defer logPanicExit()
@@ -162,6 +168,10 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 		logger.Warnf("current max worker setting (%d) requires open files ulimit of at least %d, current value is %d. Setting max worker limit to %d", preMaxWorker, expectedOpenFiles, maxOpenFiles, config.maxWorker)
 	}
 
+	// initialize epn sub server
+	startEmbeddedPerl(config)
+	defer stopEmbeddedPerl()
+
 	mainworker := newMainWorker(config, key, workerMap)
 	mainworker.running = true
 	mainworker.maxOpenFiles = maxOpenFiles
@@ -239,10 +249,10 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 		switch {
 		case arg == "--help" || arg == "-h":
 			helpFunc()
-			os.Exit(ExitCodeUnknown)
+			cleanExit(ExitCodeUnknown)
 		case arg == "--version" || arg == "-v":
 			printVersion(config)
-			os.Exit(ExitCodeUnknown)
+			cleanExit(ExitCodeUnknown)
 		case arg == "-d" || arg == "--daemon":
 			config.daemon = true
 		case arg == "-r":
@@ -317,7 +327,7 @@ func createPidFile(path string) {
 	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	}
 	pidFile = path
 }
@@ -339,7 +349,7 @@ func checkStalePidFile(path string) bool {
 	err = process.Signal(syscall.Signal(0))
 	if err == nil {
 		fmt.Fprintf(os.Stderr, "Error: worker already running: %d\n", pid)
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	}
 	return true
 }
@@ -348,6 +358,12 @@ func deletePidFile(f string) {
 	if f != "" {
 		os.Remove(f)
 	}
+}
+
+func cleanExit(exitCode int) {
+	deletePidFile(pidFile)
+	stopEmbeddedPerl()
+	os.Exit(exitCode)
 }
 
 func logThreaddump() {
@@ -407,6 +423,12 @@ func printUsage() {
 	fmt.Print("       --mem_limit=<percent>                        \n")
 	fmt.Print("       --show_error_output                          \n")
 	fmt.Print("\n")
+	fmt.Print("Embedded Perl:\n")
+	fmt.Print("       --enable_embedded_perl=<yes|no>              \n")
+	fmt.Print("       --use_embedded_perl_implicitly=<yes|no>      \n")
+	fmt.Print("       --use_perl_cache=<yes|no>                    \n")
+	fmt.Print("       --p1_file=<path>                             \n")
+	fmt.Print("\n")
 	fmt.Print("Worker Development:\n")
 	fmt.Print("       --debug-profiler=<listen address>            \n")
 	fmt.Print("       --cpuprofile=<file>                          \n")
@@ -418,5 +440,5 @@ func printUsage() {
 	fmt.Print("see README for a detailed explanation of all options.\n")
 	fmt.Print("\n")
 
-	os.Exit(ExitCodeUnknown)
+	cleanExit(ExitCodeUnknown)
 }

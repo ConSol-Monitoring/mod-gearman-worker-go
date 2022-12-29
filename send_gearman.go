@@ -28,10 +28,10 @@ func Sendgearman(build string) {
 
 	if !sendSuccess {
 		logger.Errorf("failed to send back result: %s", err.Error())
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	}
 	logger.Infof("%d data packet(s) sent to host %s successfully.", resultsCounter, lastAddress)
-	os.Exit(ExitCodeError)
+	cleanExit(ExitCodeError)
 }
 
 func sendgearmanInit(build string) *configurationStruct {
@@ -39,7 +39,7 @@ func sendgearmanInit(build string) *configurationStruct {
 	config, err := initConfiguration("mod_gearman_worker", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		os.Exit(ExitCodeUnknown)
+		cleanExit(ExitCodeUnknown)
 	}
 
 	// create the logger, everything logged until here gets printed to stdOut
@@ -111,7 +111,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	})
 	if !scanner.Scan() {
 		timeout.Stop()
@@ -120,7 +120,7 @@ func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.S
 	timeout.Stop()
 	if scanner.Err() != nil {
 		logger.Errorf("reading stdin failed: %s", scanner.Err().Error())
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	}
 	input := scanner.Text()
 	if input == "" {
@@ -133,7 +133,7 @@ func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.S
 func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
-		os.Exit(ExitCodeError)
+		cleanExit(ExitCodeError)
 	})
 	lines := make([]string, 0)
 	for {
@@ -149,7 +149,7 @@ func readStdinData(config *configurationStruct, result *answer, scanner *bufio.S
 		if err != nil {
 			timeout.Stop()
 			logger.Errorf("reading stdin failed: %s", err)
-			os.Exit(ExitCodeError)
+			cleanExit(ExitCodeError)
 		}
 	}
 }
@@ -249,5 +249,5 @@ Note: When using a delimiter you may also submit one result
       <host_name>[tab]<return_code>[tab]<plugin_output>[newline]
 `)
 
-	os.Exit(ExitCodeUnknown)
+	cleanExit(ExitCodeUnknown)
 }
