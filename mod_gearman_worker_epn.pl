@@ -83,11 +83,10 @@ sub _server {
     my($opt) = @_;
     my $socketpath = $opt->{'socket'}->[0];
     unlink($socketpath);
-    my $server = IO::Socket::UNIX->new(Local     => $socketpath,
+    my $server = IO::Socket::UNIX->new(Local  => $socketpath,
                                     Type      => SOCK_STREAM,
                                     Listen    => 5,
                 ) || die "Couldn't open unix socket $socketpath: $@\n";
-
 
     printf("**ePN: listening on %s\n", $socketpath) if $opt->{'verbose'};
     $unixsocket = $socketpath;
@@ -111,28 +110,19 @@ sub _handle_connection {
     my $err = $@;
     if($err) {
         printf("**ePN: errored: %s\n", $err) if $opt->{'verbose'};
-        my $json = Cpanel::JSON::XS->new->utf8->canonical;
-        $res = $json->encode({
+        _send_answer($client, {
             rc               => 3, # UNKNOWN
             stdout           => $err,
             compile_duration => 0,
             run_duration     => 0,
         });
-        print $client $res,"\n";
-        printf("**ePN: done: %s\n", $res) if $opt->{'verbose'} > 1;
-        close($client);
         return;
     }
     return unless $res; # parent process can handle next request
 
-    my $json = Cpanel::JSON::XS->new->utf8->canonical;
-    my $forked = delete $res->{'forked'};
+    _send_answer($client, $res);
 
-    $res->{'cpu_user'} = POSIX::clock() / 1e6; # value is in microseconds
-    $res = $json->encode($res);
-    print $client $res,"\n";
-    printf("**ePN: done: %s\n", $res) if $opt->{'verbose'} > 1;
-    close($client);
+    my $forked = delete $res->{'forked'};
     if($forked) {
         undef $unixsocket;
         exit(0);
@@ -210,6 +200,19 @@ sub _request {
     $req->{'args'}    = $req->{'args'}    // [];
     $req->{'timeout'} = $req->{'timeout'} // 60;
     return($req);
+}
+
+###########################################################
+sub _send_answer {
+    my($client, $res) = @_;
+    $res->{'cpu_user'} = POSIX::clock() / 1e6; # value is in microseconds
+    $res->{'rc'}       = int($res->{'rc'});
+    my $json = Cpanel::JSON::XS->new->utf8->canonical;
+    $res = $json->encode($res);
+    print $client $res,"\n";
+    close($client);
+    printf("**ePN: done: %s\n", $res) if $opt->{'verbose'} > 1;
+    return;
 }
 
 ###########################################################
