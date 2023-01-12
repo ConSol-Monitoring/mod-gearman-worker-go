@@ -44,7 +44,6 @@ type configurationStruct struct {
 	showErrorOutput           bool
 	dupResultsArePassive      bool
 	dupServerBacklogQueueSize int
-	gearmanConnectionTimeout  int
 	restrictPath              []string
 	server                    []string
 	timeoutReturn             int
@@ -81,7 +80,6 @@ func (config *configurationStruct) setDefaultValues() {
 	config.logmode = "automatic"
 	config.dupResultsArePassive = true
 	config.dupServerBacklogQueueSize = 1000
-	config.gearmanConnectionTimeout = -1
 	config.timeoutReturn = 2
 	config.jobTimeout = 60
 	config.idleTimeout = 10
@@ -152,7 +150,6 @@ func (config *configurationStruct) dump() {
 	logger.Debugf("showErrorOutput               %v\n", config.showErrorOutput)
 	logger.Debugf("dupResultsArePassive          %v\n", config.dupResultsArePassive)
 	logger.Debugf("dupServerBacklogQueueSize     %d\n", config.dupServerBacklogQueueSize)
-	logger.Debugf("gearmanConnectionTimeout      %dms\n", config.gearmanConnectionTimeout)
 	logger.Debugf("restrictPath                  %v\n", config.restrictPath)
 	logger.Debugf("timeoutReturn                 %d\n", config.timeoutReturn)
 	logger.Debugf("daemon                        %v\n", config.daemon)
@@ -207,6 +204,7 @@ func (config *configurationStruct) readSetting(values []string) {
 		if config.debug > LogLevelTrace2 {
 			config.debug = LogLevelTrace2
 		}
+		createLogger(config)
 	case "logfile":
 		config.logfile = value
 	case "logmode":
@@ -262,7 +260,7 @@ func (config *configurationStruct) readSetting(values []string) {
 	case "dupserver_backlog_queue_size":
 		config.dupServerBacklogQueueSize = getInt(value)
 	case "gearman_connection_timeout":
-		config.gearmanConnectionTimeout = getInt(value)
+		// unused, timeout is not exposed by libworker
 	case "restrict_path":
 		config.restrictPath = append(config.restrictPath, value)
 	case "timeout", "t":
@@ -301,6 +299,8 @@ func (config *configurationStruct) readSetting(values []string) {
 		config.usePerlCache = getBool(value)
 	case "p1_file":
 		config.p1File = value
+	default:
+		logger.Warnf("unknown config option: %s", key)
 	}
 }
 

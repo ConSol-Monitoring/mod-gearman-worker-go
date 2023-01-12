@@ -238,6 +238,7 @@ type verifyCallback func(*configurationStruct) error
 func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
 	config := &configurationStruct{name: name, build: build}
 	config.setDefaultValues()
+	createLogger(config)
 	for i := 1; i < len(os.Args); i++ {
 		// is it a param?
 		if !strings.HasPrefix(os.Args[i], "--") && !strings.HasPrefix(os.Args[i], "-") {
@@ -280,7 +281,6 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	config.removeDuplicates()
 
 	if config.debug >= LogLevelDebug {
-		createLogger(config)
 		config.dump()
 	}
 
