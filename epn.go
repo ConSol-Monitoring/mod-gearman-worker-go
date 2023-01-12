@@ -27,6 +27,8 @@ var (
 
 	// ePNFilePrefix contains prefixes to look for explicit epn flag
 	ePNFilePrefix = []string{"# nagios:", "# naemon:", "# icinga:"}
+
+	fileUsesEPNCache = make(map[string]bool)
 )
 
 func startEmbeddedPerl(config *configurationStruct) {
@@ -127,8 +129,19 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	if !config.enableEmbeddedPerl {
 		return false
 	}
+	cached, ok := fileUsesEPNCache[file]
+	if ok {
+		return cached
+	}
+	fileUsesEPN := detectFileUsesEmbeddedPerl(file, config)
+	fileUsesEPNCache[file] = cached
+	return fileUsesEPN
+}
+
+func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	readFile, err := os.Open(file)
 	if err != nil {
+		logger.Warnf("failed to open %s: %s", file, err.Error())
 		return false
 	}
 	defer readFile.Close()
