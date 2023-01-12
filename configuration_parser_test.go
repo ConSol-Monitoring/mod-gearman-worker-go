@@ -9,7 +9,7 @@ func TestReadSettingsFile(t *testing.T) {
 	var testConfig configurationStruct
 
 	// set default values so we can check if they get overwritten
-	setDefaultValues(&testConfig)
+	testConfig.setDefaultValues()
 
 	f, err := os.Create("testConfigFile")
 	if err != nil {
@@ -28,7 +28,7 @@ server=hostname
 server=hostname2
 `))
 
-	readSettingsFile("testConfigFile", &testConfig)
+	testConfig.readSettingsFile("testConfigFile")
 	testConfig.removeDuplicates()
 
 	if testConfig.debug != 2 {
@@ -62,7 +62,7 @@ func TestReadSettingsPath(t *testing.T) {
 	var testConfig configurationStruct
 
 	// set default values so we can check if they get overwritten
-	setDefaultValues(&testConfig)
+	testConfig.setDefaultValues()
 
 	err := os.Mkdir("testConfigFolder", 0755)
 	if err != nil {
@@ -87,7 +87,7 @@ server=hostname
 server=hostname2
 `))
 
-	readSettingsPath("testConfigFolder", &testConfig)
+	testConfig.readSettingsPath("testConfigFolder")
 	testConfig.removeDuplicates()
 
 	if testConfig.debug != 2 {

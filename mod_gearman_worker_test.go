@@ -31,7 +31,7 @@ func BenchmarkJobs(b *testing.B) {
 		jobTimeout: 10,
 		debug:      0,
 	}
-	setDefaultValues(&config)
+	config.setDefaultValues()
 	config.debug = -1
 	disableLogging()
 	cmd := exec.Command("gearmand", "--port", "54730", "--listen", "127.0.0.1", "--log-file", "stderr", "--verbose", "DEBUG")

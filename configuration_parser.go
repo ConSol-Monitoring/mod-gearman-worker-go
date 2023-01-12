@@ -72,42 +72,43 @@ type configurationStruct struct {
 	flagMemProfile string
 }
 
-func setDefaultValues(result *configurationStruct) {
-	result.logmode = "automatic"
-	result.encryption = true
-	result.showErrorOutput = true
-	result.debug = 0
-	result.logmode = "automatic"
-	result.dupResultsArePassive = true
-	result.dupServerBacklogQueueSize = 1000
-	result.gearmanConnectionTimeout = -1
-	result.timeoutReturn = 2
-	result.jobTimeout = 60
-	result.idleTimeout = 10
-	result.daemon = false
-	result.minWorker = 1
-	result.maxWorker = 20
-	result.spawnRate = 3
-	result.sinkRate = 1
-	result.backgroundingThreshold = 30
-	result.loadCPUMulti = 1.5
-	result.memLimit = 70
-	result.enableEmbeddedPerl = false
-	result.useEmbeddedPerlImplicitly = false
-	result.usePerlCache = true
+// setDefaultValues sets reasonable defaults
+func (config *configurationStruct) setDefaultValues() {
+	config.logmode = "automatic"
+	config.encryption = true
+	config.showErrorOutput = true
+	config.debug = 0
+	config.logmode = "automatic"
+	config.dupResultsArePassive = true
+	config.dupServerBacklogQueueSize = 1000
+	config.gearmanConnectionTimeout = -1
+	config.timeoutReturn = 2
+	config.jobTimeout = 60
+	config.idleTimeout = 10
+	config.daemon = false
+	config.minWorker = 1
+	config.maxWorker = 20
+	config.spawnRate = 3
+	config.sinkRate = 1
+	config.backgroundingThreshold = 30
+	config.loadCPUMulti = 1.5
+	config.memLimit = 70
+	config.enableEmbeddedPerl = false
+	config.useEmbeddedPerlImplicitly = false
+	config.usePerlCache = true
 	filename, err := os.Executable()
 	if err == nil {
-		result.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
+		config.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
 	}
 	hostname, _ := os.Hostname()
-	result.identifier = hostname
-	if result.identifier == "" {
-		result.identifier = "unknown"
+	config.identifier = hostname
+	if config.identifier == "" {
+		config.identifier = "unknown"
 	}
-	result.delimiter = "\t"
+	config.delimiter = "\t"
 }
 
-// remove duplicate entries from all string lists
+// removeDuplicates removes duplicate entries from all string lists
 func (config *configurationStruct) removeDuplicates() {
 	config.server = removeDuplicateStrings(config.server)
 	config.dupserver = removeDuplicateStrings(config.dupserver)
@@ -116,30 +117,76 @@ func (config *configurationStruct) removeDuplicates() {
 	config.restrictPath = removeDuplicateStrings(config.restrictPath)
 }
 
+// dump logs all config items
+func (config *configurationStruct) dump() {
+	logger.Debugf("name                          %s\n", config.name)
+	logger.Debugf("build                         %s\n", config.build)
+	logger.Debugf("identifier                    %s\n", config.identifier)
+	logger.Debugf("debug                         %d\n", config.debug)
+	logger.Debugf("logfile                       %s\n", config.logfile)
+	logger.Debugf("logmode                       %s\n", config.logmode)
+	logger.Debugf("server                        %v\n", config.server)
+	logger.Debugf("dupserver                     %v\n", config.dupserver)
+	logger.Debugf("eventhandler                  %v\n", config.eventhandler)
+	logger.Debugf("notifications                 %v\n", config.notifications)
+	logger.Debugf("services                      %v\n", config.services)
+	logger.Debugf("hosts                         %v\n", config.hosts)
+	logger.Debugf("hostgroups                    %v\n", config.hostgroups)
+	logger.Debugf("servicegroups                 %v\n", config.servicegroups)
+	logger.Debugf("encryption                    %v\n", config.encryption)
+	logger.Debugf("keyfile                       %s\n", config.keyfile)
+	logger.Debugf("pidfile                       %s\n", config.pidfile)
+	logger.Debugf("jobTimeout                    %ds\n", config.jobTimeout)
+	logger.Debugf("minWorker                     %d\n", config.minWorker)
+	logger.Debugf("maxWorker                     %d\n", config.maxWorker)
+	logger.Debugf("idleTimeout                   %ds\n", config.idleTimeout)
+	logger.Debugf("maxAge                        %d\n", config.maxAge)
+	logger.Debugf("spawnRate                     %d/s\n", config.spawnRate)
+	logger.Debugf("sinkRate                      %d/s\n", config.sinkRate)
+	logger.Debugf("loadLimit1                    %.2f\n", config.loadLimit1)
+	logger.Debugf("loadLimit5                    %.2f\n", config.loadLimit5)
+	logger.Debugf("loadLimit15                   %.2f\n", config.loadLimit15)
+	logger.Debugf("loadCPUMulti                  %.2f\n", config.loadCPUMulti)
+	logger.Debugf("memLimit                      %d%%\n", config.memLimit)
+	logger.Debugf("backgroundingThreshold        %ds\n", config.backgroundingThreshold)
+	logger.Debugf("showErrorOutput               %v\n", config.showErrorOutput)
+	logger.Debugf("dupResultsArePassive          %v\n", config.dupResultsArePassive)
+	logger.Debugf("dupServerBacklogQueueSize     %d\n", config.dupServerBacklogQueueSize)
+	logger.Debugf("gearmanConnectionTimeout      %dms\n", config.gearmanConnectionTimeout)
+	logger.Debugf("restrictPath                  %v\n", config.restrictPath)
+	logger.Debugf("timeoutReturn                 %d\n", config.timeoutReturn)
+	logger.Debugf("daemon                        %v\n", config.daemon)
+	logger.Debugf("prometheusServer              %s\n", config.prometheusServer)
+	logger.Debugf("enableEmbeddedPerl            %v\n", config.enableEmbeddedPerl)
+	logger.Debugf("useEmbeddedPerlImplicitly     %v\n", config.useEmbeddedPerlImplicitly)
+	logger.Debugf("usePerlCache                  %v\n", config.usePerlCache)
+	logger.Debugf("p1File                        %s\n", config.p1File)
+}
+
 /**
 * parses the key value pairs and stores them in the configuration struct
 *
  */
-func readSetting(values []string, result *configurationStruct) {
+func (config *configurationStruct) readSetting(values []string) {
 	key := strings.ToLower(strings.Trim(values[0], " "))
 	value := strings.Trim(values[1], " ")
 
 	switch key {
 	case "dupserver":
 		list := strings.Split(value, ",")
-		result.dupserver = append(result.dupserver, list...)
+		config.dupserver = append(config.dupserver, list...)
 	case "hostgroups":
 		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
 		}
-		result.hostgroups = append(result.hostgroups, list...)
+		config.hostgroups = append(config.hostgroups, list...)
 	case "servicegroups":
 		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
 			list[i] = strings.Trim(list[i], " ")
 		}
-		result.servicegroups = append(result.servicegroups, list...)
+		config.servicegroups = append(config.servicegroups, list...)
 	case "server":
 		list := strings.Split(value, ",")
 		for i := 0; i < len(list); i++ {
@@ -148,114 +195,117 @@ func readSetting(values []string, result *configurationStruct) {
 		for i, s := range list {
 			list[i] = fixGearmandServerAddress(s)
 		}
-		result.server = append(result.server, list...)
+		config.server = append(config.server, list...)
 	case "prometheus_server":
-		result.prometheusServer = value
+		config.prometheusServer = value
 	case "timeout_return":
-		result.timeoutReturn = getInt(value)
+		config.timeoutReturn = getInt(value)
 	case "config":
-		readSettingsPath(value, result)
+		config.readSettingsPath(value)
 	case "debug":
-		result.debug = getInt(value)
+		config.debug = getInt(value)
+		if config.debug > LogLevelTrace2 {
+			config.debug = LogLevelTrace2
+		}
 	case "logfile":
-		result.logfile = value
+		config.logfile = value
 	case "logmode":
-		result.logmode = value
+		config.logmode = value
 	case "identifier":
-		result.identifier = value
+		config.identifier = value
 	case "eventhandler":
-		result.eventhandler = getBool(value)
+		config.eventhandler = getBool(value)
 	case "notifications":
-		result.notifications = getBool(value)
+		config.notifications = getBool(value)
 	case "services":
-		result.services = getBool(value)
+		config.services = getBool(value)
 	case "hosts":
-		result.hosts = getBool(value)
+		config.hosts = getBool(value)
 	case "encryption":
-		result.encryption = getBool(value)
+		config.encryption = getBool(value)
 	case "key":
-		result.key = value
+		config.key = value
 	case "keyfile":
-		result.keyfile = value
+		config.keyfile = value
 	case "pidfile":
-		result.pidfile = value
+		config.pidfile = value
 	case "job_timeout":
-		result.jobTimeout = getInt(value)
+		config.jobTimeout = getInt(value)
 	case "min-worker":
-		result.minWorker = getInt(value)
+		config.minWorker = getInt(value)
 	case "max-worker":
-		result.maxWorker = getInt(value)
+		config.maxWorker = getInt(value)
 	case "idle-timeout":
-		result.idleTimeout = getInt(value)
+		config.idleTimeout = getInt(value)
 	case "max-age":
-		result.maxAge = getInt(value)
+		config.maxAge = getInt(value)
 	case "spawn-rate":
-		result.spawnRate = getInt(value)
+		config.spawnRate = getInt(value)
 	case "sink-rate":
-		result.sinkRate = getInt(value)
+		config.sinkRate = getInt(value)
 	case "load_limit1":
-		result.loadLimit1 = getFloat(value)
+		config.loadLimit1 = getFloat(value)
 	case "load_limit5":
-		result.loadLimit5 = getFloat(value)
+		config.loadLimit5 = getFloat(value)
 	case "load_limit15":
-		result.loadLimit15 = getFloat(value)
+		config.loadLimit15 = getFloat(value)
 	case "load_cpu_multi":
-		result.loadCPUMulti = getFloat(value)
+		config.loadCPUMulti = getFloat(value)
 	case "mem_limit":
-		result.memLimit = getInt(value)
+		config.memLimit = getInt(value)
 	case "backgrounding-threshold":
-		result.backgroundingThreshold = getInt(value)
+		config.backgroundingThreshold = getInt(value)
 	case "show_error_output":
-		result.showErrorOutput = getBool(value)
+		config.showErrorOutput = getBool(value)
 	case "dup_results_are_passive":
-		result.dupResultsArePassive = getBool(value)
+		config.dupResultsArePassive = getBool(value)
 	case "dupserver_backlog_queue_size":
-		result.dupServerBacklogQueueSize = getInt(value)
+		config.dupServerBacklogQueueSize = getInt(value)
 	case "gearman_connection_timeout":
-		result.gearmanConnectionTimeout = getInt(value)
+		config.gearmanConnectionTimeout = getInt(value)
 	case "restrict_path":
-		result.restrictPath = append(result.restrictPath, value)
+		config.restrictPath = append(config.restrictPath, value)
 	case "timeout", "t":
-		result.timeout = getInt(value)
+		config.timeout = getInt(value)
 	case "delimiter", "d":
-		result.delimiter = value
+		config.delimiter = value
 	case "host":
-		result.host = value
+		config.host = value
 	case "service":
-		result.service = value
+		config.service = value
 	case "result_queue":
-		result.resultQueue = value
+		config.resultQueue = value
 	case "message", "m":
-		result.message = value
+		config.message = value
 	case "return_code", "r":
-		result.returnCode = getInt(value)
+		config.returnCode = getInt(value)
 	case "active":
-		result.active = getBool(value)
+		config.active = getBool(value)
 	case "starttime":
-		result.startTime = getFloat(value)
+		config.startTime = getFloat(value)
 	case "finishtime":
-		result.finishTime = getFloat(value)
+		config.finishTime = getFloat(value)
 	case "latency":
-		result.latency = getFloat(value)
+		config.latency = getFloat(value)
 	case "debug-profiler":
-		result.flagProfile = value
+		config.flagProfile = value
 	case "cpuprofile":
-		result.flagCPUProfile = value
+		config.flagCPUProfile = value
 	case "memprofile":
-		result.flagMemProfile = value
+		config.flagMemProfile = value
 	case "enable_embedded_perl":
-		result.enableEmbeddedPerl = getBool(value)
+		config.enableEmbeddedPerl = getBool(value)
 	case "use_embedded_perl_implicitly":
-		result.useEmbeddedPerlImplicitly = getBool(value)
+		config.useEmbeddedPerlImplicitly = getBool(value)
 	case "use_perl_cache":
-		result.usePerlCache = getBool(value)
+		config.usePerlCache = getBool(value)
 	case "p1_file":
-		result.p1File = value
+		config.p1File = value
 	}
 }
 
 // read settings from file or folder
-func readSettingsPath(path string, result *configurationStruct) {
+func (config *configurationStruct) readSettingsPath(path string) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		logger.Errorf("cannot read %s: %s", path, err.Error())
@@ -265,7 +315,7 @@ func readSettingsPath(path string, result *configurationStruct) {
 		filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
 			if !info.IsDir() {
 				if strings.HasSuffix(path, ".cfg") || strings.HasSuffix(path, ".conf") {
-					readSettingsFile(path, result)
+					config.readSettingsFile(path)
 				}
 			}
 			return err
@@ -273,12 +323,12 @@ func readSettingsPath(path string, result *configurationStruct) {
 		return
 	}
 
-	readSettingsFile(path, result)
+	config.readSettingsFile(path)
 }
 
 // opens the config file and reads all key value pairs, separated through = and commented out with #
 // also reads the config files specified in the config= value
-func readSettingsFile(path string, result *configurationStruct) {
+func (config *configurationStruct) readSettingsFile(path string) {
 	file, err := os.Open(path)
 
 	if err != nil {
@@ -296,7 +346,7 @@ func readSettingsFile(path string, result *configurationStruct) {
 		if len(line) > 0 && line[0] != '#' {
 			// get both values
 			values := strings.SplitN(line, "=", 2)
-			readSetting(values, result)
+			config.readSetting(values)
 		}
 	}
 }

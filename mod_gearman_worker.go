@@ -237,7 +237,7 @@ type verifyCallback func(*configurationStruct) error
 
 func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
 	config := &configurationStruct{name: name, build: build}
-	setDefaultValues(config)
+	config.setDefaultValues()
 	for i := 1; i < len(os.Args); i++ {
 		// is it a param?
 		if !strings.HasPrefix(os.Args[i], "--") && !strings.HasPrefix(os.Args[i], "-") {
@@ -274,10 +274,16 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 				sa = append(sa, "yes")
 			}
 			// give the param and the value to readSetting
-			readSetting(sa, config)
+			config.readSetting(sa)
 		}
 	}
 	config.removeDuplicates()
+
+	if config.debug >= LogLevelDebug {
+		createLogger(config)
+		config.dump()
+	}
+
 	err := verifyFunc(config)
 	return config, err
 }

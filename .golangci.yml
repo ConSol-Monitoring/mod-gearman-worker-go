@@ -41,7 +41,7 @@ issues:
   exclude-use-default: true
   exclude:
     - "cyclomatic complexity .* of func `Test.*` is high"
-    - "cyclomatic complexity .* of func `readSetting` is high"
+    - "cyclomatic complexity .* of func `.*readSetting` is high"
     - "cognitive complexity .* of func `Test.*"
     - 'Magic number: 0.01\D '
     - 'Magic number: 1\D '

@@ -16,7 +16,7 @@ func TestReadAndExecute(t *testing.T) {
 	config := configurationStruct{}
 	config.encryption = false
 	config.jobTimeout = 30
-	setDefaultValues(&config)
+	config.setDefaultValues()
 	thisHostname, err := os.Hostname()
 	if err != nil {
 		thisHostname = "unknown"
@@ -56,7 +56,7 @@ func TestReadAndExecute(t *testing.T) {
 
 func TestExecuteCommandWithTimeout(t *testing.T) {
 	config := configurationStruct{}
-	setDefaultValues(&config)
+	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
 
@@ -153,7 +153,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 func TestExecuteCommandArgListTooLongError(t *testing.T) {
 	config := configurationStruct{}
-	setDefaultValues(&config)
+	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
 
@@ -180,7 +180,7 @@ func TestExecuteCommandOutOfFilesError(t *testing.T) {
 		t.Skip("test will panic, run manually with PANIC_TESTS=1 env set")
 	}
 	config := configurationStruct{}
-	setDefaultValues(&config)
+	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
 
