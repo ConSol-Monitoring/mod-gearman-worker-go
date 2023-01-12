@@ -207,8 +207,10 @@ func (config *configurationStruct) readSetting(values []string) {
 		createLogger(config)
 	case "logfile":
 		config.logfile = value
+		createLogger(config)
 	case "logmode":
 		config.logmode = value
+		createLogger(config)
 	case "identifier":
 		config.identifier = value
 	case "eventhandler":
