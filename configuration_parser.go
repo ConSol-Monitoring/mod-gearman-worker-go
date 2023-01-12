@@ -261,6 +261,8 @@ func (config *configurationStruct) readSetting(values []string) {
 		config.dupServerBacklogQueueSize = getInt(value)
 	case "gearman_connection_timeout":
 		// unused, timeout is not exposed by libworker
+	case "max-jobs":
+		// unused
 	case "restrict_path":
 		config.restrictPath = append(config.restrictPath, value)
 	case "timeout", "t":
