@@ -28,6 +28,7 @@ type answer struct {
 	output             string
 	resultQueue        string
 	active             string
+	execType           string
 }
 
 func (a *answer) String() string {
@@ -82,6 +83,8 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 		if result.startTime-result.coreStartTime > float64(config.maxAge) {
 			logger.Warnf("worker: maxAge: job too old: startTime: %s (threshold: %ds)", time.Unix(int64(result.coreStartTime), 0), config.maxAge)
 			result.output = fmt.Sprintf("Could not start check in time (worker: %s)", config.identifier)
+			result.execType = "too_late"
+			taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 			return &result
 		}
 	}
@@ -141,6 +144,8 @@ func executeInShell(cmdString string) bool {
 func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
 	result.returnCode = 3
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
+		result.execType = "bad_path"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		result.output = "command contains bad path"
 		return
 	}
@@ -150,16 +155,23 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	var cmd *exec.Cmd
 	if executeInShell(received.commandLine) {
+		result.execType = "shell"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", received.commandLine)
 	} else {
 		splitted := strings.Fields(received.commandLine)
 		if fileUsesEmbeddedPerl(splitted[0], config) {
+			result.execType = "epn"
+			taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 			logger.Tracef("using embedded perl for: %s", splitted[0])
-			if executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config) {
-				return
+			err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config)
+			if err != nil {
+				logger.Warnf("embedded perl failed for: %s: %s", splitted[0], err.Error())
 			}
-			logger.Warnf("embedded perl failed for: %s, continuing with regular exec", splitted[0])
+			return
 		}
+		result.execType = "exec"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
 	}
 
@@ -206,7 +218,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	state := cmd.ProcessState
 	if config.prometheusServer != "" {
-		prometheusUserAndSystemTime(received.commandLine, state)
+		prometheusUserAndSystemTime(received.commandLine, result.execType, state)
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
@@ -298,10 +310,10 @@ func setProcessErrorResult(result *answer, config *configurationStruct, err erro
 	result.output = fmt.Sprintf("UNKNOWN: %s (worker: %s)", err.Error(), config.identifier)
 }
 
-func prometheusUserAndSystemTime(command string, state *os.ProcessState) {
+func prometheusUserAndSystemTime(command string, execType string, state *os.ProcessState) {
 	basename := getCommandBasename(command)
-	userTimes.WithLabelValues(basename).Observe(state.UserTime().Seconds())
-	systemTimes.WithLabelValues(basename).Observe(state.SystemTime().Seconds())
+	userTimes.WithLabelValues(basename, execType).Observe(state.UserTime().Seconds())
+	systemTimes.WithLabelValues(basename, execType).Observe(state.SystemTime().Seconds())
 }
 
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)

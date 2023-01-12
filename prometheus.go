@@ -40,16 +40,16 @@ var (
 	taskCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "modgearmanworker_tasks_completed_total",
-			Help: "total nuber of completed tasks since startup",
+			Help: "total number of completed tasks since startup",
 		},
-		[]string{"type"})
+		[]string{"type", "exec"})
 
 	errorCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "modgearmanworker_tasks_errors_total",
-			Help: "total nuber of errors in executed plugins (plugins with exit code > 0)",
+			Help: "total number of errors in executed plugins (plugins with exit code > 0)",
 		},
-		[]string{"type"})
+		[]string{"type", "exec"})
 
 	userTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -57,7 +57,7 @@ var (
 			Help:       "sum of the userTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
-		[]string{"description"})
+		[]string{"description", "exec"})
 
 	systemTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -65,7 +65,7 @@ var (
 			Help:       "sum of the systemTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
-		[]string{"description"})
+		[]string{"description", "exec"})
 )
 
 func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {

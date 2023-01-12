@@ -121,7 +121,6 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		worker.activeJobs--
 		return
 	}
-	taskCounter.WithLabelValues(received.typ).Inc()
 	worker.mainWorker.tasks++
 
 	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
@@ -211,7 +210,7 @@ func (worker *worker) executeJob(received *receivedStruct) {
 	result := readAndExecute(received, worker.config)
 
 	if result.returnCode > 0 {
-		errorCounter.WithLabelValues(received.typ).Inc()
+		errorCounter.WithLabelValues(received.typ, result.execType).Inc()
 	}
 
 	if received.resultQueue != "" {

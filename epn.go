@@ -194,7 +194,7 @@ type ePNRes struct {
 	CPUUser         float64 `json:"cpu_user"`
 }
 
-func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct, config *configurationStruct) bool {
+func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct, config *configurationStruct) error {
 	msg, err := json.Marshal(ePNMsg{
 		Bin:     bin,
 		Args:    args,
@@ -202,22 +202,19 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 		Timeout: received.timeout,
 	})
 	if err != nil {
-		logger.Errorf("json error: %s", err)
-		return false
+		return fmt.Errorf("json error: %w", err)
 	}
 
 	c, err := net.Dial("unix", ePNServerSocket.Name())
 	if err != nil {
-		logger.Errorf("sending to epn server failed: %s", err)
-		return false
+		return fmt.Errorf("sending to epn server failed: %w", err)
 	}
 	defer c.Close()
 
 	msg = append(msg, '\n')
 	_, err = c.Write(msg)
 	if err != nil {
-		logger.Errorf("sending to epn server failed: %s", err)
-		return false
+		return fmt.Errorf("sending to epn server failed: %w", err)
 	}
 
 	var buf bytes.Buffer
@@ -226,8 +223,7 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	res := ePNRes{}
 	err = json.Unmarshal(buf.Bytes(), &res)
 	if err != nil {
-		logger.Errorf("json unpacking failed: %s", err)
-		return false
+		return fmt.Errorf("json unpacking failed: %w", err)
 	}
 
 	result.output = res.Stdout
@@ -235,9 +231,9 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 
 	if config.prometheusServer != "" {
 		basename := getCommandBasename(bin)
-		userTimes.WithLabelValues(basename).Observe(res.CPUUser)
-		systemTimes.WithLabelValues(basename).Observe(0)
+		userTimes.WithLabelValues(basename, result.execType).Observe(res.CPUUser)
+		systemTimes.WithLabelValues(basename, result.execType).Observe(0)
 	}
 
-	return true
+	return nil
 }
