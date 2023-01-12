@@ -40,10 +40,10 @@ func startEmbeddedPerl(config *configurationStruct) {
 	if config.usePerlCache {
 		args = append(args, "-c")
 	}
-	if config.debug == 1 {
+	if config.debug >= LogLevelDebug {
 		args = append(args, "-v")
 	}
-	if config.debug > 1 {
+	if config.debug >= LogLevelTrace {
 		args = append(args, "-vv")
 	}
 	socketPath, err := os.CreateTemp("", "mod_gearman_worker_epn*.socket")

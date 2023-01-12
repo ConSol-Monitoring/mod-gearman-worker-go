@@ -45,6 +45,9 @@ func createLogger(config *configurationStruct) {
 }
 
 func getSeverity(input int) string {
+	if input > LogLevelTrace2 {
+		input = LogLevelTrace2
+	}
 	switch input {
 	case LogLevelInfo:
 		return "INFO"
