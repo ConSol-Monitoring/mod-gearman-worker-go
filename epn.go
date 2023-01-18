@@ -51,7 +51,9 @@ func startEmbeddedPerl(config *configurationStruct) {
 	socketPath, err := os.CreateTemp("", "mod_gearman_worker_epn*.socket")
 	ePNServerSocket = socketPath
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to create epn socket: %s\n", err.Error())
+		err = fmt.Errorf("failed to create epn socket: %w", err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
 	}
 	args = append(args, socketPath.Name())
@@ -60,13 +62,17 @@ func startEmbeddedPerl(config *configurationStruct) {
 	cmd := exec.Command(config.p1File, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to connect to stdout: %s\n", err.Error())
+		err = fmt.Errorf("failed to connect to stdout: %w", err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
 	}
 	stdoutScanner := bufio.NewScanner(stdout)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to connect to stderr: %s\n", err.Error())
+		err = fmt.Errorf("failed to connect to stderr: %w", err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
 	}
 	stderrScanner := bufio.NewScanner(stderr)
@@ -83,7 +89,9 @@ func startEmbeddedPerl(config *configurationStruct) {
 
 	err = cmd.Start()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to start epn worker: %s\n", err.Error())
+		err = fmt.Errorf("failed to start epn worker: %w", err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
 	}
 	ePNServerProcess = cmd
@@ -95,7 +103,9 @@ func startEmbeddedPerl(config *configurationStruct) {
 	for keepTrying {
 		select {
 		case <-timeout.C:
-			fmt.Fprintf(os.Stderr, "Error: failed to open epn socket\n")
+			err = fmt.Errorf("timeout (%s) while waiting for epn socket", ePNStartTimeout)
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			logger.Errorf("epn startup error: %s", err)
 			cleanExit(ExitCodeError)
 		case <-ticker.C:
 			_, err := os.Stat(socketPath.Name())
