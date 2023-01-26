@@ -89,7 +89,7 @@ func (config *configurationStruct) setDefaultValues() {
 	config.spawnRate = 3
 	config.sinkRate = 1
 	config.backgroundingThreshold = 30
-	config.loadCPUMulti = 1.5
+	config.loadCPUMulti = 2.5
 	config.memLimit = 70
 	config.enableEmbeddedPerl = false
 	config.useEmbeddedPerlImplicitly = false
