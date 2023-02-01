@@ -17,7 +17,7 @@ import (
 
 const (
 	// VERSION contains the actual lmd version
-	VERSION = "1.2.4"
+	VERSION = "1.3.0"
 
 	// ExitCodeError is used for erroneous exits
 	ExitCodeError = 2
