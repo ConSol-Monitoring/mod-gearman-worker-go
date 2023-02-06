@@ -88,6 +88,9 @@ func sendResultDup(client *client.Client, item *answer, dupAddress string, confi
 }
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
+	if len(config.dupserver) == 0 {
+		return
+	}
 	duplicateResult := *result
 
 	for _, dupAddress := range config.dupserver {
