@@ -160,7 +160,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	myCipher = createCipher(key, config.encryption)
 
 	maxOpenFiles := getMaxOpenFiles()
-	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.name, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
+	logger.Infof("%s - version %s (Build: %s) starting with %d workers (max %d), pid: %d (max open files: %d)\n", config.binary, VERSION, config.build, config.minWorker, config.maxWorker, os.Getpid(), maxOpenFiles)
 
 	expectedOpenFiles := uint64(float64((config.maxWorker*OpenFilesPerWorker + OpenFilesBase)) * OpenFilesExtraPercent)
 	maxPossibleWorker := int(((float64(maxOpenFiles) / OpenFilesExtraPercent) - OpenFilesBase) / OpenFilesPerWorker)
@@ -238,7 +238,7 @@ type helpCallback func()
 type verifyCallback func(*configurationStruct) error
 
 func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
-	config := &configurationStruct{name: name, build: build}
+	config := &configurationStruct{binary: name, build: build}
 	config.setDefaultValues()
 	createLogger(config)
 	for i := 1; i < len(os.Args); i++ {
@@ -386,7 +386,7 @@ func logThreaddump() {
 
 // printVersion prints the version
 func printVersion(config *configurationStruct) {
-	fmt.Printf("%s - version %s (Build: %s)\n", config.name, VERSION, config.build)
+	fmt.Printf("%s - version %s (Build: %s)\n", config.binary, VERSION, config.build)
 }
 
 func printUsage() {

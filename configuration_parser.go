@@ -11,7 +11,7 @@ import (
 )
 
 type configurationStruct struct {
-	name                      string
+	binary                    string
 	build                     string
 	identifier                string
 	debug                     int
@@ -117,7 +117,7 @@ func (config *configurationStruct) removeDuplicates() {
 
 // dump logs all config items
 func (config *configurationStruct) dump() {
-	logger.Debugf("name                          %s\n", config.name)
+	logger.Debugf("binary                        %s\n", config.binary)
 	logger.Debugf("build                         %s\n", config.build)
 	logger.Debugf("identifier                    %s\n", config.identifier)
 	logger.Debugf("debug                         %d\n", config.debug)
@@ -158,6 +158,12 @@ func (config *configurationStruct) dump() {
 	logger.Debugf("useEmbeddedPerlImplicitly     %v\n", config.useEmbeddedPerlImplicitly)
 	logger.Debugf("usePerlCache                  %v\n", config.usePerlCache)
 	logger.Debugf("p1File                        %s\n", config.p1File)
+	if config.binary == "send_gearman" {
+		logger.Debugf("returncode                    %d\n", config.returnCode)
+		logger.Debugf("message                       %s\n", config.message)
+		logger.Debugf("host                          %s\n", config.host)
+		logger.Debugf("service                       %s\n", config.service)
+	}
 }
 
 /**

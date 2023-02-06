@@ -36,7 +36,7 @@ func Sendgearman(build string) {
 
 func sendgearmanInit(build string) *configurationStruct {
 	// reads the args, check if they are params, if so sends them to the configuration reader
-	config, err := initConfiguration("mod_gearman_worker", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
+	config, err := initConfiguration("send_gearman", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 		cleanExit(ExitCodeUnknown)
@@ -110,7 +110,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 
 func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
+		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=.../--host=...", config.timeout)
 		cleanExit(ExitCodeError)
 	})
 	if !scanner.Scan() {
