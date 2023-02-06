@@ -98,6 +98,7 @@ func enqueueDupServerResult(config *configurationStruct, result *answer) {
 		returnCode:         result.returnCode,
 		source:             result.source,
 		output:             result.output,
+		resultQueue:        result.resultQueue,
 		active:             result.active,
 		execType:           result.execType,
 	}
