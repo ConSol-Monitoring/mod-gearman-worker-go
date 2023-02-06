@@ -29,6 +29,9 @@ type answer struct {
 	resultQueue        string
 	active             string
 	execType           string
+	runUserDuration    float64
+	runSysDuration     float64
+	compileDuration    float64
 }
 
 func (a *answer) String() string {
@@ -143,6 +146,9 @@ func executeInShell(cmdString string) bool {
 // and as second value a status Code between 0 and 3
 func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
 	result.returnCode = 3
+	var state *os.ProcessState
+	defer updatePrometheusExecMetrics(config, result, received)
+
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
 		result.execType = "bad_path"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
@@ -164,7 +170,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 			result.execType = "epn"
 			taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 			logger.Tracef("using embedded perl for: %s", splitted[0])
-			err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config)
+			err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received)
 			if err != nil {
 				logger.Warnf("embedded perl failed for: %s: %s", splitted[0], err.Error())
 			}
@@ -216,10 +222,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		return
 	}
 
-	state := cmd.ProcessState
-	if config.prometheusServer != "" {
-		prometheusUserAndSystemTime(received.commandLine, result.execType, state)
-	}
+	state = cmd.ProcessState
 
 	if ctx.Err() == context.DeadlineExceeded {
 		setTimeoutResult(result, config, received)
@@ -228,6 +231,11 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	if waitStatus, ok := state.Sys().(syscall.WaitStatus); ok {
 		result.returnCode = waitStatus.ExitStatus()
+	}
+
+	if state != nil {
+		result.runUserDuration = state.UserTime().Seconds()
+		result.runSysDuration = state.SystemTime().Seconds()
 	}
 
 	// extract stdout and stderr
@@ -310,15 +318,10 @@ func setProcessErrorResult(result *answer, config *configurationStruct, err erro
 	result.output = fmt.Sprintf("UNKNOWN: %s (worker: %s)", err.Error(), config.identifier)
 }
 
-func prometheusUserAndSystemTime(command string, execType string, state *os.ProcessState) {
-	basename := getCommandBasename(command)
-	userTimes.WithLabelValues(basename, execType).Observe(state.UserTime().Seconds())
-	systemTimes.WithLabelValues(basename, execType).Observe(state.SystemTime().Seconds())
-}
-
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)
 
-func getCommandBasename(input string) string {
+// returns basename and full qualifier for command line
+func getCommandBasename(input string) (string, string) {
 	l := len(input)
 	for {
 		input = reCmdEnvVar.ReplaceAllString(input, "")
@@ -327,7 +330,22 @@ func getCommandBasename(input string) string {
 		}
 		l = len(input)
 	}
-	args := strings.SplitN(input, " ", 2)
+	args := strings.SplitN(input, " ", 3)
 	paths := strings.Split(args[0], "/")
-	return paths[len(paths)-1]
+	fullBin := args[0]
+	qualifier := paths[len(paths)-1]
+
+	switch qualifier {
+	case "python", "python2", "python3", "bash", "sh", "perl":
+		// add first argument
+		if len(args) >= 2 {
+			fullBin = fmt.Sprintf("%s %s", fullBin, args[1])
+			argpaths := strings.Split(args[1], "/")
+			arg1base := argpaths[len(argpaths)-1]
+			qualifier = fmt.Sprintf("%s %s", qualifier, arg1base)
+		}
+	default:
+	}
+
+	return qualifier, fullBin
 }

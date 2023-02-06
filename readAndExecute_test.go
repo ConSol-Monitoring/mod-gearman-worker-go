@@ -220,10 +220,13 @@ func TestGetCommandBasename(t *testing.T) {
 		{"ENV1=1 ENV2=2 ./test arg1 arg2", "test"},
 		{`ENV1="1 2 3" ENV2='2' ./test arg1 arg2`, "test"},
 		{`PATH=test:$PATH LD_LIB=... $(pwd)/test`, "test"},
+		{"/python /tmp/file1 args1", "python file1"},
+		{"/python2 /tmp/file1 args1", "python2 file1"},
+		{"/python3 /tmp/file1 args1", "python3 file1"},
 	}
 
 	for _, test := range tests {
-		base := getCommandBasename(test.command)
+		base, _ := getCommandBasename(test.command)
 		if base != test.expect {
 			t.Errorf("getCommandBasename was incorrect, got: %s, want: %s", base, test.expect)
 		}

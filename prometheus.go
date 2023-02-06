@@ -85,7 +85,10 @@ func startPrometheus(config *configurationStruct) (prometheusListener *net.Liste
 		// make sure we log panics properly
 		defer logPanicExit()
 		mux := http.NewServeMux()
-		mux.Handle("/metrics", promhttp.Handler())
+		handler := promhttp.InstrumentMetricHandler(
+			prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
+		)
+		mux.Handle("/metrics", handler)
 		http.Serve(l, mux)
 		logger.Debugf("prometheus listener %s stopped", config.prometheusServer)
 	}()
@@ -132,5 +135,41 @@ func registerMetrics() {
 
 	if err := prometheus.Register(systemTimes); err != nil {
 		fmt.Println(err)
+	}
+}
+
+func buildExecExemplarLabels(result *answer, received *receivedStruct, basename string) prometheus.Labels {
+	// prometheus panics if exemplars are too long, so make sure basename is small enough
+	if len(basename) > 30 {
+		basename = basename[0:30]
+	}
+	label := prometheus.Labels{
+		"basename":         basename,
+		"rc":               fmt.Sprintf("%d", result.returnCode),
+		"exec":             result.execType,
+		"compile_duration": fmt.Sprintf("%.5f", result.compileDuration),
+		"runtime_duration": fmt.Sprintf("%.5f", result.runUserDuration+result.runSysDuration),
+		"type":             received.typ,
+	}
+	return label
+}
+
+func updatePrometheusExecMetrics(config *configurationStruct, result *answer, received *receivedStruct) {
+	if config.prometheusServer == "" {
+		return
+	}
+
+	basename, _ := getCommandBasename(received.commandLine)
+
+	if result.runUserDuration > 0 {
+		userTimes.WithLabelValues(basename, result.execType).Observe(result.runUserDuration)
+	}
+	if result.runSysDuration > 0 {
+		systemTimes.WithLabelValues(basename, result.execType).Observe(result.runSysDuration)
+	}
+
+	if result.returnCode > 0 {
+		exemplarLabels := buildExecExemplarLabels(result, received, basename)
+		errorCounter.WithLabelValues(received.typ, result.execType).(prometheus.ExemplarAdder).AddWithExemplar(1, exemplarLabels)
 	}
 }

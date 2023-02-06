@@ -204,7 +204,7 @@ type ePNRes struct {
 	CPUUser         float64 `json:"cpu_user"`
 }
 
-func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct, config *configurationStruct) error {
+func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct) error {
 	msg, err := json.Marshal(ePNMsg{
 		Bin:     bin,
 		Args:    args,
@@ -238,12 +238,8 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 
 	result.output = res.Stdout
 	result.returnCode = res.RC
-
-	if config.prometheusServer != "" {
-		basename := getCommandBasename(bin)
-		userTimes.WithLabelValues(basename, result.execType).Observe(res.CPUUser)
-		systemTimes.WithLabelValues(basename, result.execType).Observe(0)
-	}
+	result.compileDuration = res.CompileDuration
+	result.runUserDuration = res.CPUUser
 
 	return nil
 }

@@ -34,6 +34,7 @@ linters:
     - varnamelen
     - nonamedreturns
     - tagliatelle
+    - forcetypeassert
   fast: false
 
 issues:
@@ -47,6 +48,7 @@ issues:
     - 'Magic number: 0.01\D '
     - 'Magic number: 1\D '
     - 'Magic number: 2\D '
+    - 'Magic number: 3\D '
     - 'Magic number: 10\D '
     - 'Magic number: 30\D '
     - 'Magic number: 16\D '

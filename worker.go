@@ -209,10 +209,6 @@ func (worker *worker) startballooning() bool {
 func (worker *worker) executeJob(received *receivedStruct) {
 	result := readAndExecute(received, worker.config)
 
-	if result.returnCode > 0 {
-		errorCounter.WithLabelValues(received.typ, result.execType).Inc()
-	}
-
 	if received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		enqueueServerResult(result)

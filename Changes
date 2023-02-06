@@ -4,6 +4,7 @@ next:
           - add embedded perl support
           - send_gearman: support reading plugin output from stdin
           - worker: adjust default load_cpu_multi to 2.5
+          - prometheus: add exemplars to metrics
 
 1.2.4    Tue Sep 27 10:38:12 CEST 2022
           - improve worker error output
