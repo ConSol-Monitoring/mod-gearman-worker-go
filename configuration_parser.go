@@ -303,6 +303,10 @@ func (config *configurationStruct) readSetting(values []string) {
 		config.usePerlCache = getBool(value)
 	case "p1_file":
 		config.p1File = value
+	case "fork_on_exec":
+		// skip legacy option
+	case "workaround_rc_25":
+		// skip legacy option
 	default:
 		logger.Warnf("unknown config option: %s", key)
 	}
