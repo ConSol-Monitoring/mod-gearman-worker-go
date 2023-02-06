@@ -144,7 +144,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 		return cached
 	}
 	fileUsesEPN := detectFileUsesEmbeddedPerl(file, config)
-	fileUsesEPNCache[file] = cached
+	fileUsesEPNCache[file] = fileUsesEPN
 	return fileUsesEPN
 }
 

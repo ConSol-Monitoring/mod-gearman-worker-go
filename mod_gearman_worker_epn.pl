@@ -20,17 +20,23 @@ for developing or testing purposes.
 
     -v|--verbose            print additional debug information
     -c|--cache              enable perl cache
+    -r|--run                run single plugin for testing purpose
     socket                  path to socket
 
 =head1 USAGE
 
-start epn server in verbose mode:
+Start epn server in verbose mode:
 
     ./mod_gearman_worker_epn.pl epn.socket -v
 
 then send command lines to the socket:
 
     echo "test.pl arg1 arg2" | nc -U epn.socket
+
+
+Test single plugin call
+
+    ./mod_gearman_worker_epn.pl -v --run -- ./plugin.pl <plugin args...>
 
 =head1 AUTHOR
 
@@ -55,20 +61,22 @@ $| = 1;
 # parse and check cmd line arguments
 Getopt::Long::Configure('no_ignore_case');
 Getopt::Long::Configure('bundling');
+Getopt::Long::Configure('pass_through');
 my $opt ={
     'help'      => 0,
     'verbose'   => 0,
     'use_cache' => 0,
+    'run_only'  => 0,
     'socket'    => [],
 };
 Getopt::Long::GetOptions(
    "h|help"         => \$opt->{'help'},
    "v|verbose"      => sub { $opt->{'verbose'}++ },
    "c|cache"        => sub { $opt->{'use_cache'}++ },
+   "r|run"          => sub { $opt->{'run_only'}++ },
    "<>"             => sub { push @{$opt->{'socket'}}, $_[0] },
 ) || pod2usage( { -verbose => 2, -message => 'error in options', -exit => 3 } );
 pod2usage( { -verbose => 2,  -exit => 3 } ) if $opt->{'help'};
-pod2usage( { -verbose => 2, -message => 'error in options', -exit => 3 } ) if scalar @{$opt->{'socket'}} != 1;
 
 my $unixsocket;
 END {
@@ -132,7 +140,7 @@ sub _handle_connection {
 ###########################################################
 # handle a single plugin execution
 sub _handle_request {
-    my($request) = @_;
+    my($request, $skip_fork) = @_;
 
     my $t0 = [Time::HiRes::gettimeofday()];
     my($handler, $err)  = Embed::Persistent::eval_file($request, $opt->{'use_cache'});
@@ -148,11 +156,15 @@ sub _handle_request {
     }
 
     # fork now after creating the cache, cache needs to remain in the parent
-    my $pid = fork();
-    if($pid == -1) {
-        die("**ePN: failed to fork: ".$!);
+    my $forked = 0;
+    if(!$skip_fork) {
+        my $pid = fork();
+        if($pid == -1) {
+            die("**ePN: failed to fork: ".$!);
+        }
+        return if $pid;
+        $forked = 1;
     }
-    return if $pid;
 
     # continue as child process
     my $t1 = [Time::HiRes::gettimeofday()];
@@ -164,7 +176,7 @@ sub _handle_request {
         stdout           => $res,
         compile_duration => $elapsed_compile,
         run_duration     => $elapsed_run,
-        forked           => 1,
+        forked           => $forked,
     });
 }
 
@@ -216,6 +228,41 @@ sub _send_answer {
 }
 
 ###########################################################
+sub _test_run {
+    my($args) = @_;
+    if($args->[0] && $args->[0] eq '--') {
+        shift @{$args};
+    }
+    printf("**ePN: test run: ".join(" ", @{$args})."\n") if $opt->{'verbose'};
+
+    my $res;
+    eval {
+        my $req     = join(" ", @{$args});
+        my $request = _parse_request($req);
+        $res        = _handle_request($request, 1);
+    };
+    my $err = $@;
+    if($err) {
+        printf("**ePN: errored: %s\n", $err);
+        return(3);
+    }
+
+    print $res->{'stdout'};
+
+    printf("**ePN: compile: %.5fs\n", $res->{'compile_duration'}) if $opt->{'verbose'};
+    printf("**ePN: runtime: %.5fs\n", $res->{'run_duration'}) if $opt->{'verbose'};
+    printf("**ePN: exit:    %d\n", $res->{'rc'}) if $opt->{'verbose'};
+    return($res->{'rc'});
+}
+
+###########################################################
+# one shot mode?
+if($opt->{'run_only'}) {
+    exit(_test_run(\@ARGV));
+}
+
+###########################################################
+pod2usage( { -verbose => 2, -message => 'error in options', -exit => 3 } ) if scalar @{$opt->{'socket'}} != 1;
 use subs 'CORE::GLOBAL::exit';
 sub CORE::GLOBAL::exit { die sprintf("ExitTrap: %d (Redefine exit to trap plugin exit with eval BLOCK)", $_[0]//0) }
 _server($opt);
