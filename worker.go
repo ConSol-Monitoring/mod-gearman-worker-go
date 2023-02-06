@@ -123,24 +123,29 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	}
 	worker.mainWorker.tasks++
 
-	logger.Debugf("incoming %s job: handle: %s - host: %s - service: %s", received.typ, job.Handle(), received.hostName, received.serviceDescription)
+	logJob(job, received, "incoming", nil)
 	logger.Trace(received)
 
 	if !worker.considerballooning() {
-		worker.executeJob(received)
+		anser := worker.executeJob(received)
 		worker.activeJobs--
+		logJob(job, received, "finished", anser)
 		return
 	}
 
 	finChan := make(chan bool, 1)
 	go func() {
-		worker.executeJob(received)
-		worker.activeJobs--
-		if received.ballooning {
-			worker.mainWorker.curBallooningWorker--
-			ballooningWorkerCount.Set(float64(worker.mainWorker.curBallooningWorker))
-		}
-		finChan <- true
+		defer logPanicExit()
+		defer func() {
+			worker.activeJobs--
+			if received.ballooning {
+				worker.mainWorker.curBallooningWorker--
+				ballooningWorkerCount.Set(float64(worker.mainWorker.curBallooningWorker))
+			}
+			finChan <- true
+		}()
+		answer := worker.executeJob(received)
+		logJob(job, received, "finished", answer)
 	}()
 
 	ticker := time.NewTicker(time.Duration(worker.config.backgroundingThreshold) * time.Second)
@@ -148,7 +153,6 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	for {
 		select {
 		case <-finChan:
-			logger.Debugf("job: %s finished", job.Handle())
 			return
 		case <-ticker.C:
 			// check again if are there open files left for ballooning
@@ -206,7 +210,7 @@ func (worker *worker) startballooning() bool {
 }
 
 // executeJob executes the job and handles sending the result
-func (worker *worker) executeJob(received *receivedStruct) {
+func (worker *worker) executeJob(received *receivedStruct) *answer {
 	result := readAndExecute(received, worker.config)
 
 	if received.resultQueue != "" {
@@ -214,6 +218,8 @@ func (worker *worker) executeJob(received *receivedStruct) {
 		enqueueServerResult(result)
 		enqueueDupServerResult(worker.config, result)
 	}
+
+	return result
 }
 
 // errorHandler gets called if the libworker worker throws an error
@@ -249,4 +255,19 @@ func (worker *worker) Shutdown() {
 		}
 	}
 	worker.worker = nil
+}
+
+func logJob(job libworker.Job, received *receivedStruct, prefix string, result *answer) {
+	suffix := ""
+	if result != nil {
+		suffix = fmt.Sprintf(" (took: %.3fs | exec: %s)", result.finishTime-result.startTime, result.execType)
+	}
+	switch {
+	case received.serviceDescription != "":
+		logger.Debugf("%s %-13s job: handle: %s - host: %20s - service: %s%s", prefix, received.typ, job.Handle(), received.hostName, received.serviceDescription, suffix)
+	case received.hostName != "":
+		logger.Debugf("%s %-13s job: handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
+	default:
+		logger.Debugf("%s %-13s job: handle: %s%s", prefix, received.typ, job.Handle(), suffix)
+	}
 }

@@ -77,11 +77,13 @@ func startEmbeddedPerl(config *configurationStruct) {
 	}
 	stderrScanner := bufio.NewScanner(stderr)
 	go func() {
+		defer logPanicExit()
 		for stdoutScanner.Scan() {
 			logger.Debugf("%s", stdoutScanner.Text())
 		}
 	}()
 	go func() {
+		defer logPanicExit()
 		for stderrScanner.Scan() {
 			logger.Errorf("%s", stderrScanner.Text())
 		}
