@@ -321,7 +321,7 @@ func setProcessErrorResult(result *answer, config *configurationStruct, err erro
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)
 
 // returns basename and full qualifier for command line
-func getCommandBasename(input string) (string, string) {
+func getCommandQualifier(input string) string {
 	l := len(input)
 	for {
 		input = reCmdEnvVar.ReplaceAllString(input, "")
@@ -332,14 +332,12 @@ func getCommandBasename(input string) (string, string) {
 	}
 	args := strings.SplitN(input, " ", 3)
 	paths := strings.Split(args[0], "/")
-	fullBin := args[0]
 	qualifier := paths[len(paths)-1]
 
 	switch qualifier {
 	case "python", "python2", "python3", "bash", "sh", "perl":
 		// add first argument
 		if len(args) >= 2 {
-			fullBin = fmt.Sprintf("%s %s", fullBin, args[1])
 			argpaths := strings.Split(args[1], "/")
 			arg1base := argpaths[len(argpaths)-1]
 			qualifier = fmt.Sprintf("%s %s", qualifier, arg1base)
@@ -347,5 +345,5 @@ func getCommandBasename(input string) (string, string) {
 	default:
 	}
 
-	return qualifier, fullBin
+	return qualifier
 }

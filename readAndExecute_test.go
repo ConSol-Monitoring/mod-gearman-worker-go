@@ -226,9 +226,9 @@ func TestGetCommandBasename(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		base, _ := getCommandBasename(test.command)
+		base := getCommandQualifier(test.command)
 		if base != test.expect {
-			t.Errorf("getCommandBasename was incorrect, got: %s, want: %s", base, test.expect)
+			t.Errorf("getCommandQualifier was incorrect, got: %s, want: %s", base, test.expect)
 		}
 	}
 }

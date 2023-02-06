@@ -159,7 +159,7 @@ func updatePrometheusExecMetrics(config *configurationStruct, result *answer, re
 		return
 	}
 
-	basename, _ := getCommandBasename(received.commandLine)
+	basename := getCommandQualifier(received.commandLine)
 
 	if result.runUserDuration > 0 {
 		userTimes.WithLabelValues(basename, result.execType).Observe(result.runUserDuration)
