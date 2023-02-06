@@ -88,7 +88,6 @@ func sendResultDup(client *client.Client, item *answer, dupAddress string, confi
 }
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
-
 	duplicateResult := &answer{
 		hostName:           result.hostName,
 		serviceDescription: result.serviceDescription,
