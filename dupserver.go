@@ -88,10 +88,12 @@ func sendResultDup(client *client.Client, item *answer, dupAddress string, confi
 }
 
 func enqueueDupServerResult(config *configurationStruct, result *answer) {
+	duplicateResult := *result
+
 	for _, dupAddress := range config.dupserver {
 		channel := dupServerConsumers[dupAddress].queue
 		select {
-		case channel <- result:
+		case channel <- &duplicateResult:
 		default:
 			logger.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s", config.dupServerBacklogQueueSize, dupAddress)
 		}
