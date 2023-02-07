@@ -527,7 +527,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 	}
 
 	// do not wait on shutdown via sigint
-	wait := 30 * time.Second
+	wait := 10 * time.Second
 	if state == Shutdown {
 		wait = 1 * time.Second
 	}
@@ -540,6 +540,13 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 		case <-timeout.C:
 			logger.Infof("%s timeout hit while waiting for all workers to stop, remaining: %d", wait, workerNum-alreadyExited)
 			w.StopStatusWorker()
+			// cancel remaining worker
+			w.workerMapLock.RLock()
+			workerMap = w.workerMap
+			w.workerMapLock.RUnlock()
+			for _, wo := range workerMap {
+				wo.Cancel()
+			}
 			return
 		case <-exited:
 			alreadyExited++

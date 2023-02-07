@@ -22,7 +22,9 @@ type receivedStruct struct {
 	coreTime           float64
 	timeout            int
 	commandLine        string
-	ballooning         bool // flag wether this job has been put into background
+	ballooning         bool   // flag wether this job has been put into background
+	Cancel             func() // cancel current job
+	Canceled           bool
 }
 
 func (r *receivedStruct) String() string {
@@ -111,6 +113,7 @@ func createReceived(input []byte) (*receivedStruct, error) {
 	result.coreTime = parseTimeStringToFloat64(stringMap["core_time"])
 	result.nextCheck = parseTimeStringToFloat64(stringMap["next_check"])
 	result.timeout = getInt(stringMap["timeout"])
+	result.Cancel = nil
 
 	return &result, nil
 }

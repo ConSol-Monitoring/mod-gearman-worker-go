@@ -3,6 +3,7 @@ package modgearman
 import (
 	"fmt"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	libworker "github.com/appscode/g2/worker"
@@ -15,6 +16,8 @@ type worker struct {
 	activeJobs int
 	config     *configurationStruct
 	mainWorker *mainWorker
+	jobs       []*receivedStruct
+	lock       sync.RWMutex
 }
 
 // creates a new worker and returns a pointer to it
@@ -126,10 +129,18 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	logJob(job, received, "incoming", nil)
 	logger.Trace(received)
 
+	worker.addJob(received)
+	defer worker.removeJob(received)
+
 	if !worker.considerballooning() {
-		anser := worker.executeJob(received)
+		answer := worker.executeJob(received)
 		worker.activeJobs--
-		logJob(job, received, "finished", anser)
+		if received.Canceled {
+			logJob(job, received, "canceled", answer)
+			res = make([]byte, 0)
+			return res, fmt.Errorf("job has been canceled")
+		}
+		logJob(job, received, "finished", answer)
 		return
 	}
 
@@ -145,7 +156,11 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 			finChan <- true
 		}()
 		answer := worker.executeJob(received)
-		logJob(job, received, "finished", answer)
+		if received.Canceled {
+			logJob(job, received, "canceled", answer)
+		} else {
+			logJob(job, received, "finished", answer)
+		}
 	}()
 
 	ticker := time.NewTicker(time.Duration(worker.config.backgroundingThreshold) * time.Second)
@@ -213,7 +228,7 @@ func (worker *worker) startballooning() bool {
 func (worker *worker) executeJob(received *receivedStruct) *answer {
 	result := readAndExecute(received, worker.config)
 
-	if received.resultQueue != "" {
+	if !received.Canceled && received.resultQueue != "" {
 		logger.Tracef("result:\n%s", result)
 		enqueueServerResult(result)
 		enqueueDupServerResult(worker.config, result)
@@ -257,6 +272,21 @@ func (worker *worker) Shutdown() {
 	worker.worker = nil
 }
 
+// Cancel current job(s)
+func (worker *worker) Cancel() {
+	if worker.activeJobs == 0 {
+		return
+	}
+	logger.Debugf("worker %s cancling current jobs", worker.id)
+	worker.lock.Lock()
+	for _, j := range worker.jobs {
+		if j.Cancel != nil {
+			j.Cancel()
+		}
+	}
+	worker.lock.Unlock()
+}
+
 func logJob(job libworker.Job, received *receivedStruct, prefix string, result *answer) {
 	suffix := ""
 	if result != nil {
@@ -270,4 +300,20 @@ func logJob(job libworker.Job, received *receivedStruct, prefix string, result *
 	default:
 		logger.Debugf("%s %-13s job: handle: %s%s", prefix, received.typ, job.Handle(), suffix)
 	}
+}
+
+func (worker *worker) addJob(received *receivedStruct) {
+	worker.lock.Lock()
+	worker.jobs = append(worker.jobs, received)
+	worker.lock.Unlock()
+}
+
+func (worker *worker) removeJob(received *receivedStruct) {
+	worker.lock.Lock()
+	for i, j := range worker.jobs {
+		if j == received {
+			worker.jobs = append(worker.jobs[:i], worker.jobs[i+1:]...)
+		}
+	}
+	worker.lock.Unlock()
 }

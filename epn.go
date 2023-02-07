@@ -227,6 +227,12 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	}
 	defer c.Close()
 
+	received.Cancel = func() {
+		logger.Errorf("closing epn conn")
+		received.Canceled = true
+		c.Close()
+	}
+
 	_, err = c.Write(msg)
 	if err != nil {
 		return fmt.Errorf("sending to epn server failed: %w", err)
@@ -234,6 +240,8 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 
 	var buf bytes.Buffer
 	io.Copy(&buf, c)
+
+	received.Cancel = nil
 
 	res := ePNRes{}
 	err = json.Unmarshal(buf.Bytes(), &res)

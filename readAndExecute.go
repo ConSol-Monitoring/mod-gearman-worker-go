@@ -191,6 +191,13 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		return
 	}
 
+	received.Cancel = func() {
+		received.Canceled = true
+		if cmd != nil && cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+	}
+
 	// https://github.com/golang/go/issues/18874
 	// timeout does not work for child processes and/or if file handles are still open
 	go func(proc *os.Process) {
@@ -215,6 +222,8 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		setProcessErrorResult(result, config, err)
 		return
 	}
+
+	received.Cancel = nil
 
 	state = cmd.ProcessState
 
