@@ -19,6 +19,9 @@ const (
 
 	// ePNStartRetryInterval is the interval at which the socket is checked
 	ePNStartRetryInterval = 50 * time.Millisecond
+
+	// ePNMaxRetries sets the amount of retries when connecting to epn server
+	ePNMaxRetries = 15
 )
 
 var (
@@ -206,7 +209,7 @@ type ePNRes struct {
 	CPUUser         float64 `json:"cpu_user"`
 }
 
-func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct) error {
+func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct, config *configurationStruct) error {
 	msg, err := json.Marshal(ePNMsg{
 		Bin:     bin,
 		Args:    args,
@@ -218,7 +221,7 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	}
 	msg = append(msg, '\n')
 
-	c, err := net.Dial("unix", ePNServerSocket.Name())
+	c, err := ePNConnect(config)
 	if err != nil {
 		return fmt.Errorf("connecting to epn server failed: %w", err)
 	}
@@ -244,4 +247,35 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	result.runUserDuration = res.CPUUser
 
 	return nil
+}
+
+func ePNConnect(config *configurationStruct) (c net.Conn, err error) {
+	c, err = net.Dial("unix", ePNServerSocket.Name())
+	if err != nil {
+		retries := 1
+		logger.Debugf("connecting to epn server failed (retry %d): %w", retries, err)
+		// retry connection to epn server
+		for {
+			if !isRunning() {
+				return
+			}
+			time.Sleep(1 * time.Second)
+			retries++
+			c, err = net.Dial("unix", ePNServerSocket.Name())
+			if err == nil {
+				return c, nil
+			}
+			if retries%3 == 0 {
+				// try restarting epn server
+				logger.Warnf("restarting epn server")
+				// retry connection to epn server
+				stopEmbeddedPerl()
+				startEmbeddedPerl(config)
+			}
+			if retries > ePNMaxRetries {
+				return
+			}
+		}
+	}
+	return
 }

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -78,6 +79,13 @@ var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter(LogFormat))
 
 var prometheusListener *net.Listener
 var pidFile string
+
+// global atomic flag wether worker should be running
+var aIsRunning int64
+
+func isRunning() bool {
+	return uint8(atomic.LoadInt64(&aIsRunning)) != 0
+}
 
 // Worker starts the mod_gearman_worker program
 func Worker(build string) {
@@ -215,6 +223,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 			case ShutdownGraceFully:
 				fallthrough
 			case Shutdown:
+				atomic.StoreInt64(&aIsRunning, 0)
 				numWorker = len(*workerMap)
 				ticker.Stop()
 				// stop worker in background, so we can continue listening to signals

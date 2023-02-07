@@ -167,13 +167,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	} else {
 		splitted := strings.Fields(received.commandLine)
 		if fileUsesEmbeddedPerl(splitted[0], config) {
-			result.execType = "epn"
-			taskCounter.WithLabelValues(received.typ, result.execType).Inc()
-			logger.Tracef("using embedded perl for: %s", splitted[0])
-			err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received)
-			if err != nil {
-				logger.Warnf("embedded perl failed for: %s: %s", splitted[0], err.Error())
-			}
+			execEPN(result, received, config, splitted)
 			return
 		}
 		result.execType = "exec"
@@ -249,6 +243,20 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	fixReturnCodes(result, config, state)
 	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
+}
+
+func execEPN(result *answer, received *receivedStruct, config *configurationStruct, splitted []string) {
+	result.execType = "epn"
+	taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+	logger.Tracef("using embedded perl for: %s", splitted[0])
+	err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config)
+	if err != nil {
+		if isRunning() {
+			logger.Warnf("embedded perl failed for: %s: %s", splitted[0], err.Error())
+		} else {
+			logger.Debugf("embedded perl failed during shutdown for: %s: %s", splitted[0], err.Error())
+		}
+	}
 }
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {

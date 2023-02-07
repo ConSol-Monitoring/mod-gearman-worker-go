@@ -12,6 +12,7 @@ import (
 	"runtime/pprof"
 	"strings"
 	"sync"
+	"sync/atomic"
 	time "time"
 )
 
@@ -63,6 +64,7 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 		idleSince:     time.Now(),
 		serverStatus:  make(map[string]string),
 	}
+	atomic.StoreInt64(&aIsRunning, 1)
 	w.InitDebugOptions()
 	w.RetryFailedConnections()
 	initializeResultServerConsumers(w.config)
