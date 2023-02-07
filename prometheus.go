@@ -125,7 +125,12 @@ func registerMetrics() {
 	if err := prometheus.Register(idleWorkerCount); err != nil {
 		fmt.Println(err)
 	}
+
 	if err := prometheus.Register(workingWorkerCount); err != nil {
+		fmt.Println(err)
+	}
+
+	if err := prometheus.Register(ballooningWorkerCount); err != nil {
 		fmt.Println(err)
 	}
 
