@@ -216,14 +216,14 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	if err != nil {
 		return fmt.Errorf("json error: %w", err)
 	}
+	msg = append(msg, '\n')
 
 	c, err := net.Dial("unix", ePNServerSocket.Name())
 	if err != nil {
-		return fmt.Errorf("sending to epn server failed: %w", err)
+		return fmt.Errorf("connecting to epn server failed: %w", err)
 	}
 	defer c.Close()
 
-	msg = append(msg, '\n')
 	_, err = c.Write(msg)
 	if err != nil {
 		return fmt.Errorf("sending to epn server failed: %w", err)
