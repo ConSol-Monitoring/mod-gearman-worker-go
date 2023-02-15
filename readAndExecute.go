@@ -75,6 +75,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	result.startTime = float64(time.Now().UnixNano() / int64(time.Second))
 	result.source = "Mod-Gearman Worker @ " + config.identifier
 	result.active = "active"
+	result.resultQueue = received.resultQueue
 
 	// hostname and core start time are the same in the result as in receive
 	result.hostName = received.hostName
@@ -110,7 +111,6 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 
 	// last set the finish time
 	result.finishTime = float64(time.Now().UnixNano() / int64(time.Second))
-	result.resultQueue = received.resultQueue
 
 	return &result
 }

@@ -3,6 +3,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 next:
           - fix epn file detection
           - fix issue with dup servers (#19)
+          - fix sending max_age error result
           - prometheus: add exemplars to metrics
           - improve restarting
 
