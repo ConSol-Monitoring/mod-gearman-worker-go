@@ -83,7 +83,7 @@ func BenchmarkJobs(b *testing.B) {
 			// run e2e test
 			_, err := sender.DoBg("host", testJob, runtime.JobNormal)
 			if err != nil {
-				sendError = fmt.Errorf("sending job failed: %s", err.Error())
+				sendError = fmt.Errorf("sending job failed: %w", err)
 			}
 		}
 	}()

@@ -39,12 +39,12 @@ func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType
 		}
 		f, err := os.Create(config.flagMemProfile)
 		if err != nil {
-			logger.Errorf("could not create memory profile: %s", err.Error())
+			logger.Errorf("could not create memory profile: %w", err)
 		}
 		defer f.Close()
 		runtime.GC()
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			logger.Errorf("could not write memory profile: %s", err.Error())
+			logger.Errorf("could not write memory profile: %w", err)
 		}
 		logger.Warnf("memory profile written to: %s", config.flagMemProfile)
 		return (Resume)

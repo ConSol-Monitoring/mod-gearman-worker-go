@@ -67,7 +67,7 @@ func runResultServerConsumer(server *resultServerConsumer) {
 			shouldExit, sendSuccess, curClient, err = sendResult(server, curClient, result)
 
 			if !sendSuccess && err != nil {
-				logger.Errorf("failed to send back result: %s", err.Error())
+				logger.Errorf("failed to send back result: %w", err)
 			}
 			if shouldExit {
 				return
@@ -100,9 +100,9 @@ func sendResult(server *resultServerConsumer, curClient *client.Client, result *
 		}
 		if err != nil {
 			if retries == 0 {
-				logger.Warnf("failed to send back result, will continue to retry for 2 minutes: %s", err.Error())
+				logger.Warnf("failed to send back result, will continue to retry for 2 minutes: %w", err)
 			} else {
-				logger.Tracef("still failing to send back result: %s", err.Error())
+				logger.Tracef("still failing to send back result: %w", err)
 			}
 		}
 		retries++

@@ -261,9 +261,9 @@ func execEPN(result *answer, received *receivedStruct, config *configurationStru
 	err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config)
 	if err != nil {
 		if isRunning() {
-			logger.Warnf("embedded perl failed for: %s: %s", splitted[0], err.Error())
+			logger.Warnf("embedded perl failed for: %s: %w", splitted[0], err)
 		} else {
-			logger.Debugf("embedded perl failed during shutdown for: %s: %s", splitted[0], err.Error())
+			logger.Debugf("embedded perl failed during shutdown for: %s: %w", splitted[0], err)
 		}
 	}
 }
@@ -327,10 +327,10 @@ func setProcessErrorResult(result *answer, config *configurationStruct, err erro
 			fallthrough
 		case syscall.ENOMEM:
 			// out of memory
-			logger.Fatalf("system error, bailing out to prevent false positives: %s", err.Error())
+			logger.Fatalf("system error, bailing out to prevent false positives: %w", err)
 		}
 	}
-	logger.Warnf("system error: %s", err.Error())
+	logger.Warnf("system error: %w", err)
 	result.returnCode = 3
 	result.output = fmt.Sprintf("UNKNOWN: %s (worker: %s)", err.Error(), config.identifier)
 }

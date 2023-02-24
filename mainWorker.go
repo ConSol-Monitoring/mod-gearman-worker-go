@@ -237,7 +237,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 	config, err := initConfiguration("mod_gearman_worker", w.config.build, printUsage, checkForReasonableConfig)
 	if err != nil {
 		restartRequired = false
-		logger.Errorf("cannot reload configuration: %s", err.Error())
+		logger.Errorf("cannot reload configuration: %w", err)
 		return
 	}
 

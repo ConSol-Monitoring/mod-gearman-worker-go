@@ -59,7 +59,7 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 
 	// check if worker is ready
 	if err := w.Ready(); err != nil {
-		logger.Debugf("worker not ready closing again: %s", err.Error())
+		logger.Debugf("worker not ready closing again: %w", err)
 		worker.Shutdown()
 		return nil
 	}
@@ -120,7 +120,7 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 
 	received, err := decrypt((decodeBase64(string(job.Data()))), worker.config.encryption)
 	if err != nil {
-		logger.Errorf("decrypt failed: %s", err.Error())
+		logger.Errorf("decrypt failed: %w", err)
 		worker.activeJobs--
 		return
 	}
@@ -242,10 +242,10 @@ func (worker *worker) errorHandler(e error) {
 	switch err := e.(type) {
 	case *libworker.WorkerDisconnectError:
 		_, addr := err.Server()
-		logger.Debugf("worker disconnect: %s from %s", e.Error(), addr)
+		logger.Debugf("worker disconnect: %w from %s", e, addr)
 		worker.mainWorker.SetServerStatus(addr, err.Error())
 	default:
-		logger.Errorf("worker error: %s", e.Error())
+		logger.Errorf("worker error: %w", e)
 		logger.Errorf("%s", debug.Stack())
 	}
 	worker.Shutdown()

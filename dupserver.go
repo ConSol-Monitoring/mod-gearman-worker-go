@@ -62,7 +62,7 @@ func runDupServerConsumer(dupServer *dupServerConsumer) {
 				client, err = sendResultDup(client, item, dupServer.address, dupServer.config)
 				if err != nil {
 					client = nil
-					logger.Debugf("failed to send back result (to dupserver): %s", err.Error())
+					logger.Debugf("failed to send back result (to dupserver): %w", err)
 					select {
 					case <-dupServer.terminationRequest:
 						if client != nil {

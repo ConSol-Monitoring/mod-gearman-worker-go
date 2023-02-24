@@ -57,14 +57,14 @@ func openFileOrCreate(path string) (os.File, error) {
 		createDirectoryAndFile(path)
 		file, err := os.Open(path)
 		if err != nil {
-			logger.Errorf("could not open file %s: %s", path, err.Error())
+			logger.Errorf("could not open file %s: %w", path, err)
 			return *file, fmt.Errorf("open file %s failed: %w", path, err)
 		}
 		return *file, nil
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		logger.Errorf("could not open file %s: %s", path, err.Error())
+		logger.Errorf("could not open file %s: %w", path, err)
 	}
 	return *file, nil
 }

@@ -45,7 +45,7 @@ func TestGetKey(t *testing.T) {
 	// remove the testfile
 	err = os.Remove(config.keyfile)
 	if err != nil {
-		t.Errorf("could not delete testKeyfile %s", err)
+		t.Errorf("could not delete testKeyfile %s", err.Error())
 	}
 }
 

@@ -95,7 +95,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 				sendSuccess = true
 				break
 			}
-			logger.Debugf("connection failed: %s", err.Error())
+			logger.Debugf("connection failed: %w", err)
 			if c != nil {
 				c.Close()
 			}

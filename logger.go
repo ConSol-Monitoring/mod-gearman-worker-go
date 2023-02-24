@@ -28,12 +28,12 @@ func createLogger(config *configurationStruct) {
 	case config.logfile != "" && (config.logmode == "automatic" || config.logmode == "file"):
 		file, err := openFileOrCreate(config.logfile)
 		if err != nil {
-			logger.Errorf("could not create or open file %s: %s", config.logfile, err.Error())
+			logger.Errorf("could not create or open file %s: %w", config.logfile, err)
 		}
 		file.Close()
 		logfile, err := os.OpenFile(config.logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
-			logger.Errorf("could not open/create logfile: %s", err.Error())
+			logger.Errorf("could not open/create logfile: %w", err)
 		}
 		logger.SetOutput(logfile)
 	default:

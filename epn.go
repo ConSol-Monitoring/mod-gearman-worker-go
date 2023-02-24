@@ -156,7 +156,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	readFile, err := os.Open(file)
 	if err != nil {
-		logger.Warnf("failed to open %s: %s", file, err.Error())
+		logger.Warnf("failed to open %s: %w", file, err)
 		return false
 	}
 	defer readFile.Close()

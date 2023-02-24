@@ -322,7 +322,7 @@ func (config *configurationStruct) readSetting(values []string) {
 func (config *configurationStruct) readSettingsPath(path string) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		logger.Errorf("cannot read %s: %s", path, err.Error())
+		logger.Errorf("cannot read %s: %w", path, err)
 		return
 	}
 	if fileInfo.IsDir() {
@@ -346,7 +346,7 @@ func (config *configurationStruct) readSettingsFile(path string) {
 	file, err := os.Open(path)
 
 	if err != nil {
-		logger.Errorf("cannot read file %s: %s", path, err.Error())
+		logger.Errorf("cannot read file %s: %w", path, err)
 		return
 	}
 
