@@ -99,7 +99,7 @@ func sendResult(server *resultServerConsumer, curClient *client.Client, result *
 			break
 		}
 		if err != nil {
-			if retries == 0 {
+			if retries == 30 {
 				logger.Warnf("failed to send back result, will continue to retry for 2 minutes: %w", err)
 			} else {
 				logger.Tracef("still failing to send back result: %w", err)
