@@ -32,6 +32,8 @@ var (
 	ePNFilePrefix = []string{"# nagios:", "# naemon:", "# icinga:"}
 
 	fileUsesEPNCache = make(map[string]bool)
+
+	ePNStarted *time.Time
 )
 
 func startEmbeddedPerl(config *configurationStruct) {
@@ -40,6 +42,8 @@ func startEmbeddedPerl(config *configurationStruct) {
 	if !config.enableEmbeddedPerl {
 		return
 	}
+	now := time.Now()
+	ePNStarted = &now
 	logger.Debugf("starting embedded perl worker")
 	args := make([]string, 0)
 	if config.usePerlCache {
@@ -101,6 +105,15 @@ func startEmbeddedPerl(config *configurationStruct) {
 	}
 	ePNServerProcess = cmd
 
+	go func() {
+		defer logPanicExit()
+		_, err := cmd.Process.Wait()
+		if err != nil {
+			logger.Errorf("epn server errored: %w", err)
+		}
+		stopEmbeddedPerl()
+	}()
+
 	// wait till socket appears
 	ticker := time.NewTicker(ePNStartRetryInterval)
 	timeout := time.NewTimer(ePNStartTimeout)
@@ -137,6 +150,8 @@ func stopEmbeddedPerl() {
 	if ePNServerSocket != nil {
 		os.Remove(ePNServerSocket.Name())
 	}
+	ePNServerSocket = nil
+	ePNStarted = nil
 	logger.Debugf("epn worker shutdown complete")
 }
 
@@ -209,7 +224,7 @@ type ePNRes struct {
 	CPUUser         float64 `json:"cpu_user"`
 }
 
-func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct, config *configurationStruct) error {
+func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct) error {
 	msg, err := json.Marshal(ePNMsg{
 		Bin:     bin,
 		Args:    args,
@@ -221,7 +236,7 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	}
 	msg = append(msg, '\n')
 
-	c, err := ePNConnect(config)
+	c, err := ePNConnect()
 	if err != nil {
 		return fmt.Errorf("connecting to epn server failed: %w", err)
 	}
@@ -257,7 +272,7 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	return nil
 }
 
-func ePNConnect(config *configurationStruct) (c net.Conn, err error) {
+func ePNConnect() (c net.Conn, err error) {
 	c, err = net.Dial("unix", ePNServerSocket.Name())
 	if err != nil {
 		retries := 1
@@ -273,12 +288,12 @@ func ePNConnect(config *configurationStruct) (c net.Conn, err error) {
 			if err == nil {
 				return c, nil
 			}
-			if retries%3 == 0 {
+			started := ePNStarted
+			if retries%3 == 0 && started != nil && time.Now().After(started.Add(ePNStartTimeout)) {
 				// try restarting epn server
-				logger.Warnf("restarting epn server")
+				logger.Debugf("restarting epn server")
 				// retry connection to epn server
-				stopEmbeddedPerl()
-				startEmbeddedPerl(config)
+				ePNStarted = nil
 			}
 			if retries > ePNMaxRetries {
 				return
@@ -286,4 +301,22 @@ func ePNConnect(config *configurationStruct) (c net.Conn, err error) {
 		}
 	}
 	return
+}
+
+// checkRestartEPNServer checks if epn server needs to be restarted
+func checkRestartEPNServer(config *configurationStruct) {
+	if !config.enableEmbeddedPerl {
+		return
+	}
+
+	if ePNStarted != nil {
+		return
+	}
+
+	now := time.Now()
+	ePNStarted = &now
+
+	logger.Warnf("restarting epn server")
+	stopEmbeddedPerl()
+	startEmbeddedPerl(config)
 }

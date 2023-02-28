@@ -167,7 +167,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	} else {
 		splitted := strings.Fields(received.commandLine)
 		if fileUsesEmbeddedPerl(splitted[0], config) {
-			execEPN(result, received, config, splitted)
+			execEPN(result, received, splitted)
 			return
 		}
 		result.execType = "exec"
@@ -254,11 +254,11 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
 }
 
-func execEPN(result *answer, received *receivedStruct, config *configurationStruct, splitted []string) {
+func execEPN(result *answer, received *receivedStruct, splitted []string) {
 	result.execType = "epn"
 	taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 	logger.Tracef("using embedded perl for: %s", splitted[0])
-	err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received, config)
+	err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received)
 	if err != nil {
 		if isRunning() {
 			logger.Warnf("embedded perl failed for: %s: %w", splitted[0], err)

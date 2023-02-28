@@ -207,6 +207,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 		select {
 		case <-ticker.C:
 			mainworker.manageWorkers(0)
+			checkRestartEPNServer(config)
 		case sig := <-osSignalChannel:
 			exitState = mainSignalHandler(sig, config)
 			switch exitState {
