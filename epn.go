@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -253,13 +254,15 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 		return fmt.Errorf("sending to epn server failed: %w", err)
 	}
 
-	var buf bytes.Buffer
-	io.Copy(&buf, c)
+	buf, err := ePNReadResponse(c)
+	if err != nil {
+		return fmt.Errorf("reading epn response failed: %w", err)
+	}
 
 	received.Cancel = nil
 
 	res := ePNRes{}
-	err = json.Unmarshal(buf.Bytes(), &res)
+	err = json.Unmarshal(buf, &res)
 	if err != nil {
 		return fmt.Errorf("json unpacking failed: %w", err)
 	}
@@ -319,4 +322,20 @@ func checkRestartEPNServer(config *configurationStruct) {
 	logger.Warnf("restarting epn server")
 	stopEmbeddedPerl()
 	startEmbeddedPerl(config)
+}
+
+// read result from connection into result buffer with undefined result size
+func ePNReadResponse(conn io.Reader) ([]byte, error) {
+	body := new(bytes.Buffer)
+	for {
+		_, err := io.CopyN(body, conn, 65536)
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				return nil, fmt.Errorf("io.CopyN: %w", err)
+			}
+			break
+		}
+	}
+	res := body.Bytes()
+	return res, nil
 }
