@@ -59,7 +59,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 	socketPath, err := os.CreateTemp("", "mod_gearman_worker_epn*.socket")
 	ePNServerSocket = socketPath
 	if err != nil {
-		err = fmt.Errorf("failed to create epn socket: %w", err)
+		err = fmt.Errorf("failed to create epn socket: %w: %s", err, err.Error())
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
@@ -73,7 +73,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 
 	err = cmd.Start()
 	if err != nil {
-		err = fmt.Errorf("failed to start epn worker: %w", err)
+		err = fmt.Errorf("failed to start epn worker: %w: %s", err, err.Error())
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
@@ -84,7 +84,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 		defer logPanicExit()
 		err := cmd.Wait()
 		if err != nil {
-			logger.Errorf("epn server errored: %w", err)
+			logger.Errorf("epn server errored: %w: %s", err, err.Error())
 		}
 		stopEmbeddedPerl()
 	}()
@@ -146,7 +146,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	readFile, err := os.Open(file)
 	if err != nil {
-		logger.Warnf("failed to open %s: %w", file, err)
+		logger.Warnf("failed to open %s: %w: %s", file, err, err.Error())
 		return false
 	}
 	defer readFile.Close()
@@ -207,13 +207,13 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 		Timeout: received.timeout,
 	})
 	if err != nil {
-		return fmt.Errorf("json error: %w", err)
+		return fmt.Errorf("json error: %w: %s", err, err.Error())
 	}
 	msg = append(msg, '\n')
 
 	c, err := ePNConnect()
 	if err != nil {
-		return fmt.Errorf("connecting to epn server failed: %w", err)
+		return fmt.Errorf("connecting to epn server failed: %w: %s", err, err.Error())
 	}
 	defer c.Close()
 
@@ -225,12 +225,12 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 
 	_, err = c.Write(msg)
 	if err != nil {
-		return fmt.Errorf("sending to epn server failed: %w", err)
+		return fmt.Errorf("sending to epn server failed: %w: %s", err, err.Error())
 	}
 
 	buf, err := ePNReadResponse(c)
 	if err != nil {
-		return fmt.Errorf("reading epn response failed: %w", err)
+		return fmt.Errorf("reading epn response failed: %w: %s", err, err.Error())
 	}
 
 	received.Cancel = nil
@@ -238,7 +238,7 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 	res := ePNRes{}
 	err = json.Unmarshal(buf, &res)
 	if err != nil {
-		return fmt.Errorf("json unpacking failed: %w", err)
+		return fmt.Errorf("json unpacking failed: %w: %s", err, err.Error())
 	}
 
 	result.output = res.Stdout
@@ -250,34 +250,37 @@ func executeWithEmbeddedPerl(bin string, args []string, result *answer, received
 }
 
 func ePNConnect() (c net.Conn, err error) {
-	c, err = net.Dial("unix", ePNServerSocket.Name())
-	if err != nil {
-		retries := 1
+	retries := 0
+	for {
+		if !isRunning() {
+			return nil, fmt.Errorf("worker is shuting down")
+		}
+		if ePNServerSocket == nil {
+			return nil, fmt.Errorf("no socket defined")
+		}
+
+		c, err = net.Dial("unix", ePNServerSocket.Name())
+		if err == nil {
+			return c, nil
+		}
+
 		logger.Debugf("connecting to epn server failed (retry %d): %w", retries, err)
-		// retry connection to epn server
-		for {
-			if !isRunning() {
-				return
-			}
-			time.Sleep(1 * time.Second)
-			retries++
-			c, err = net.Dial("unix", ePNServerSocket.Name())
-			if err == nil {
-				return c, nil
-			}
-			started := ePNStarted
-			if retries%3 == 0 && started != nil && time.Now().After(started.Add(ePNStartTimeout)) {
-				// try restarting epn server
-				logger.Debugf("restarting epn server")
-				// retry connection to epn server
-				ePNStarted = nil
-			}
-			if retries > ePNMaxRetries {
-				return
-			}
+		retries++
+
+		if retries > ePNMaxRetries {
+			return nil, fmt.Errorf("epn socket connect failed: %w: %s", err, err.Error())
+		}
+
+		time.Sleep(1 * time.Second)
+
+		started := ePNStarted
+		if retries%3 == 0 && started != nil && time.Now().After(started.Add(ePNStartTimeout)) {
+			// try restarting epn server
+			logger.Debugf("restarting epn server")
+			// retry connection to epn server
+			ePNStarted = nil
 		}
 	}
-	return
 }
 
 // checkRestartEPNServer checks if epn server needs to be restarted
@@ -305,7 +308,7 @@ func ePNReadResponse(conn io.Reader) ([]byte, error) {
 		_, err := io.CopyN(body, conn, 65536)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("io.CopyN: %w", err)
+				return nil, fmt.Errorf("io.CopyN: %w: %s", err, err.Error())
 			}
 			break
 		}
@@ -318,7 +321,7 @@ func ePNReadResponse(conn io.Reader) ([]byte, error) {
 func passthroughLogs(name string, logFn func(f string, v ...interface{}), pipeFn func() (io.ReadCloser, error)) {
 	pipe, err := pipeFn()
 	if err != nil {
-		err = fmt.Errorf("failed to connect to %s: %w", name, err)
+		err = fmt.Errorf("failed to connect to %s: %w: %s", name, err, err.Error())
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
