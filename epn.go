@@ -68,34 +68,8 @@ func startEmbeddedPerl(config *configurationStruct) {
 	os.Remove(socketPath.Name())
 
 	cmd := exec.Command(config.p1File, args...)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		err = fmt.Errorf("failed to connect to stdout: %w", err)
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		logger.Errorf("epn startup error: %s", err)
-		cleanExit(ExitCodeError)
-	}
-	stdoutScanner := bufio.NewScanner(stdout)
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		err = fmt.Errorf("failed to connect to stderr: %w", err)
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		logger.Errorf("epn startup error: %s", err)
-		cleanExit(ExitCodeError)
-	}
-	stderrScanner := bufio.NewScanner(stderr)
-	go func() {
-		defer logPanicExit()
-		for stdoutScanner.Scan() {
-			logger.Debugf("%s", stdoutScanner.Text())
-		}
-	}()
-	go func() {
-		defer logPanicExit()
-		for stderrScanner.Scan() {
-			logger.Errorf("%s", stderrScanner.Text())
-		}
-	}()
+	passthroughLogs("stdout", logger.Debugf, cmd.StdoutPipe)
+	passthroughLogs("stderr", logger.Errorf, cmd.StderrPipe)
 
 	err = cmd.Start()
 	if err != nil {
@@ -108,7 +82,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 
 	go func() {
 		defer logPanicExit()
-		_, err := cmd.Process.Wait()
+		err := cmd.Wait()
 		if err != nil {
 			logger.Errorf("epn server errored: %w", err)
 		}
@@ -338,4 +312,28 @@ func ePNReadResponse(conn io.Reader) ([]byte, error) {
 	}
 	res := body.Bytes()
 	return res, nil
+}
+
+// redirect log output from epn server to main worker log file
+func passthroughLogs(name string, logFn func(f string, v ...interface{}), pipeFn func() (io.ReadCloser, error)) {
+	pipe, err := pipeFn()
+	if err != nil {
+		err = fmt.Errorf("failed to connect to %s: %w", name, err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		logger.Errorf("epn startup error: %s", err)
+		cleanExit(ExitCodeError)
+	}
+	read := bufio.NewReader(pipe)
+	go func() {
+		defer logPanicExit()
+		for {
+			line, _, err := read.ReadLine()
+			if err != nil {
+				break
+			}
+			if len(line) > 0 {
+				logFn("%s", string(line))
+			}
+		}
+	}()
 }
