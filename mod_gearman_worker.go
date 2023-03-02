@@ -214,12 +214,13 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 			case Resume:
 				continue
 			case Reload:
-				restartRequired, config := mainworker.applyConfigChanges()
+				restartRequired, newConf := mainworker.applyConfigChanges()
+				newConfig = newConf
+				config = newConf
 				if !restartRequired {
 					// no restart of our workers required
 					continue
 				}
-				newConfig = config
 				fallthrough
 			case ShutdownGraceFully:
 				fallthrough
