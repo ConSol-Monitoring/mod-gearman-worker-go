@@ -60,7 +60,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	config.encryption = false
 	result := &answer{}
 
-	executeCommand(result, &receivedStruct{commandLine: "ls readAndExecute_test.go", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "ls readAndExecute_test.go", timeout: 10}, &config)
 	if result.output != "readAndExecute_test.go" || result.returnCode != 0 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "readAndExecute_test.go", 0)
 	}
@@ -68,7 +68,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	// check for timeout:
 	t1 := time.Now()
 	config.timeoutReturn = 3
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sleep 2", timeout: 1}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sleep 2", timeout: 1}, &config)
 	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
 	}
@@ -79,7 +79,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	// try command which ignores normal signals
 	t1 = time.Now()
-	executeCommand(result, &receivedStruct{commandLine: "trap 'echo Booh!' SIGINT SIGTERM; sleep 2", timeout: 1}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "trap 'echo Booh!' SIGINT SIGTERM; sleep 2", timeout: 1}, &config)
 	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
 	}
@@ -90,7 +90,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	// try command which ignores normal signals as subshell
 	t1 = time.Now()
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"trap 'echo Booh!' SIGINT SIGTERM; sleep 2\"", timeout: 1}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"trap 'echo Booh!' SIGINT SIGTERM; sleep 2\"", timeout: 1}, &config)
 	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
 	}
@@ -100,49 +100,49 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	}
 
 	// exit(3) fuer exit codes
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 2'; exit 2\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 2'; exit 2\"", timeout: 10}, &config)
 	if result.output != "exit status 2" || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "exit status 2", 2)
 	}
 
 	// stdout & stderr output
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr\nstderr' >&2; echo 'stdout\nstdout'; exit 2\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr\nstderr' >&2; echo 'stdout\nstdout'; exit 2\"", timeout: 10}, &config)
 	if result.output != `stdout\nstdout\n[stderr\nstderr]` || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `stdout\nstdout\n[stderr\nstderr]`, 2)
 	}
 
 	// stderr output only
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr' >&2; exit 2\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'stderr' >&2; exit 2\"", timeout: 10}, &config)
 	if result.output != "[stderr]" || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "[stderr]", 2)
 	}
 
 	// quotes in output
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo '\\\"'\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo '\\\"'\"", timeout: 10}, &config)
 	if result.output != "\"" || result.returnCode != 0 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "\"", 0)
 	}
 
 	// none-existing command
-	executeCommand(result, &receivedStruct{commandLine: "/not-there", timeout: 3}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/not-there", timeout: 3}, &config)
 	if !strings.HasPrefix(result.output, "UNKNOWN: Return code of 127 is out of bounds.") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "UNKNOWN: Return code of 127 is out of bounds.", 3)
 	}
 
 	// none-existing command II
-	executeCommand(result, &receivedStruct{commandLine: "/not-there \"\"", timeout: 3}, &config)
-	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 127 is out of bounds.") || result.returnCode != 2 {
-		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 127 is out of bounds.", 2)
+	executeCommandLine(result, &receivedStruct{commandLine: "/not-there \"\"", timeout: 3}, &config)
+	if !strings.HasPrefix(result.output, "UNKNOWN: Return code of 127 is out of bounds.") || result.returnCode != 3 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "UNKNOWN: Return code of 127 is out of bounds.", 3)
 	}
 
 	// other exit codes
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 42'; exit 42\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'exit status 42'; exit 42\"", timeout: 10}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 42 is out of bounds.") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 42 is out of bounds.", 3)
 	}
 
 	// signals
-	executeCommand(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'killing\nme...'; echo 'stderr\nstderr' >&2; kill $$\"", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo 'killing\nme...'; echo 'stderr\nstderr' >&2; kill $$\"", timeout: 10}, &config)
 	if !strings.HasPrefix(result.output, "CRITICAL: Return code of 15 is out of bounds.") || result.returnCode != 2 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "CRITICAL: Return code of 15 is out of bounds.", 2)
 	}
@@ -157,7 +157,7 @@ func TestExecuteCommandArgListTooLongError(t *testing.T) {
 	config.encryption = false
 	result := &answer{}
 
-	executeCommand(result, &receivedStruct{commandLine: "getconf ARG_MAX", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "getconf ARG_MAX", timeout: 10}, &config)
 	argMax, err := strconv.ParseInt(result.output, 0, 64)
 	if err != nil || argMax <= 0 {
 		t.Skip("skipping test without ARG_MAX")
@@ -169,7 +169,7 @@ func TestExecuteCommandArgListTooLongError(t *testing.T) {
 
 	// create a cmd which should trigger arguments too long error
 	cmd := "/bin/sh -c echo " + string(bytes.Repeat([]byte{1}, int(argMax-1)))
-	executeCommand(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: cmd, timeout: 10}, &config)
 	if !strings.Contains(result.output, `argument list too long`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `argument list too long`)
 	}
@@ -196,7 +196,7 @@ func TestExecuteCommandOutOfFilesError(t *testing.T) {
 	}
 
 	// create a cmd which should trigger out of files error
-	executeCommand(result, &receivedStruct{commandLine: "/bin/true", timeout: 10}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: "/bin/true", timeout: 10}, &config)
 	if !strings.Contains(result.output, `too many open files`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `too many open files`)
 	}
@@ -238,7 +238,7 @@ func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
 	config.debug = 0
 	createLogger(&config)
 	for n := 0; n < b.N; n++ {
-		executeCommand(&answer{}, &receivedStruct{commandLine: "/bin/pwd", timeout: 100}, &config)
+		executeCommandLine(&answer{}, &receivedStruct{commandLine: "/bin/pwd", timeout: 100}, &config)
 	}
 }
 
@@ -246,7 +246,7 @@ func BenchmarkReadAndExecuteShell(b *testing.B) {
 	config := configurationStruct{}
 	config.debug = 0
 	createLogger(&config)
-	received := &receivedStruct{commandLine: "/bin/pwd \"\"", timeout: 10}
+	received := &receivedStruct{commandLine: "/bin/pwd \"|\"", timeout: 10}
 	for n := 0; n < b.N; n++ {
 		readAndExecute(received, &config)
 	}

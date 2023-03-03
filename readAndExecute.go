@@ -101,7 +101,7 @@ func readAndExecute(received *receivedStruct, config *configurationStruct) *answ
 	}
 
 	// run the command
-	executeCommand(&result, received, config)
+	executeCommandLine(&result, received, config)
 
 	// if this is a host call, no service_description is needed, else set the description
 	// so the server recognizes the answer
@@ -131,22 +131,10 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 	return false
 }
 
-func executeInShell(cmdString string) bool {
-	// if the command does not start with a / or a ., or has some of this chars inside it gets executed in the /bin/sh else as simple command
-	if !strings.HasPrefix(cmdString, "/") && !strings.HasPrefix(cmdString, "./") {
-		return true
-	}
-	if strings.ContainsAny(cmdString, "!$^&*()~[]\\|{\"};<>?`\\'") {
-		return true
-	}
-	return false
-}
-
 // executes a command in the bash, returns whatever gets printed on the bash
 // and as second value a status Code between 0 and 3
-func executeCommand(result *answer, received *receivedStruct, config *configurationStruct) {
+func executeCommandLine(result *answer, received *receivedStruct, config *configurationStruct) {
 	result.returnCode = 3
-	var state *os.ProcessState
 	defer updatePrometheusExecMetrics(config, result, received)
 
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
@@ -156,24 +144,33 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 		return
 	}
 
+	command := parseCommand(received.commandLine, config)
+	switch command.ExecType {
+	case EPN:
+		result.execType = "epn"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		execEPN(result, command, received)
+		return
+	case Shell:
+		result.execType = "shell"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		command.Args = []string{"-c", command.Command}
+		command.Command = "/bin/sh"
+	case Exec:
+		result.execType = "exec"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+	default:
+		logger.Panicf("unknown exec path: %v", command.ExecType)
+	}
+
+	execCmd(command, received, result, config)
+}
+
+func execCmd(command *command, received *receivedStruct, result *answer, config *configurationStruct) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(received.timeout)*time.Second)
 	defer cancel()
 
-	var cmd *exec.Cmd
-	if executeInShell(received.commandLine) {
-		result.execType = "shell"
-		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
-		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", received.commandLine)
-	} else {
-		splitted := strings.Fields(received.commandLine)
-		if fileUsesEmbeddedPerl(splitted[0], config) {
-			execEPN(result, received, splitted)
-			return
-		}
-		result.execType = "exec"
-		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
-		cmd = exec.CommandContext(ctx, splitted[0], splitted[1:]...)
-	}
+	cmd := exec.CommandContext(ctx, command.Command, command.Args...)
 
 	// byte buffer for output
 	var errbuf bytes.Buffer
@@ -181,6 +178,9 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	cmd.Stdout = &outbuf
 	cmd.Stderr = &errbuf
 	cmd.Env = os.Environ()
+	for key, val := range command.Env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, val))
+	}
 
 	// prevent child from receiving signals meant for the worker only
 	setSysProcAttr(cmd)
@@ -225,7 +225,7 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 
 	received.Cancel = nil
 
-	state = cmd.ProcessState
+	state := cmd.ProcessState
 
 	if ctx.Err() == context.DeadlineExceeded {
 		setTimeoutResult(result, config, received)
@@ -254,16 +254,14 @@ func executeCommand(result *answer, received *receivedStruct, config *configurat
 	result.output = strings.Replace(strings.Trim(result.output, "\r\n"), "\n", `\n`, len(result.output))
 }
 
-func execEPN(result *answer, received *receivedStruct, splitted []string) {
-	result.execType = "epn"
-	taskCounter.WithLabelValues(received.typ, result.execType).Inc()
-	logger.Tracef("using embedded perl for: %s", splitted[0])
-	err := executeWithEmbeddedPerl(splitted[0], splitted[1:], result, received)
+func execEPN(result *answer, cmd *command, received *receivedStruct) {
+	logger.Tracef("using embedded perl for: %s", cmd.Command)
+	err := executeWithEmbeddedPerl(cmd, result, received)
 	if err != nil {
 		if isRunning() {
-			logger.Warnf("embedded perl failed for: %s: %w", splitted[0], err)
+			logger.Warnf("embedded perl failed for: %s: %w", cmd.Command, err)
 		} else {
-			logger.Debugf("embedded perl failed during shutdown for: %s: %w", splitted[0], err)
+			logger.Debugf("embedded perl failed during shutdown for: %s: %w", cmd.Command, err)
 		}
 	}
 }

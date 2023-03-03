@@ -199,11 +199,11 @@ type ePNRes struct {
 	CPUUser         float64 `json:"cpu_user"`
 }
 
-func executeWithEmbeddedPerl(bin string, args []string, result *answer, received *receivedStruct) error {
+func executeWithEmbeddedPerl(cmd *command, result *answer, received *receivedStruct) error {
 	msg, err := json.Marshal(ePNMsg{
-		Bin:     bin,
-		Args:    args,
-		Env:     map[string]string{},
+		Bin:     cmd.Command,
+		Args:    cmd.Args,
+		Env:     cmd.Env,
 		Timeout: received.timeout,
 	})
 	if err != nil {
