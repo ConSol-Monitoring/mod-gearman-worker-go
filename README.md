@@ -13,8 +13,16 @@ less ressources than the original worker.
 
 ## Embedded Perl
 
-This worker does not support embedded perl. It will run perl scripts simply
-like any other plugin.
+This worker does support embedded perl as well. This is done by a (managed) perl
+epn daemon which will handle the perl plugins.
+
+## Negate
+To make checks more efficient, this worker has implemented its own negate plugin.
+Whenever the command line starts with something like .../negate (if the basename
+of the first command equals "negate") it will use the internal negate instead of
+running the specified negate command.
+All options are similar to the
+[official negate](https://www.monitoring-plugins.org/doc/man/negate.html) implementation:
 
 ## Prometheus
 
