@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 	"syscall"
@@ -32,6 +33,7 @@ type answer struct {
 	runUserDuration    float64
 	runSysDuration     float64
 	compileDuration    float64
+	timedOut           bool
 }
 
 func (a *answer) String() string {
@@ -135,7 +137,8 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 // and as second value a status Code between 0 and 3
 func executeCommandLine(result *answer, received *receivedStruct, config *configurationStruct) {
 	result.returnCode = 3
-	defer updatePrometheusExecMetrics(config, result, received)
+	command := parseCommand(received.commandLine, config)
+	defer updatePrometheusExecMetrics(config, result, received, command)
 
 	if !checkRestrictPath(received.commandLine, config.restrictPath) {
 		result.execType = "bad_path"
@@ -144,7 +147,10 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 		return
 	}
 
-	command := parseCommand(received.commandLine, config)
+	if command.Negate != nil && command.Negate.Timeout > 0 {
+		received.timeout = command.Negate.Timeout
+	}
+
 	switch command.ExecType {
 	case EPN:
 		result.execType = "epn"
@@ -164,6 +170,9 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 	}
 
 	execCmd(command, received, result, config)
+	if command.Negate != nil {
+		command.Negate.Apply(result)
+	}
 }
 
 func execCmd(command *command, received *receivedStruct, result *answer, config *configurationStruct) {
@@ -229,6 +238,9 @@ func execCmd(command *command, received *receivedStruct, result *answer, config 
 
 	if ctx.Err() == context.DeadlineExceeded {
 		setTimeoutResult(result, config, received)
+		if command.Negate != nil {
+			command.Negate.SetTimeoutReturnCode(result)
+		}
 		return
 	}
 
@@ -264,6 +276,9 @@ func execEPN(result *answer, cmd *command, received *receivedStruct) {
 			logger.Debugf("embedded perl failed during shutdown for: %s: %w", cmd.Command, err)
 		}
 	}
+	if cmd.Negate != nil {
+		cmd.Negate.Apply(result)
+	}
 }
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
@@ -292,6 +307,7 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 }
 
 func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct) {
+	result.timedOut = true
 	result.returnCode = config.timeoutReturn
 	switch received.typ {
 	case "service":
@@ -336,26 +352,42 @@ func setProcessErrorResult(result *answer, config *configurationStruct, err erro
 var reCmdEnvVar = regexp.MustCompile(`^[A-Za-z0-9_]+=("[^"]*"|'[^']*'|[^\s]*)\s+`)
 
 // returns basename and full qualifier for command line
-func getCommandQualifier(input string) string {
-	l := len(input)
-	for {
-		input = reCmdEnvVar.ReplaceAllString(input, "")
-		if len(input) == l {
-			break
+func getCommandQualifier(com *command) string {
+	qualifier := ""
+	var args []string
+	switch com.ExecType {
+	case Shell:
+		input := com.Command
+		l := len(input)
+		for {
+			input = reCmdEnvVar.ReplaceAllString(input, "")
+			if len(input) == l {
+				break
+			}
+			l = len(input)
 		}
-		l = len(input)
+		args = strings.SplitN(input, " ", 3)
+		qualifier = path.Base(args[0])
+	case Exec, EPN:
+		qualifier = path.Base(com.Command)
+		args = com.Args
+	default:
+		logger.Panicf("unhandled type: %v", com.ExecType)
 	}
-	args := strings.SplitN(input, " ", 3)
-	paths := strings.Split(args[0], "/")
-	qualifier := paths[len(paths)-1]
 
 	switch qualifier {
 	case "python", "python2", "python3", "bash", "sh", "perl":
-		// add first argument
-		if len(args) >= 2 {
-			argpaths := strings.Split(args[1], "/")
-			arg1base := argpaths[len(argpaths)-1]
+		// add basename of first argument
+		for _, arg1 := range args {
+			switch arg1 {
+			case "-c", "-w":
+				// skip some known none-filenames
+				continue
+			}
+			arg1paths := strings.Split(arg1, "/")
+			arg1base := arg1paths[len(arg1paths)-1]
 			qualifier = fmt.Sprintf("%s %s", qualifier, arg1base)
+			break
 		}
 	default:
 	}

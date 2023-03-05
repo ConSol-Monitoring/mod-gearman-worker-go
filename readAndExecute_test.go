@@ -225,10 +225,12 @@ func TestGetCommandBasename(t *testing.T) {
 		{"/python /tmp/file1 args1", "python file1"},
 		{"/python2 /tmp/file1 args1", "python2 file1"},
 		{"/python3 /tmp/file1 args1", "python3 file1"},
+		{"lib/negate /bin/python3 /tmp/file1 args1", "python3 file1"},
 	}
 
 	for _, test := range tests {
-		base := getCommandQualifier(test.command)
+		com := parseCommand(test.command, &configurationStruct{})
+		base := getCommandQualifier(com)
 		assert.Equal(t, test.expect, base, "getCommandQualifier")
 	}
 }

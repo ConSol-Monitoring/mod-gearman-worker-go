@@ -25,6 +25,7 @@ type command struct {
 	Command  string
 	Args     []string
 	Env      map[string]string
+	Negate   *Negate
 }
 
 func parseCommand(rawCommand string, config *configurationStruct) *command {
@@ -66,6 +67,11 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 
 	if fileUsesEmbeddedPerl(parsed.Command, config) {
 		parsed.ExecType = EPN
+	}
+
+	// use internal negate implementation
+	if strings.HasSuffix(parsed.Command, "/negate") {
+		ParseNegate(parsed)
 	}
 
 	return parsed

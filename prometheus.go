@@ -159,12 +159,12 @@ func buildExecExemplarLabels(result *answer, received *receivedStruct, basename 
 	return label
 }
 
-func updatePrometheusExecMetrics(config *configurationStruct, result *answer, received *receivedStruct) {
+func updatePrometheusExecMetrics(config *configurationStruct, result *answer, received *receivedStruct, com *command) {
 	if config.prometheusServer == "" {
 		return
 	}
 
-	basename := getCommandQualifier(received.commandLine)
+	basename := getCommandQualifier(com)
 
 	if result.runUserDuration > 0 {
 		userTimes.WithLabelValues(basename, result.execType).Observe(result.runUserDuration)

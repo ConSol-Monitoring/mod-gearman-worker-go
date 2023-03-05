@@ -2,6 +2,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
           - parse shell args to execute more commands without shell
+          - use internal negate if command starts with .../negate to safe that fork
 
 1.3.2    Thu Mar  2 16:21:22 CET 2023
           - improve restarting epn server
