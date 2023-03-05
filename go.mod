@@ -10,8 +10,9 @@ require (
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sevlyar/go-daemon v0.1.6
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/tools v0.6.1-0.20230217175706-3102dad5faf9
-	golang.org/x/vuln v0.0.0-20230224180816-edec1fb0a9c7
+	golang.org/x/vuln v0.0.0-20230303230808-d3042fecc4e3
 )
 
 require (
@@ -155,7 +156,6 @@ require (
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/t-yuki/gocover-cobertura v0.0.0-20180217150009-aaee18c8195c // indirect
 	github.com/tdakkota/asciicheck v0.1.1 // indirect
@@ -177,7 +177,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20230203172020-98cc5a0785f9 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

@@ -35,19 +35,26 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		Env:      make(map[string]string),
 	}
 
-	// don't try to parse super long command lines
-	if len(rawCommand) > 10000 {
-		return parsed
-	}
-
 	if strings.ContainsAny(rawCommand, "!$^&*()~[]\\|{};<>?`") {
 		return parsed
 	}
 
-	envs, args, err := shellwords.ParseWithEnvs(rawCommand)
-	if err != nil {
-		logger.Debugf("failed to parse shell words: %w: %s", err)
-		return parsed
+	var envs []string
+	var args []string
+	var err error
+	if !strings.ContainsAny(rawCommand, `'"`) {
+		envs, args = parseShellArgsWithoutQuotes(rawCommand)
+	} else {
+		// don't try to parse super long command lines, shellwords is pretty slow
+		if len(rawCommand) > 100000 {
+			return parsed
+		}
+
+		envs, args, err = shellwords.ParseWithEnvs(rawCommand)
+		if err != nil {
+			logger.Debugf("failed to parse shell words: %w: %s", err)
+			return parsed
+		}
 	}
 	parsed.Command = args[0]
 	parsed.Args = args[1:]
@@ -62,4 +69,21 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 	}
 
 	return parsed
+}
+
+func parseShellArgsWithoutQuotes(rawCommand string) (envs []string, args []string) {
+	splitted := strings.Fields(rawCommand)
+	inEnv := true
+	for _, s := range splitted {
+		if inEnv {
+			if strings.Contains(s, "=") {
+				envs = append(envs, s)
+				continue
+			} else {
+				inEnv = false
+			}
+		}
+		args = append(args, s)
+	}
+	return
 }

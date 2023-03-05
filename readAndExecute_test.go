@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadAndExecute(t *testing.T) {
@@ -227,18 +229,7 @@ func TestGetCommandBasename(t *testing.T) {
 
 	for _, test := range tests {
 		base := getCommandQualifier(test.command)
-		if base != test.expect {
-			t.Errorf("getCommandQualifier was incorrect, got: %s, want: %s", base, test.expect)
-		}
-	}
-}
-
-func BenchmarkExecuteCommandWithTimeout(b *testing.B) {
-	config := configurationStruct{}
-	config.debug = 0
-	createLogger(&config)
-	for n := 0; n < b.N; n++ {
-		executeCommandLine(&answer{}, &receivedStruct{commandLine: "/bin/pwd", timeout: 100}, &config)
+		assert.Equal(t, test.expect, base, "getCommandQualifier")
 	}
 }
 
@@ -260,4 +251,30 @@ func BenchmarkReadAndExecuteExec(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		readAndExecute(received, &config)
 	}
+}
+
+func BenchmarkParseCommandI(b *testing.B) {
+	config := configurationStruct{}
+	config.debug = 0
+	cmdLine := `VAR1=test VAR2=test /bin/test -f "sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd"`
+	for n := 0; n < b.N; n++ {
+		parseCommand(cmdLine, &config)
+	}
+	com := parseCommand(cmdLine, &config)
+	assert.Equal(b, "/bin/test", com.Command, "command parsed")
+	assert.Equalf(b, map[string]string{"VAR1": "test", "VAR2": "test"}, com.Env, "env parsed")
+	assert.Equal(b, 2, len(com.Args), "args parsed")
+}
+
+func BenchmarkParseCommandII(b *testing.B) {
+	config := configurationStruct{}
+	config.debug = 0
+	cmdLine := `VAR1=test VAR2=test /bin/test -f sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd`
+	for n := 0; n < b.N; n++ {
+		parseCommand(cmdLine, &config)
+	}
+	com := parseCommand(cmdLine, &config)
+	assert.Equal(b, "/bin/test", com.Command, "command parsed")
+	assert.Equalf(b, map[string]string{"VAR1": "test", "VAR2": "test"}, com.Env, "env parsed")
+	assert.Equal(b, 13, len(com.Args), "args parsed")
 }
