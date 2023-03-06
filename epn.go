@@ -57,7 +57,6 @@ func startEmbeddedPerl(config *configurationStruct) {
 		args = append(args, "-vv")
 	}
 	socketPath, err := os.CreateTemp("", "mod_gearman_worker_epn*.socket")
-	ePNServerSocket = socketPath
 	if err != nil {
 		err = fmt.Errorf("failed to create epn socket: %w: %s", err, err.Error())
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -66,6 +65,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 	}
 	args = append(args, socketPath.Name())
 	os.Remove(socketPath.Name())
+	ePNServerSocket = socketPath
 
 	cmd := exec.Command(config.p1File, args...)
 	passthroughLogs("stdout", logger.Debugf, cmd.StdoutPipe)
@@ -146,7 +146,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	readFile, err := os.Open(file)
 	if err != nil {
-		logger.Warnf("failed to open %s: %w: %s", file, err, err.Error())
+		logger.Debugf("failed to open %s: %w: %s", file, err, err.Error())
 		return false
 	}
 	defer readFile.Close()
@@ -256,15 +256,25 @@ func ePNConnect() (c net.Conn, err error) {
 			return nil, fmt.Errorf("worker is shuting down")
 		}
 		if ePNServerSocket == nil {
-			return nil, fmt.Errorf("no socket defined")
+			time.Sleep(1 * time.Second)
+			retries++
+			if retries > ePNMaxRetries {
+				return nil, fmt.Errorf("epn socket connect failed: no socket exists")
+			}
+			continue
 		}
 
+		s1 := ePNStarted
 		c, err = net.Dial("unix", ePNServerSocket.Name())
 		if err == nil {
 			return c, nil
 		}
 
-		logger.Debugf("connecting to epn server failed (retry %d): %w", retries, err)
+		if retries == 0 {
+			logger.Warnf("connecting to epn server failed (retry %d): %w: %s", retries, err, err.Error())
+		} else {
+			logger.Debugf("connecting to epn server failed (retry %d): %w: %s", retries, err, err.Error())
+		}
 		retries++
 
 		if retries > ePNMaxRetries {
@@ -273,8 +283,8 @@ func ePNConnect() (c net.Conn, err error) {
 
 		time.Sleep(1 * time.Second)
 
-		started := ePNStarted
-		if retries%3 == 0 && started != nil && time.Now().After(started.Add(ePNStartTimeout)) {
+		s2 := ePNStarted
+		if retries%3 == 0 && s1 == s2 && s2 != nil && time.Now().After(s2.Add(ePNStartTimeout)) {
 			// try restarting epn server
 			logger.Debugf("restarting epn server")
 			// retry connection to epn server

@@ -48,6 +48,7 @@ use warnings;
 use strict;
 use Time::HiRes;
 use Cpanel::JSON::XS;
+use Socket ();
 use IO::Socket;
 use IO::Socket::UNIX;
 use Pod::Usage;
@@ -93,7 +94,7 @@ sub _server {
     unlink($socketpath);
     my $server = IO::Socket::UNIX->new(Local  => $socketpath,
                                     Type      => SOCK_STREAM,
-                                    Listen    => 5,
+                                    Listen    => Socket::SOMAXCONN,
                 ) || die "Couldn't open unix socket $socketpath: $@\n";
 
     printf("**ePN: listening on %s\n", $socketpath) if $opt->{'verbose'};
