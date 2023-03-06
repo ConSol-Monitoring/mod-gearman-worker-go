@@ -160,8 +160,6 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 	case Shell:
 		result.execType = "shell"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
-		command.Args = []string{"-c", command.Command}
-		command.Command = "/bin/sh"
 	case Exec:
 		result.execType = "exec"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
@@ -357,7 +355,10 @@ func getCommandQualifier(com *command) string {
 	var args []string
 	switch com.ExecType {
 	case Shell:
-		input := com.Command
+		if len(com.Args) < 2 {
+			return com.Command
+		}
+		input := com.Args[1]
 		l := len(input)
 		for {
 			input = reCmdEnvVar.ReplaceAllString(input, "")

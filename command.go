@@ -36,6 +36,14 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		Env:      make(map[string]string),
 	}
 
+	// adjust command to run with a shell
+	defer func() {
+		if parsed.ExecType == Shell {
+			parsed.Args = []string{"-c", parsed.Command}
+			parsed.Command = "/bin/sh"
+		}
+	}()
+
 	if strings.ContainsAny(rawCommand, "!$^&*()~[]\\|{};<>?`") {
 		return parsed
 	}
