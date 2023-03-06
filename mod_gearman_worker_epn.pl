@@ -101,7 +101,7 @@ sub _server {
     $unixsocket = $socketpath;
     local $SIG{CHLD} = 'IGNORE';
     while(my $client = $server->accept()) {
-        _handle_connection($client, $server);
+        _handle_connection($client);
     }
     close($server);
 }
@@ -109,7 +109,7 @@ sub _server {
 ###########################################################
 # listen on the socket and run the plugins
 sub _handle_connection {
-    my($client, $server) = @_;
+    my($client) = @_;
     my $res;
     eval {
         my $req     = <$client>;
