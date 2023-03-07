@@ -168,7 +168,7 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 	}
 
 	execCmd(command, received, result, config)
-	if command.Negate != nil {
+	if command.Negate != nil && !result.timedOut {
 		command.Negate.Apply(result)
 	}
 }
@@ -235,10 +235,7 @@ func execCmd(command *command, received *receivedStruct, result *answer, config 
 	state := cmd.ProcessState
 
 	if ctx.Err() == context.DeadlineExceeded {
-		setTimeoutResult(result, config, received)
-		if command.Negate != nil {
-			command.Negate.SetTimeoutReturnCode(result)
-		}
+		setTimeoutResult(result, config, received, command.Negate)
 		return
 	}
 
@@ -304,7 +301,7 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 	result.returnCode = 3
 }
 
-func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct) {
+func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct, negate *Negate) {
 	result.timedOut = true
 	result.returnCode = config.timeoutReturn
 	switch received.typ {
@@ -317,6 +314,9 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 	default:
 		logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
 		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
+	}
+	if negate != nil {
+		negate.SetTimeoutReturnCode(result)
 	}
 }
 

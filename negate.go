@@ -125,9 +125,6 @@ func ParseNegate(com *command) {
 }
 
 func (n *Negate) Apply(result *answer) {
-	if result.timedOut {
-		return
-	}
 	switch result.returnCode {
 	case 0:
 		n.ApplyNewCode(result, "OK", n.OKStatus)
