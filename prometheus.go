@@ -70,7 +70,11 @@ var (
 
 func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {
 	registerMetrics()
-	infoCount.WithLabelValues(VERSION, config.identifier).Set(1)
+	build := ""
+	if config.build != "" {
+		build = fmt.Sprintf(":%s", config.build)
+	}
+	infoCount.WithLabelValues(fmt.Sprintf("%s%s", VERSION, build), config.identifier).Set(1)
 
 	if config.prometheusServer == "" {
 		return
