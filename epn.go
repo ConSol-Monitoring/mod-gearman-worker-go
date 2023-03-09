@@ -25,6 +25,11 @@ const (
 	ePNMaxRetries = 15
 )
 
+type EPNCacheItem struct {
+	Mtime int64
+	EPN   bool
+}
+
 var (
 	ePNServerProcess *exec.Cmd
 	ePNServerSocket  *os.File
@@ -32,7 +37,7 @@ var (
 	// ePNFilePrefix contains prefixes to look for explicit epn flag
 	ePNFilePrefix = []string{"# nagios:", "# naemon:", "# icinga:"}
 
-	fileUsesEPNCache = make(map[string]bool)
+	fileUsesEPNCache = make(map[string]EPNCacheItem)
 
 	ePNStarted *time.Time
 )
@@ -134,12 +139,22 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	if !config.enableEmbeddedPerl {
 		return false
 	}
+
+	fileinfo, err := os.Stat(file)
+	if err != nil {
+		logger.Debugf("stat failed: %w: %s", file, err, err.Error())
+		return false
+	}
+
 	cached, ok := fileUsesEPNCache[file]
-	if ok {
-		return cached
+	if ok && cached.Mtime <= fileinfo.ModTime().Unix() {
+		return cached.EPN
 	}
 	fileUsesEPN := detectFileUsesEmbeddedPerl(file, config)
-	fileUsesEPNCache[file] = fileUsesEPN
+	fileUsesEPNCache[file] = EPNCacheItem{
+		Mtime: fileinfo.ModTime().Unix(),
+		EPN:   fileUsesEPN,
+	}
 	return fileUsesEPN
 }
 

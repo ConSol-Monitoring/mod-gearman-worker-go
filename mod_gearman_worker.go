@@ -161,7 +161,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	// create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
 
-	fileUsesEPNCache = make(map[string]bool)
+	fileUsesEPNCache = make(map[string]EPNCacheItem)
 
 	// create the cipher
 	key := getKey(config)
