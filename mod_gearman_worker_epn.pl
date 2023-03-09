@@ -101,10 +101,30 @@ sub _server {
     printf("**ePN: listening on %s\n", $socketpath) if $opt->{'verbose'};
     $unixsocket = $socketpath;
     local $SIG{CHLD} = 'IGNORE';
-    while(my $client = $server->accept()) {
-        _handle_connection($client);
+    local $SIG{INT}  = sub {
+        CORE::exit(0);
+    };
+    alarm(60);
+    while(1) {
+        local $SIG{ALRM} = \&_timeout_handler;
+        while(my $client = $server->accept()) {
+            alarm(0);
+            _handle_connection($client);
+            alarm(60);
+        }
     }
     close($server);
+}
+
+###########################################################
+# listen on the socket and run the plugins
+sub _timeout_handler {
+    printf("**ePN: timeout...  ".getppid()."\n");# if $opt->{'verbose'};
+    if(getppid() == 1) {
+        printf("**ePN: exiting, ppid is 1, this means usually our parent worker has gone away.\n") if $opt->{'verbose'};
+        CORE::exit(0);
+    }
+    alarm(60);
 }
 
 ###########################################################
@@ -135,7 +155,7 @@ sub _handle_connection {
     my $forked = delete $res->{'forked'};
     if($forked) {
         undef $unixsocket;
-        exit(0);
+        CORE::exit(0);
     }
 }
 
@@ -260,7 +280,7 @@ sub _test_run {
 ###########################################################
 # one shot mode?
 if($opt->{'run_only'}) {
-    exit(_test_run(\@ARGV));
+    CORE::exit(_test_run(\@ARGV));
 }
 
 ###########################################################
@@ -268,7 +288,7 @@ pod2usage( { -verbose => 2, -message => 'error in options', -exit => 3 } ) if sc
 use subs 'CORE::GLOBAL::exit';
 sub CORE::GLOBAL::exit { die sprintf("ExitTrap: %d (Redefine exit to trap plugin exit with eval BLOCK)", $_[0]//0) }
 _server($opt);
-exit(0);
+CORE::exit(0);
 
 ################################################################################
 package Embed::Persistent;
