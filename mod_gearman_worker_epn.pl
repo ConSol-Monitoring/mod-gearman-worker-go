@@ -45,6 +45,7 @@ Test single plugin call
 =cut
 
 use warnings;
+no warnings 'redefine';
 use strict;
 use Time::HiRes;
 use Cpanel::JSON::XS;
