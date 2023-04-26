@@ -72,18 +72,18 @@ func openFileOrCreate(path string) (os.File, error) {
 func createDirectoryAndFile(pathe string) {
 	directory, file := path.Split(pathe)
 	if directory != "" {
-		err := os.MkdirAll(directory, 0755)
+		err := os.MkdirAll(directory, 0o755)
 		if err != nil {
-			logger.Panic(err)
+			logger.Fatalf("mkdir: %s", err.Error())
 		}
 		_, err = os.Create(directory + "/" + file)
 		if err != nil {
-			logger.Panic(err)
+			logger.Fatalf("open: %s", err.Error())
 		}
 	} else {
 		_, err := os.Create(file)
 		if err != nil {
-			logger.Panic(err)
+			logger.Fatalf("open: %s", err.Error())
 		}
 	}
 }

@@ -31,7 +31,7 @@ func createLogger(config *configurationStruct) {
 			logger.Errorf("could not create or open file %s: %w", config.logfile, err)
 		}
 		file.Close()
-		logfile, err := os.OpenFile(config.logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		logfile, err := os.OpenFile(config.logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 		if err != nil {
 			logger.Errorf("could not open/create logfile: %w", err)
 		}
@@ -42,6 +42,10 @@ func createLogger(config *configurationStruct) {
 
 	logger.SetFormatter(factorlog.NewStdFormatter(frmt))
 	logger.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))
+	logger.SetVerbosity(0)
+	if config.debug >= 2 {
+		logger.SetVerbosity(2)
+	}
 }
 
 func getSeverity(input int) string {
@@ -73,6 +77,10 @@ func logPanicExit() {
 func setLogLevel(lvl int) {
 	verbosity := getSeverity(lvl)
 	logger.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))
+	logger.SetVerbosity(0)
+	if lvl >= 2 {
+		logger.SetVerbosity(2)
+	}
 }
 
 func disableLogging() {

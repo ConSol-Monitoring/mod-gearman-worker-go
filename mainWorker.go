@@ -251,7 +251,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 
 	// restart epn worker if necessary
 	if config.enableEmbeddedPerl != w.config.enableEmbeddedPerl || config.usePerlCache != w.config.usePerlCache || config.debug != w.config.debug {
-		stopEmbeddedPerl()
+		stopEmbeddedPerl(ePNGraceDelay)
 		startEmbeddedPerl(config)
 	}
 
@@ -393,6 +393,7 @@ func (w *mainWorker) checkMemory() bool {
 
 	return true
 }
+
 func (w *mainWorker) unregisterWorker(worker *worker) {
 	switch worker.what {
 	case "check":

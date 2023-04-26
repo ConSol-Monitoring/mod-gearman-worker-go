@@ -245,7 +245,7 @@ func (worker *worker) errorHandler(e error) {
 		logger.Debugf("worker disconnect: %w from %s", e, addr)
 		worker.mainWorker.SetServerStatus(addr, err.Error())
 	default:
-		logger.Errorf("worker error: %w", e)
+		logger.Errorf("worker error: %w: %s", e, e.Error())
 		logger.Errorf("%s", debug.Stack())
 	}
 	worker.Shutdown()
@@ -290,7 +290,7 @@ func (worker *worker) Cancel() {
 func logJob(job libworker.Job, received *receivedStruct, prefix string, result *answer) {
 	suffix := ""
 	if result != nil {
-		suffix = fmt.Sprintf(" (took: %.3fs | exec: %s)", result.finishTime-result.startTime, result.execType)
+		suffix = fmt.Sprintf(" (took: %.3fs | rc: %d | exec: %s)", result.finishTime-result.startTime, result.returnCode, result.execType)
 	}
 	switch {
 	case received.serviceDescription != "":
@@ -299,6 +299,9 @@ func logJob(job libworker.Job, received *receivedStruct, prefix string, result *
 		logger.Debugf("%s %-13s job: handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
 	default:
 		logger.Debugf("%s %-13s job: handle: %s%s", prefix, received.typ, job.Handle(), suffix)
+		if result != nil && logger.IsV(2) {
+			logger.Tracef("Output:\n%s", result.output)
+		}
 	}
 }
 

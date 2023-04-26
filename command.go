@@ -61,7 +61,7 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 
 		envs, args, err = shellwords.ParseWithEnvs(rawCommand)
 		if err != nil {
-			logger.Debugf("failed to parse shell words: %w: %s", err)
+			logger.Debugf("failed to parse shell words: %w: %s", err, err.Error())
 			return parsed
 		}
 	}

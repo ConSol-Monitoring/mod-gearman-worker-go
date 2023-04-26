@@ -23,6 +23,9 @@ const (
 
 	// ePNMaxRetries sets the amount of retries when connecting to epn server
 	ePNMaxRetries = 15
+
+	// ePNGraceDelay sets the seconds for a graceful shutdown
+	ePNGraceDelay = 60
 )
 
 type EPNCacheItem struct {
@@ -40,6 +43,12 @@ var (
 	fileUsesEPNCache = make(map[string]EPNCacheItem)
 
 	ePNStarted *time.Time
+
+	// if pattern was found in passed through logs, epn server will restart
+	ePNRestartPattern = []string{
+		"Attempt to free nonexistent shared string",
+		", Perl interpreter: ",
+	}
 )
 
 func startEmbeddedPerl(config *configurationStruct) {
@@ -91,7 +100,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 		if err != nil {
 			logger.Errorf("epn server errored: %w: %s", err, err.Error())
 		}
-		stopEmbeddedPerl()
+		stopEmbeddedPerl(ePNGraceDelay)
 	}()
 
 	// wait till socket appears
@@ -116,7 +125,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 	timeout.Stop()
 }
 
-func stopEmbeddedPerl() {
+func stopEmbeddedPerl(gracefulSeconds int64) {
 	if ePNServerProcess == nil {
 		return
 	}
@@ -124,15 +133,44 @@ func stopEmbeddedPerl() {
 		return
 	}
 
-	ePNServerProcess.Process.Signal(os.Interrupt)
-	ePNServerProcess.Process.Release()
+	pid := ePNServerProcess.Process.Pid
+
+	proc := ePNServerProcess
 	ePNServerProcess = nil
-	if ePNServerSocket != nil {
-		os.Remove(ePNServerSocket.Name())
-	}
+	socket := ePNServerSocket
 	ePNServerSocket = nil
 	ePNStarted = nil
-	logger.Debugf("epn worker shutdown complete")
+
+	if proc.ProcessState.Exited() || proc.Process == nil {
+		gracefulSeconds = 0
+	}
+
+	stop := func() {
+		proc.Process.Signal(os.Interrupt)
+		proc.Process.Release()
+		logger.Debugf("epn worker (%d) shutdown complete", pid)
+	}
+
+	if gracefulSeconds > 0 {
+		go func() {
+			time.Sleep(1 * time.Second)
+			if socket != nil {
+				os.Remove(socket.Name())
+			}
+		}()
+	} else if socket != nil {
+		os.Remove(socket.Name())
+	}
+
+	if gracefulSeconds > 0 {
+		go func() {
+			time.Sleep(time.Duration(gracefulSeconds) * time.Second)
+			stop()
+		}()
+		return
+	}
+
+	stop()
 }
 
 func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
@@ -322,7 +360,7 @@ func checkRestartEPNServer(config *configurationStruct) {
 	ePNStarted = &now
 
 	logger.Warnf("restarting epn server")
-	stopEmbeddedPerl()
+	stopEmbeddedPerl(ePNGraceDelay)
 	startEmbeddedPerl(config)
 }
 
@@ -359,8 +397,17 @@ func passthroughLogs(name string, logFn func(f string, v ...interface{}), pipeFn
 			if err != nil {
 				break
 			}
+
+			lineStr := string(line)
 			if len(line) > 0 {
-				logFn("%s", string(line))
+				logFn("%s", lineStr)
+			}
+
+			for _, p := range ePNRestartPattern {
+				if strings.Contains(lineStr, p) {
+					logger.Errorf("found epn error, triggering epn server restart")
+					ePNStarted = nil
+				}
 			}
 		}
 	}()

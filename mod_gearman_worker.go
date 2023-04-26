@@ -77,8 +77,10 @@ func init() {
 
 var logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter(LogFormat))
 
-var prometheusListener *net.Listener
-var pidFile string
+var (
+	prometheusListener *net.Listener
+	pidFile            string
+)
 
 // global atomic flag wether worker should be running
 var aIsRunning int64
@@ -100,7 +102,6 @@ func Worker(build string) {
 	if config.daemon {
 		ctx := &daemon.Context{}
 		d, err := ctx.Reborn()
-
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: unable to start daemon mode")
 		}
@@ -180,7 +181,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	// initialize epn sub server
 	startEmbeddedPerl(config)
-	defer stopEmbeddedPerl()
+	defer stopEmbeddedPerl(0)
 
 	mainworker := newMainWorker(config, key, workerMap)
 	mainworker.running = true
@@ -245,8 +246,10 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 	}
 }
 
-type helpCallback func()
-type verifyCallback func(*configurationStruct) error
+type (
+	helpCallback   func()
+	verifyCallback func(*configurationStruct) error
+)
 
 func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
 	config := &configurationStruct{binary: name, build: build}
@@ -344,7 +347,7 @@ func createPidFile(path string) {
 		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
 
-	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
+	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0o644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
 		cleanExit(ExitCodeError)
@@ -382,7 +385,7 @@ func deletePidFile(f string) {
 
 func cleanExit(exitCode int) {
 	deletePidFile(pidFile)
-	stopEmbeddedPerl()
+	stopEmbeddedPerl(0)
 	os.Exit(exitCode)
 }
 
