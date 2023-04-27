@@ -93,9 +93,8 @@ func parseShellArgsWithoutQuotes(rawCommand string) (envs []string, args []strin
 			if strings.Contains(s, "=") {
 				envs = append(envs, s)
 				continue
-			} else {
-				inEnv = false
 			}
+			inEnv = false
 		}
 		args = append(args, s)
 	}
