@@ -181,7 +181,7 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 	// initialize epn sub server
 	startEmbeddedPerl(config)
-	defer stopEmbeddedPerl(0)
+	defer stopAllEmbeddedPerl()
 
 	mainworker := newMainWorker(config, key, workerMap)
 	mainworker.running = true
@@ -385,7 +385,7 @@ func deletePidFile(f string) {
 
 func cleanExit(exitCode int) {
 	deletePidFile(pidFile)
-	stopEmbeddedPerl(0)
+	stopAllEmbeddedPerl()
 	os.Exit(exitCode)
 }
 

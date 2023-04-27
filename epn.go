@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -33,9 +34,19 @@ type EPNCacheItem struct {
 	EPN   bool
 }
 
+type EPNDaemon struct {
+	Lock   sync.RWMutex
+	Cmd    *exec.Cmd
+	Socket *os.File
+	Pid    int
+}
+
 var (
-	ePNServerProcess *exec.Cmd
-	ePNServerSocket  *os.File
+	// current running epn daemon
+	ePNServer *EPNDaemon
+
+	// list of previous daemon which gracefully stop right now
+	ePNServerStopQueue = new(sync.Map)
 
 	// ePNFilePrefix contains prefixes to look for explicit epn flag
 	ePNFilePrefix = []string{"# nagios:", "# naemon:", "# icinga:"}
@@ -52,8 +63,7 @@ var (
 )
 
 func startEmbeddedPerl(config *configurationStruct) {
-	ePNServerProcess = nil
-	ePNServerSocket = nil
+	ePNServer = nil
 	if !config.enableEmbeddedPerl {
 		return
 	}
@@ -79,7 +89,6 @@ func startEmbeddedPerl(config *configurationStruct) {
 	}
 	args = append(args, socketPath.Name())
 	os.Remove(socketPath.Name())
-	ePNServerSocket = socketPath
 
 	cmd := exec.Command(config.p1File, args...)
 	passthroughLogs("stdout", logger.Debugf, cmd.StdoutPipe)
@@ -92,16 +101,24 @@ func startEmbeddedPerl(config *configurationStruct) {
 		logger.Errorf("epn startup error: %s", err)
 		cleanExit(ExitCodeError)
 	}
-	ePNServerProcess = cmd
 
-	go func() {
+	pid := cmd.Process.Pid
+	daemon := &EPNDaemon{
+		Cmd:    cmd,
+		Socket: socketPath,
+		Pid:    pid,
+	}
+	ePNServerStopQueue.Store(pid, daemon)
+	ePNServer = daemon
+
+	go func(d *EPNDaemon) {
 		defer logPanicExit()
 		err := cmd.Wait()
 		if err != nil {
 			logger.Errorf("epn server errored: %w: %s", err, err.Error())
 		}
-		stopEmbeddedPerl(ePNGraceDelay)
-	}()
+		d.Stop(0)
+	}(daemon)
 
 	// wait till socket appears
 	ticker := time.NewTicker(ePNStartRetryInterval)
@@ -125,41 +142,29 @@ func startEmbeddedPerl(config *configurationStruct) {
 	timeout.Stop()
 }
 
-func stopEmbeddedPerl(gracefulSeconds int64) {
-	if ePNServerProcess == nil {
-		return
-	}
-	if ePNServerProcess.Process == nil {
-		return
-	}
-
-	pid := ePNServerProcess.Process.Pid
-
-	proc := ePNServerProcess
-	ePNServerProcess = nil
-	socket := ePNServerSocket
-	ePNServerSocket = nil
-	ePNStarted = nil
-
-	if proc.ProcessState.Exited() || proc.Process == nil {
+func (d *EPNDaemon) Stop(gracefulSeconds int64) {
+	if d.Cmd == nil || d.Cmd.ProcessState == nil || d.Cmd.ProcessState.Exited() {
 		gracefulSeconds = 0
 	}
 
 	stop := func() {
-		proc.Process.Signal(os.Interrupt)
-		proc.Process.Release()
-		logger.Debugf("epn worker (%d) shutdown complete", pid)
+		if d.Cmd != nil && d.Cmd.Process != nil {
+			d.Cmd.Process.Signal(os.Interrupt)
+			d.Cmd.Process.Release()
+		}
+		logger.Debugf("epn worker (%d) shutdown complete", d.Pid)
+		ePNServerStopQueue.Delete(d.Pid)
 	}
 
 	if gracefulSeconds > 0 {
 		go func() {
 			time.Sleep(1 * time.Second)
-			if socket != nil {
-				os.Remove(socket.Name())
+			if d.Socket != nil {
+				os.Remove(d.Socket.Name())
 			}
 		}()
-	} else if socket != nil {
-		os.Remove(socket.Name())
+	} else if d.Socket != nil {
+		os.Remove(d.Socket.Name())
 	}
 
 	if gracefulSeconds > 0 {
@@ -171,6 +176,15 @@ func stopEmbeddedPerl(gracefulSeconds int64) {
 	}
 
 	stop()
+}
+
+func stopAllEmbeddedPerl() {
+	ePNServerStopQueue.Range(func(key, value any) bool {
+		d := value.(*EPNDaemon)
+		d.Stop(0)
+		ePNServerStopQueue.Delete(key)
+		return true
+	})
 }
 
 func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
@@ -308,7 +322,7 @@ func ePNConnect() (c net.Conn, err error) {
 		if !isRunning() {
 			return nil, fmt.Errorf("worker is shuting down")
 		}
-		if ePNServerSocket == nil {
+		if ePNServer == nil {
 			time.Sleep(1 * time.Second)
 			retries++
 			if retries > ePNMaxRetries {
@@ -318,7 +332,7 @@ func ePNConnect() (c net.Conn, err error) {
 		}
 
 		s1 := ePNStarted
-		c, err = net.Dial("unix", ePNServerSocket.Name())
+		c, err = net.Dial("unix", ePNServer.Socket.Name())
 		if err == nil {
 			return c, nil
 		}
@@ -360,7 +374,10 @@ func checkRestartEPNServer(config *configurationStruct) {
 	ePNStarted = &now
 
 	logger.Warnf("restarting epn server")
-	stopEmbeddedPerl(ePNGraceDelay)
+	if ePNServer != nil {
+		ePNServer.Stop(ePNGraceDelay)
+		ePNServer = nil
+	}
 	startEmbeddedPerl(config)
 }
 
