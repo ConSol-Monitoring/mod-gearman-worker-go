@@ -316,14 +316,6 @@ sub valid_package_name {
 }
 
 ###########################################################
-# Perl 5.005_03 only traps warnings for errors classed by perldiag
-# as Fatal (eg 'Global symbol """"%s"""" requires explicit package name').
-# Therefore treat all warnings as fatal.
-sub throw_exception {
-    die shift;
-}
-
-###########################################################
 sub eval_file {
     my($request, $use_cache) = @_;
 
@@ -371,9 +363,6 @@ $sub
 EOSUB
 
     $plugin_cache->{$filename}[MTIME] = $mtime if $use_cache;
-
-    # Suppress warning display.
-    local $SIG{__WARN__} = \&throw_exception;
 
     # ensure modified Perl plugins get recached by the epn
     no strict 'refs';
@@ -424,8 +413,8 @@ sub run_package {
     my $filename    = $request->{'bin'};
     my @plugin_args = @{$request->{'args'}};
 
-    local $SIG{__WARN__} = \&throw_exception;
     my $stdout = tie(*STDOUT, 'OutputTrap');
+    my $stderr = tie(*STDERR, 'OutputTrap');
     $0 = $filename.(scalar @plugin_args > 0 ? " " : '').join(" ", @plugin_args);
 
     local %ENV = (%ENV, %{$request->{'env'}}) if($request->{'env'} && scalar keys %{$request->{'env'}} > 0);
@@ -450,6 +439,12 @@ sub run_package {
     my $plugin_output = <STDOUT>;
     undef $stdout;
     untie *STDOUT;
+    my $errors = <STDERR>;
+    if($errors) {
+        $plugin_output .= sprintf("\n[%s]", $errors);
+    }
+    undef $stderr;
+    untie *STDERR;
 
     $plugin_output = "**ePN: $filename: plugin did not call exit()\n".$plugin_output if $has_exit == 0;
 
