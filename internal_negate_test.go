@@ -8,7 +8,7 @@ import (
 
 func TestNegate(t *testing.T) {
 	cmdLine := "ENV1=test ./lib/negate -w OK -c UNKNOWN -s /bin/command comArg1 comArg2"
-	cmd := parseCommand(cmdLine, &configurationStruct{})
+	cmd := parseCommand(cmdLine, &configurationStruct{internalNegate: true})
 
 	assert.Equal(t, Exec, cmd.ExecType, "exec type")
 	assert.NotNil(t, cmd.Negate, "parsed negate")

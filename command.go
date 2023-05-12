@@ -18,14 +18,18 @@ const (
 
 	// EPN is the embedded perl interpreter
 	EPN
+
+	// Internal is for internal checks
+	Internal
 )
 
 type command struct {
-	ExecType CommandExecType
-	Command  string
-	Args     []string
-	Env      map[string]string
-	Negate   *Negate
+	ExecType      CommandExecType
+	Command       string
+	Args          []string
+	Env           map[string]string
+	Negate        *Negate
+	InternalCheck InternalCheck
 }
 
 func parseCommand(rawCommand string, config *configurationStruct) *command {
@@ -80,6 +84,12 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 	// use internal negate implementation
 	if config.internalNegate && strings.HasSuffix(parsed.Command, "/negate") {
 		ParseNegate(parsed)
+	}
+
+	// use internal check_nsc_web implementation
+	if config.internalCheckNscWeb && strings.HasSuffix(parsed.Command, "/check_nsc_web") {
+		parsed.InternalCheck = &InternalCheckNSCWeb{}
+		parsed.ExecType = Internal
 	}
 
 	return parsed

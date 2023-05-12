@@ -151,28 +151,35 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 		received.timeout = command.Negate.Timeout
 	}
 
+	defer func() {
+		if result.timedOut {
+			setTimeoutResult(result, config, received, command.Negate)
+			return
+		}
+		if command.Negate != nil {
+			command.Negate.Apply(result)
+		}
+	}()
+
 	switch command.ExecType {
 	case EPN:
 		result.execType = "epn"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		execEPN(result, command, received)
-		if result.timedOut {
-			setTimeoutResult(result, config, received, command.Negate)
-		}
-		return
 	case Shell:
 		result.execType = "shell"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		execCmd(command, received, result, config)
 	case Exec:
 		result.execType = "exec"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		execCmd(command, received, result, config)
+	case Internal:
+		result.execType = "internal"
+		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		execInternal(result, command, received)
 	default:
 		logger.Panicf("unknown exec path: %v", command.ExecType)
-	}
-
-	execCmd(command, received, result, config)
-	if command.Negate != nil && !result.timedOut {
-		command.Negate.Apply(result)
 	}
 }
 
@@ -238,7 +245,7 @@ func execCmd(command *command, received *receivedStruct, result *answer, config 
 	state := cmd.ProcessState
 
 	if ctx.Err() == context.DeadlineExceeded {
-		setTimeoutResult(result, config, received, command.Negate)
+		result.timedOut = true
 		return
 	}
 
@@ -273,9 +280,6 @@ func execEPN(result *answer, cmd *command, received *receivedStruct) {
 		} else {
 			logger.Debugf("embedded perl failed during shutdown for: %s: %w", cmd.Command, err)
 		}
-	}
-	if cmd.Negate != nil && !result.timedOut {
-		cmd.Negate.Apply(result)
 	}
 }
 
