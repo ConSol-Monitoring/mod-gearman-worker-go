@@ -156,6 +156,9 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 		result.execType = "epn"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		execEPN(result, command, received)
+		if result.timedOut {
+			setTimeoutResult(result, config, received, command.Negate)
+		}
 		return
 	case Shell:
 		result.execType = "shell"
@@ -271,7 +274,7 @@ func execEPN(result *answer, cmd *command, received *receivedStruct) {
 			logger.Debugf("embedded perl failed during shutdown for: %s: %w", cmd.Command, err)
 		}
 	}
-	if cmd.Negate != nil {
+	if cmd.Negate != nil && !result.timedOut {
 		cmd.Negate.Apply(result)
 	}
 }
@@ -304,6 +307,7 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct, negate *Negate) {
 	result.timedOut = true
 	result.returnCode = config.timeoutReturn
+	originalOutput := result.output
 	switch received.typ {
 	case "service":
 		logger.Infof("service check: %s - %s run into timeout after %d seconds", received.hostName, received.serviceDescription, received.timeout)
@@ -314,6 +318,9 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 	default:
 		logger.Infof("%s with command %s run into timeout after %d seconds", received.typ, received.commandLine, received.timeout)
 		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
+	}
+	if originalOutput != "" {
+		result.output = fmt.Sprintf("%s\n%s", result.output, originalOutput)
 	}
 	if negate != nil {
 		negate.SetTimeoutReturnCode(result)

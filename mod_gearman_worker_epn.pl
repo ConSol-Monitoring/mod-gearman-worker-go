@@ -53,7 +53,7 @@ use Socket ();
 use IO::Socket;
 use IO::Socket::UNIX;
 use Pod::Usage;
-use POSIX ();
+use POSIX ":sys_wait_h";
 use Getopt::Long;
 use Text::ParseWords qw(parse_line);
 
@@ -87,6 +87,9 @@ END {
     }
 }
 
+my $main_loop_interval = 5;
+our $child_procs = {};
+
 ###########################################################
 # listen on the socket and run the plugins
 sub _server {
@@ -104,27 +107,76 @@ sub _server {
     local $SIG{INT}  = sub {
         CORE::exit(0);
     };
-    alarm(60);
+    alarm($main_loop_interval);
     while(1) {
+        local $SIG{CHLD} = \&_sigchld_handler;
         local $SIG{ALRM} = \&_timeout_handler;
         while(my $client = $server->accept()) {
             alarm(0);
             _handle_connection($client);
-            alarm(60);
+            alarm($main_loop_interval);
         }
     }
     close($server);
 }
 
 ###########################################################
+# cleanup exited child process
+sub _sigchld_handler {
+    while((my $chldpid = waitpid(-1, &WNOHANG)) > 0) {
+        printf("**ePN: chld pid %d exited\n", $chldpid) if $opt->{'verbose'} > 1;
+        delete $child_procs->{$chldpid};
+    }
+    $SIG{CHLD} = \&_sigchld_handler;
+}
+
+###########################################################
+# check if any chld needs to be killed
+sub _check_chld_timeouts {
+    my $now = time();
+    for my $pid (sort keys %{$child_procs}) {
+        my $proc = $child_procs->{$pid};
+        if($proc->{'end_time'} < $now) {
+            printf("**ePN: killing chld pid %d, %ds timeout (%s) reached but still running\n",
+                $pid,
+                $proc->{'timeout'},
+                scalar localtime $proc->{'end_time'},
+            ) if $opt->{'verbose'};
+            if($proc->{'end_time'} < $now - 10) {
+                kill('KILL', $pid);
+            } else {
+                kill('INT', $pid);
+            }
+        }
+    }
+}
+
+###########################################################
 # listen on the socket and run the plugins
 sub _timeout_handler {
-    printf("**ePN: timeout...  ".getppid()."\n");# if $opt->{'verbose'};
+    _check_chld_timeouts();
     if(getppid() == 1) {
         printf("**ePN: exiting, ppid is 1, this means usually our parent worker has gone away.\n") if $opt->{'verbose'};
-        CORE::exit(0);
+        _clean_exit();
     }
-    alarm(60);
+    alarm($main_loop_interval);
+}
+
+###########################################################
+# end children process and exit
+sub _clean_exit {
+    for my $pid (sort keys %{$child_procs}) {
+        kill('INT', $pid);
+    }
+    if($unixsocket) {
+        unlink($unixsocket);
+        undef $unixsocket;
+    }
+    sleep(0.5) if scalar keys %{$child_procs} > 0;
+    for my $pid (sort keys %{$child_procs}) {
+        kill('KILL', $pid);
+    }
+    CORE::exit(0);
 }
 
 ###########################################################
@@ -184,7 +236,18 @@ sub _handle_request {
         if($pid == -1) {
             die("**ePN: failed to fork: ".$!);
         }
-        return if $pid;
+        if($pid) {
+            my $entry = {
+                start_time => time(),
+                timeout    => $request->{'timeout'} // 60,
+                pid        => $pid,
+                request    => $request,
+            };
+            $entry->{'end_time'} = $entry->{'start_time'} + $entry->{'timeout'};
+            $child_procs->{$pid} = $entry;
+            printf("**ePN: chld pid %d started\n", $pid) if $opt->{'verbose'} > 1;
+            return;
+        }
         $forked = 1;
     }
 
@@ -419,9 +482,13 @@ sub run_package {
 
     local %ENV = (%ENV, %{$request->{'env'}}) if($request->{'env'} && scalar keys %{$request->{'env'}} > 0);
 
-    local $SIG{ALRM} = sub { die "**ePN: timeout\n" };
+    local $SIG{ALRM} = sub { exit(2); };
     alarm($request->{'timeout'});
-    eval { $plugin_hndlr_cr->(@plugin_args) };
+    eval {
+        local $SIG{TERM} = sub { exit(2); };
+        local $SIG{INT}  = sub { exit(2); };
+        $plugin_hndlr_cr->(@plugin_args);
+    };
     alarm(0);
 
     my $err = $@;

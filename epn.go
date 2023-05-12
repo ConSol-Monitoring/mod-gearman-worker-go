@@ -295,12 +295,21 @@ func executeWithEmbeddedPerl(cmd *command, result *answer, received *receivedStr
 		return fmt.Errorf("sending to epn server failed: %w: %s", err, err.Error())
 	}
 
+	timeoutTime := time.Now().Add(time.Duration(received.timeout) * time.Second)
 	buf, err := ePNReadResponse(c)
 	if err != nil {
 		return fmt.Errorf("reading epn response failed: %w: %s", err, err.Error())
 	}
 
+	if time.Now().After(timeoutTime) {
+		result.timedOut = true
+	}
+
 	received.Cancel = nil
+
+	if len(buf) == 0 {
+		return fmt.Errorf("zero sized result, epn worker closed connection")
+	}
 
 	res := ePNRes{}
 	err = json.Unmarshal(buf, &res)
