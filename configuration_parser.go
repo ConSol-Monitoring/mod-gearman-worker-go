@@ -53,6 +53,9 @@ type configurationStruct struct {
 	useEmbeddedPerlImplicitly bool
 	usePerlCache              bool
 	p1File                    string
+	// internal plugins
+	internalNegate      bool
+	internalCheckNscWeb bool
 	// send_gearman specific
 	timeout     int
 	delimiter   string
@@ -94,6 +97,8 @@ func (config *configurationStruct) setDefaultValues() {
 	config.enableEmbeddedPerl = false
 	config.useEmbeddedPerlImplicitly = false
 	config.usePerlCache = true
+	config.internalNegate = true
+	config.internalCheckNscWeb = true
 	filename, err := os.Executable()
 	if err == nil {
 		config.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
@@ -158,6 +163,8 @@ func (config *configurationStruct) dump() {
 	logger.Debugf("useEmbeddedPerlImplicitly     %v\n", config.useEmbeddedPerlImplicitly)
 	logger.Debugf("usePerlCache                  %v\n", config.usePerlCache)
 	logger.Debugf("p1File                        %s\n", config.p1File)
+	logger.Debugf("internal_negate               %v\n", config.internalNegate)
+	logger.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
 	if config.binary == "send_gearman" {
 		logger.Debugf("returncode                    %d\n", config.returnCode)
 		logger.Debugf("message                       %s\n", config.message)
@@ -309,6 +316,10 @@ func (config *configurationStruct) readSetting(values []string) {
 		config.usePerlCache = getBool(value)
 	case "p1_file":
 		config.p1File = value
+	case "internal_negate":
+		config.internalNegate = getBool(value)
+	case "internal_check_nsc_web":
+		config.internalCheckNscWeb = getBool(value)
 	case "fork_on_exec":
 		// skip legacy option
 	case "workaround_rc_25":
@@ -344,7 +355,6 @@ func (config *configurationStruct) readSettingsPath(path string) {
 // also reads the config files specified in the config= value
 func (config *configurationStruct) readSettingsFile(path string) {
 	file, err := os.Open(path)
-
 	if err != nil {
 		logger.Errorf("cannot read file %s: %w", path, err)
 		return

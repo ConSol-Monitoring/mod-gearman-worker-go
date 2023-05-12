@@ -78,7 +78,7 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 	}
 
 	// use internal negate implementation
-	if strings.HasSuffix(parsed.Command, "/negate") {
+	if config.internalNegate && strings.HasSuffix(parsed.Command, "/negate") {
 		ParseNegate(parsed)
 	}
 
