@@ -54,8 +54,12 @@ dump:
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD; cd ../..; \
+		( cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD ) ; \
 	done
+
+# run build watch, ex. with tracing: make build-watch -- -debug=3 --logfile=stderr
+build-watch: vendor
+	set -x ; ls *.go cmd/*/*.go worker.cfg | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
 
 build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
