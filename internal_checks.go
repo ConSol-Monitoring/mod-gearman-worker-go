@@ -7,7 +7,7 @@ import (
 )
 
 type InternalCheck interface {
-	Check(*bytes.Buffer, []string) int
+	Check(context.Context, *bytes.Buffer, []string) int
 }
 
 func execInternal(result *answer, cmd *command, received *receivedStruct) {
@@ -19,7 +19,7 @@ func execInternal(result *answer, cmd *command, received *receivedStruct) {
 	go func() {
 		defer logPanicExit()
 		output := bytes.NewBuffer(nil)
-		rc := cmd.InternalCheck.Check(output, cmd.Args)
+		rc := cmd.InternalCheck.Check(ctx, output, cmd.Args)
 		result.output = output.String()
 		result.returnCode = rc
 		cancel()
