@@ -256,6 +256,21 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	config.setDefaultValues()
 	createLogger(config)
 	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--" {
+			break
+		}
+
+		if os.Args[i] == "testcmd" {
+			args := os.Args[i+1:]
+			if len(args) > 0 && args[0] == "--" {
+				args = args[1:]
+			}
+			rc, out := runTestCmd(config, args)
+			out = strings.TrimSpace(out)
+			fmt.Fprintf(os.Stdout, "%s\n", out)
+			os.Exit(rc)
+		}
+
 		// is it a param?
 		if !strings.HasPrefix(os.Args[i], "--") && !strings.HasPrefix(os.Args[i], "-") {
 			logger.Errorf("%s is not a param!, ignoring", os.Args[i])

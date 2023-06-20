@@ -169,10 +169,12 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 	case Shell:
 		result.execType = "shell"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		logger.Tracef("using shell for: %s", command.Command)
 		execCmd(command, received, result, config)
 	case Exec:
 		result.execType = "exec"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
+		logger.Tracef("using exec for: %s", command.Command)
 		execCmd(command, received, result, config)
 	case Internal:
 		result.execType = "internal"

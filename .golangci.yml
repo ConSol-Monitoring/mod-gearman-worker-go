@@ -47,6 +47,8 @@ issues:
     - "cyclomatic complexity .* of func `.*readSetting` is high"
     - "Function name: readSetting, Cyclomatic Complexity"
     - "cognitive complexity .* of func `Test.*"
+    - "cognitive complexity .* of func `initConfiguration`"
+    - "cyclomatic complexity .* of func `initConfiguration` is high"
     - 'Magic number: 0.01\D '
     - 'Magic number: 1\D '
     - 'Magic number: 2\D '
