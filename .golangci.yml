@@ -35,6 +35,8 @@ linters:
     - nonamedreturns
     - tagliatelle
     - forcetypeassert
+    - depguard
+    - mirror
   fast: false
 
 issues:
