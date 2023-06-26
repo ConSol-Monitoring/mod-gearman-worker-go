@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v0.1.0
 )
 
-require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230620133029-7b2419fe3651
+require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230623113653-83c38c8d0292
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect
@@ -186,7 +186,7 @@ require (
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
