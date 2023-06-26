@@ -86,6 +86,12 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		ParseNegate(parsed)
 	}
 
+	// use internal check_dummy implementation
+	if config.internalCheckDummy && strings.HasSuffix(parsed.Command, "/check_dummy") {
+		parsed.InternalCheck = &InternalCheckDummy{}
+		parsed.ExecType = Internal
+	}
+
 	// use internal check_nsc_web implementation
 	if config.internalCheckNscWeb && strings.HasSuffix(parsed.Command, "/check_nsc_web") {
 		parsed.InternalCheck = &InternalCheckNSCWeb{}

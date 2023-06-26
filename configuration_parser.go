@@ -55,6 +55,7 @@ type configurationStruct struct {
 	p1File                    string
 	// internal plugins
 	internalNegate      bool
+	internalCheckDummy  bool
 	internalCheckNscWeb bool
 	// send_gearman specific
 	timeout     int
@@ -98,6 +99,7 @@ func (config *configurationStruct) setDefaultValues() {
 	config.useEmbeddedPerlImplicitly = false
 	config.usePerlCache = true
 	config.internalNegate = true
+	config.internalCheckDummy = true
 	config.internalCheckNscWeb = true
 	filename, err := os.Executable()
 	if err == nil {
@@ -164,6 +166,7 @@ func (config *configurationStruct) dump() {
 	logger.Debugf("usePerlCache                  %v\n", config.usePerlCache)
 	logger.Debugf("p1File                        %s\n", config.p1File)
 	logger.Debugf("internal_negate               %v\n", config.internalNegate)
+	logger.Debugf("internal_check_dummy          %v\n", config.internalCheckDummy)
 	logger.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
 	if config.binary == "send_gearman" {
 		logger.Debugf("returncode                    %d\n", config.returnCode)
@@ -318,6 +321,8 @@ func (config *configurationStruct) readSetting(values []string) {
 		config.p1File = value
 	case "internal_negate":
 		config.internalNegate = getBool(value)
+	case "internal_check_dummy":
+		config.internalCheckDummy = getBool(value)
 	case "internal_check_nsc_web":
 		config.internalCheckNscWeb = getBool(value)
 	case "fork_on_exec":
