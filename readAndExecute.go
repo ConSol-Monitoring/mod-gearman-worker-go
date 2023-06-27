@@ -385,6 +385,10 @@ func getCommandQualifier(com *command) string {
 	case Exec, EPN:
 		qualifier = path.Base(com.Command)
 		args = com.Args
+	case Internal:
+		qualifier = fmt.Sprintf("%T", com.InternalCheck)
+		qualifier = strings.TrimPrefix(qualifier, "*modgearman.")
+		args = com.Args
 	default:
 		logger.Panicf("unhandled type: %v", com.ExecType)
 	}
