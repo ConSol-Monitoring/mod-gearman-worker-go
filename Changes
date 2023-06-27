@@ -1,6 +1,7 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
+          - fix crash when using internal checks and prometheus metrics
           - improve output on configuraton errors
 
 1.3.4    Mon Jun 26 15:47:45 CEST 2023
