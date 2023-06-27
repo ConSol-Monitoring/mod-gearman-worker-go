@@ -300,13 +300,13 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			config.message = os.Args[i+1]
 			i++
 		default:
-			s := strings.Trim(os.Args[i], "-")
-			sa := strings.SplitN(s, "=", 2)
-			if len(sa) == 1 {
-				sa = append(sa, "yes")
+			s := strings.TrimPrefix(strings.TrimPrefix(os.Args[i], "-"), "-")
+			if !strings.Contains(s, "=") {
+				s = fmt.Sprintf("%s=yes", s)
 			}
-			// give the param and the value to readSetting
-			config.readSetting(sa)
+			if err := config.parseConfigItem(s); err != nil {
+				return nil, fmt.Errorf("error in command line argument %s: %s", os.Args[i], err.Error())
+			}
 		}
 	}
 	config.removeDuplicates()

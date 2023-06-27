@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bufio"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -176,11 +177,12 @@ func (config *configurationStruct) dump() {
 	}
 }
 
-/**
-* parses the key value pairs and stores them in the configuration struct
-*
- */
-func (config *configurationStruct) readSetting(values []string) {
+// parses the key value pairs and stores them in the configuration struct
+func (config *configurationStruct) parseConfigItem(raw string) error {
+	values := strings.SplitN(raw, "=", 2)
+	if len(values) <= 1 {
+		return fmt.Errorf("parse error, expected key=value in %s", raw)
+	}
 	key := strings.ToLower(strings.Trim(values[0], " "))
 	value := strings.Trim(values[1], " ")
 
@@ -214,7 +216,10 @@ func (config *configurationStruct) readSetting(values []string) {
 	case "timeout_return":
 		config.timeoutReturn = getInt(value)
 	case "config":
-		config.readSettingsPath(value)
+		err := config.readSettingsPath(value)
+		if err != nil {
+			return err
+		}
 	case "debug":
 		config.debug = getInt(value)
 		if config.debug > LogLevelTrace2 {
@@ -330,54 +335,73 @@ func (config *configurationStruct) readSetting(values []string) {
 	case "workaround_rc_25":
 		// skip legacy option
 	default:
-		logger.Warnf("unknown config option: %s", key)
+		logger.Warnf("unknown configuration option: %s", raw)
 	}
+
+	return nil
 }
 
 // read settings from file or folder
-func (config *configurationStruct) readSettingsPath(path string) {
+func (config *configurationStruct) readSettingsPath(path string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		logger.Errorf("cannot read %s: %w", path, err)
-		return
-	}
-	if fileInfo.IsDir() {
-		filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
-			if !info.IsDir() {
-				if strings.HasSuffix(path, ".cfg") || strings.HasSuffix(path, ".conf") {
-					config.readSettingsFile(path)
-				}
-			}
-			return err
-		})
-		return
+		return fmt.Errorf("cannot read %s: %s", path, err.Error())
 	}
 
-	config.readSettingsFile(path)
+	if fileInfo.IsDir() {
+		err = filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+
+			if !strings.HasSuffix(path, ".cfg") && !strings.HasSuffix(path, ".conf") {
+				return nil
+			}
+
+			return config.readSettingsFile(path)
+		})
+
+		if err != nil {
+			return fmt.Errorf("error reading configuration from %s: %s", path, err.Error())
+		}
+	}
+
+	return config.readSettingsFile(path)
 }
 
 // opens the config file and reads all key value pairs, separated through = and commented out with #
 // also reads the config files specified in the config= value
-func (config *configurationStruct) readSettingsFile(path string) {
+func (config *configurationStruct) readSettingsFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		logger.Errorf("cannot read file %s: %w", path, err)
-		return
+		return fmt.Errorf("cannot read file %s: %s", path, err.Error())
 	}
 
 	scanner := bufio.NewScanner(file)
 
+	nr := 0
 	for scanner.Scan() {
+		nr++
 		// get line and remove whitespaces
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		// check if not commented out
-		if len(line) > 0 && line[0] != '#' {
-			// get both values
-			values := strings.SplitN(line, "=", 2)
-			config.readSetting(values)
+
+		// skip empty lines
+		if len(line) == 0 {
+			continue
+		}
+
+		// skip comments
+		if line[0] == '#' {
+			continue
+		}
+
+		if err := config.parseConfigItem(line); err != nil {
+			return fmt.Errorf("parse error in file %s:%d: %s", path, nr, err.Error())
 		}
 	}
+
+	return nil
 }
 
 func getInt(input string) int {

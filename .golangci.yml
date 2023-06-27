@@ -44,8 +44,8 @@ issues:
   exclude-use-default: true
   exclude:
     - "cyclomatic complexity .* of func `Test.*` is high"
-    - "cyclomatic complexity .* of func `.*readSetting` is high"
-    - "Function name: readSetting, Cyclomatic Complexity"
+    - "cyclomatic complexity .* of func `.*parseConfigItem` is high"
+    - "Function name: parseConfigItem, Cyclomatic Complexity"
     - "cognitive complexity .* of func `Test.*"
     - "cognitive complexity .* of func `initConfiguration`"
     - "cyclomatic complexity .* of func `initConfiguration` is high"

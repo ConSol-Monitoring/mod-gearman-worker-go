@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - improve output on configuraton errors
+
 1.3.4    Mon Jun 26 15:47:45 CEST 2023
           - epn: improve timeout handling
           - add internal check_nsc_web handler
