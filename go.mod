@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v0.1.0
 )
 
-require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230623113653-83c38c8d0292
+require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230628070711-434b8aa1f93e
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect

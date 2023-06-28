@@ -119,8 +119,8 @@ github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnht
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/codeskyblue/go-sh v0.0.0-20200712050446-30169cf553fe/go.mod h1:VQx0hjo2oUeQkQUET7wRwradO6f+fN5jzXgB/zROxxE=
-github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230623113653-83c38c8d0292 h1:x+bQJNeGR3GAcIGOCHXcL5XR0i38PeUsgEOYfyLtn4A=
-github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230623113653-83c38c8d0292/go.mod h1:TRUXpzEJY2vnFaQv5mLCxYSPC8oG+hHf76lQekIlIyw=
+github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230628070711-434b8aa1f93e h1:/C9kMyzhOl6YrhuBHBG6Ok0z3E/Cmt23OudLx0zqLnw=
+github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230628070711-434b8aa1f93e/go.mod h1:TRUXpzEJY2vnFaQv5mLCxYSPC8oG+hHf76lQekIlIyw=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/curioswitch/go-reassign v0.2.0 h1:G9UZyOcpk/d7Gd6mqYgd8XYWFMw/znxwGDUstnC9DIo=
 github.com/curioswitch/go-reassign v0.2.0/go.mod h1:x6OpXuWvgfQaMGks2BZybTngWjT84hqJfKoO8Tt/Roc=
