@@ -12,10 +12,10 @@ require (
 	github.com/sevlyar/go-daemon v0.1.6
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/tools v0.10.0
-	golang.org/x/vuln v0.1.0
+	golang.org/x/vuln v0.2.0
 )
 
-require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230628070711-434b8aa1f93e
+require github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20230704153504-6fd95dbcd544
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect
@@ -184,7 +184,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
