@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.3.7    Fri Jul 14 13:07:32 CEST 2023
           - add usage for testcmd command
           - fix performance metrics for epn checks
 
