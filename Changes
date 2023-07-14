@@ -1,5 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - add usage for testcmd command
+          - fix performance metrics for epn checks
+
 1.3.6    Thu Jun 29 11:00:12 CEST 2023
           - fix crash when multiple internal check_nsc_web checks run in parallel
 
