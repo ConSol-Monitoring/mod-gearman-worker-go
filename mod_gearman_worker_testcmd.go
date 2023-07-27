@@ -14,7 +14,7 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 		commandLine:        strings.Join(args, " "),
 	}
 	if len(args) == 0 {
-		return 3, "usage: mod_gearman_worker testcmd <cmd> <args>"
+		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
 	}
 	logger.Debugf("test cmd: %s\n", check.commandLine)
 	command := parseCommand(check.commandLine, conf)
