@@ -11,7 +11,7 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 		typ:                "service",
 		hostName:           "test check from commandline",
 		serviceDescription: "test",
-		commandLine:        strings.Join(args, " "),
+		commandLine:        buildCommandLine(args),
 	}
 	if len(args) == 0 {
 		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
@@ -31,4 +31,15 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 	output = res.output
 	logger.Debugf("test cmd rc: %d\n", rc)
 	return
+}
+
+// reconstruct command line from array of args
+func buildCommandLine(args []string) string {
+	cmd := args[0]
+	for _, a := range args[1:] {
+		// escape quotes
+		a = strings.ReplaceAll(a, `"`, `\"`)
+		cmd = cmd + ` "` + a + `"`
+	}
+	return cmd
 }
