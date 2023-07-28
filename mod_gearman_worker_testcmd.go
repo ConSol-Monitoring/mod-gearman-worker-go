@@ -17,12 +17,15 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
 	}
 	logger.Debugf("test cmd: %s\n", check.commandLine)
+
+	// parse command line to see if we need to start the epn daemon
 	command := parseCommand(check.commandLine, conf)
 	if command.ExecType == EPN {
 		startEmbeddedPerl(conf)
 		atomic.StoreInt64(&aIsRunning, 1)
 		defer stopAllEmbeddedPerl()
 	}
+
 	res := readAndExecute(check, conf)
 	rc = res.returnCode
 	output = res.output
