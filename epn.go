@@ -194,7 +194,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 
 	fileinfo, err := os.Stat(file)
 	if err != nil {
-		logger.Debugf("stat failed: %w: %s", file, err, err.Error())
+		logger.Debugf("stat on %s failed: %w: %s", file, err, err.Error())
 		return false
 	}
 
