@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -168,6 +169,69 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	if !strings.Contains(result.output, `)\nkilling\nme...\n[stderr\nstderr]`) || result.returnCode != 2 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `)\nkilling\nme...\n[stderr\nstderr]`)
+	}
+}
+
+// Parallelize parallelizes the function calls
+func Parallelize(functions ...func()) {
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(len(functions))
+
+	defer waitGroup.Wait()
+
+	for _, function := range functions {
+		go func(f func()) {
+			f()
+		}(function)
+	}
+}
+
+// Testing with golang 1.20.8
+func TestExecuteCommandWithTimeoutII(t *testing.T) {
+	config := configurationStruct{}
+	config.setDefaultValues()
+	config.encryption = false
+	result := &answer{}
+
+	// check for timeout:
+	t1 := time.Now()
+	config.timeoutReturn = 3
+	result = &answer{}
+
+	//executeCommandLine(result, &receivedStruct{commandLine: `sleep 30`, timeout: 2}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `python /tmp/test.py"`, timeout: 5}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 25}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import subprocess; import socket; p = subprocess.Popen('sleep 600', stdout=subprocess.PIPE, shell=True); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 4}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import subprocess; import socket; p = subprocess.Popen(['/bin/python2.7', '-c' ,'\"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind((\'localhost\', 50001)); s.listen(1); fd, addr = s.accept();\"'], stdout=subprocess.PIPE, shell=False); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 7}, &config)
+
+	// func1 := func() {
+	// }
+	// func2 := func() {
+	// 	executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();""`, timeout: 10}, &config)
+	// }
+	// func3 := func() {
+	// 	executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 10}, &config)
+	// }
+	// func4 := func() {
+	// 	executeCommandLine(result, &receivedStruct{commandLine: `trap 'echo Booh!' SIGINT SIGTERM; sleep 2"`, timeout: 10}, &config)
+	// }
+	// func5 := func() {
+	// 	executeCommandLine(result, &receivedStruct{commandLine: `/bin/sh -c \"trap 'echo Booh!' SIGINT SIGTERM; sleep 2\"`, timeout: 10}, &config)
+	// }
+	// func6 := func() {
+	// 	executeCommandLine(result, &receivedStruct{commandLine: `python2.7 -c "echo hi"`, timeout: 10}, &config)
+	// }
+
+	//Parallelize(func1,func2,func3,func4,func5,func6)
+
+	for {
+	}
+	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
+	}
+	duration := time.Since(t1)
+	if duration > 2*time.Second {
+		t.Errorf("command took %s, which is beyond the expected timeout", duration)
 	}
 }
 
