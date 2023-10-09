@@ -198,11 +198,16 @@ func TestExecuteCommandWithTimeoutII(t *testing.T) {
 	config.timeoutReturn = 3
 	result = &answer{}
 
-	//executeCommandLine(result, &receivedStruct{commandLine: `sleep 30`, timeout: 2}, &config)
-	//executeCommandLine(result, &receivedStruct{commandLine: `python /tmp/test.py"`, timeout: 5}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `sleep 30`, timeout: 50}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `python3 /tmp/python-test-d.py`, timeout: 5}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `(sleep 30 &)`, timeout: 5}, &config)
 	//executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 25}, &config)
 	//executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import subprocess; import socket; p = subprocess.Popen('sleep 600', stdout=subprocess.PIPE, shell=True); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 4}, &config)
-	executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import subprocess; import socket; p = subprocess.Popen(['/bin/python2.7', '-c' ,'\"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind((\'localhost\', 50001)); s.listen(1); fd, addr = s.accept();\"'], stdout=subprocess.PIPE, shell=False); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 7}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `python3 -c "import subprocess; import socket; p = subprocess.Popen(['/bin/python2.7', '-c' ,'\"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind((\'localhost\', 50001)); s.listen(1); fd, addr = s.accept();\"'], stdout=subprocess.PIPE, shell=False); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 3}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `nohup python3 -c "import subprocess; import socket; p = subprocess.Popen(['/bin/python2.7', '-c' ,'\"import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind((\'localhost\', 50001)); s.listen(1); fd, addr = s.accept();\"'], stdout=subprocess.PIPE, shell=False); p.kill(); s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();" &`, timeout: 3}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `nohup python3 -c "import subprocess; import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept();"`, timeout: 3}, &config)
+	//executeCommandLine(result, &receivedStruct{commandLine: `bash -c "(nohup python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(('localhost', 50000)); s.listen(1); fd, addr = s.accept(); &) ; disown -a"`, timeout: 3}, &config)
+	executeCommandLine(result, &receivedStruct{commandLine: `python3 test/python-daemon.py`, timeout: 3}, &config)
 
 	// func1 := func() {
 	// }
@@ -224,8 +229,6 @@ func TestExecuteCommandWithTimeoutII(t *testing.T) {
 
 	//Parallelize(func1,func2,func3,func4,func5,func6)
 
-	for {
-	}
 	if !strings.HasPrefix(result.output, "(Check Timed Out On Worker:") || result.returnCode != 3 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "timeout", 3)
 	}
