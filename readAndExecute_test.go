@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -169,20 +168,6 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 
 	if !strings.Contains(result.output, `)\nkilling\nme...\n[stderr\nstderr]`) || result.returnCode != 2 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `)\nkilling\nme...\n[stderr\nstderr]`)
-	}
-}
-
-// Parallelize parallelizes the function calls
-func Parallelize(functions ...func()) {
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(len(functions))
-
-	defer waitGroup.Wait()
-
-	for _, function := range functions {
-		go func(f func()) {
-			f()
-		}(function)
 	}
 }
 
