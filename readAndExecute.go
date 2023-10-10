@@ -219,7 +219,6 @@ func execCmd(command *command, received *receivedStruct, result *answer, config 
 
 	// https://github.com/golang/go/issues/18874
 	// timeout does not work for child processes and/or if file handles are still open
-	// TODO: This could be the source of the zombies (go keyword)
 	go func(proc *os.Process) {
 		defer logPanicExit()
 		<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
