@@ -290,19 +290,19 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 		return
 	}
 	if result.returnCode == exitCodeNotExecutable {
-		result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
-		result.returnCode = 2
+		result.output = fmt.Sprintf("UNKNOWN: Return code of %d is out of bounds. Make sure the plugin you're trying to run is executable. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
+		result.returnCode = 3
 		return
 	}
 	if result.returnCode == exitCodeFileNotFound {
-		result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
-		result.returnCode = 2
+		result.output = fmt.Sprintf("UNKNOWN: Return code of %d is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", result.returnCode, config.identifier) + "\n" + result.output
+		result.returnCode = 3
 		return
 	}
 	if waitStatus, ok := state.Sys().(syscall.WaitStatus); ok {
 		if waitStatus.Signaled() {
-			result.output = fmt.Sprintf("CRITICAL: Return code of %d is out of bounds. Plugin exited by signal: %s. (worker: %s)", waitStatus.Signal(), waitStatus.Signal(), config.identifier) + "\n" + result.output
-			result.returnCode = 2
+			result.output = fmt.Sprintf("UNKNOWN: Return code of %d is out of bounds. Plugin exited by signal: %s. (worker: %s)", waitStatus.Signal(), waitStatus.Signal(), config.identifier) + "\n" + result.output
+			result.returnCode = 3
 			return
 		}
 	}
