@@ -7,7 +7,7 @@ import (
 )
 
 type InternalCheck interface {
-	Check(context.Context, *bytes.Buffer, []string) int
+	Check(ctx context.Context, output *bytes.Buffer, args []string) int
 }
 
 func execInternal(result *answer, cmd *command, received *receivedStruct) {

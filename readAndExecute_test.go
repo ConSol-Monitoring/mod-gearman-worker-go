@@ -284,7 +284,7 @@ func BenchmarkParseCommandI(b *testing.B) {
 	com := parseCommand(cmdLine, &config)
 	assert.Equal(b, "/bin/test", com.Command, "command parsed")
 	assert.Equalf(b, map[string]string{"VAR1": "test", "VAR2": "test"}, com.Env, "env parsed")
-	assert.Equal(b, 2, len(com.Args), "args parsed")
+	assert.Lenf(b, com.Args, 2, "args parsed")
 }
 
 func BenchmarkParseCommandII(b *testing.B) {
@@ -297,5 +297,5 @@ func BenchmarkParseCommandII(b *testing.B) {
 	com := parseCommand(cmdLine, &config)
 	assert.Equal(b, "/bin/test", com.Command, "command parsed")
 	assert.Equalf(b, map[string]string{"VAR1": "test", "VAR2": "test"}, com.Env, "env parsed")
-	assert.Equal(b, 13, len(com.Args), "args parsed")
+	assert.Lenf(b, com.Args, 13, "args parsed")
 }

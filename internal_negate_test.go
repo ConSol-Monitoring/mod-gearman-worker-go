@@ -12,8 +12,8 @@ func TestNegate(t *testing.T) {
 
 	assert.Equal(t, Exec, cmd.ExecType, "exec type")
 	assert.NotNil(t, cmd.Negate, "parsed negate")
-	assert.Equal(t, cmd.Negate.WarningStatus, "OK", "parsed negate")
-	assert.Equal(t, cmd.Negate.CriticalStatus, "UNKNOWN", "parsed negate")
+	assert.Equal(t, "OK", cmd.Negate.WarningStatus, "parsed negate")
+	assert.Equal(t, "UNKNOWN", cmd.Negate.CriticalStatus, "parsed negate")
 }
 
 func TestExecuteCommandWithNegateI(t *testing.T) {
