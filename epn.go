@@ -37,7 +37,7 @@ type EPNCacheItem struct {
 type EPNDaemon struct {
 	Lock   sync.RWMutex
 	Cmd    *exec.Cmd
-	Socket *os.File
+	Socket string
 	Pid    int
 }
 
@@ -88,6 +88,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 		cleanExit(ExitCodeError)
 	}
 	args = append(args, socketPath.Name())
+	socketPath.Close()
 	os.Remove(socketPath.Name())
 
 	cmd := exec.Command(config.p1File, args...)
@@ -105,7 +106,7 @@ func startEmbeddedPerl(config *configurationStruct) {
 	pid := cmd.Process.Pid
 	daemon := &EPNDaemon{
 		Cmd:    cmd,
-		Socket: socketPath,
+		Socket: socketPath.Name(),
 		Pid:    pid,
 	}
 	ePNServerStopQueue.Store(pid, daemon)
@@ -159,12 +160,12 @@ func (d *EPNDaemon) Stop(gracefulSeconds int64) {
 	if gracefulSeconds > 0 {
 		go func() {
 			time.Sleep(1 * time.Second)
-			if d.Socket != nil {
-				os.Remove(d.Socket.Name())
+			if d.Socket != "" {
+				os.Remove(d.Socket)
 			}
 		}()
-	} else if d.Socket != nil {
-		os.Remove(d.Socket.Name())
+	} else if d.Socket != "" {
+		os.Remove(d.Socket)
 	}
 
 	if gracefulSeconds > 0 {
@@ -341,7 +342,7 @@ func ePNConnect() (c net.Conn, err error) {
 		}
 
 		s1 := ePNStarted
-		c, err = net.Dial("unix", ePNServer.Socket.Name())
+		c, err = net.Dial("unix", ePNServer.Socket)
 		if err == nil {
 			return c, nil
 		}
