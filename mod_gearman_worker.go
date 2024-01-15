@@ -415,7 +415,7 @@ func logThreaddump() {
 
 // printVersion prints the version
 func printVersion(config *configurationStruct) {
-	fmt.Printf("%s - version %s (Build: %s)\n", config.binary, VERSION, config.build)
+	fmt.Printf("%s - version %s (Build: %s, %s)\n", config.binary, VERSION, config.build, runtime.Version())
 }
 
 func printUsage() {
