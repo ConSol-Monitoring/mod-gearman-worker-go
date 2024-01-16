@@ -294,11 +294,11 @@ func logJob(job libworker.Job, received *receivedStruct, prefix string, result *
 	}
 	switch {
 	case received.serviceDescription != "":
-		logger.Debugf("%s %-13s job: handle: %s - host: %20s - service: %s%s", prefix, received.typ, job.Handle(), received.hostName, received.serviceDescription, suffix)
+		logger.Debugf("%s %-7s - handle: %s - host: %20s - service: %s%s", prefix, received.typ, job.Handle(), received.hostName, received.serviceDescription, suffix)
 	case received.hostName != "":
-		logger.Debugf("%s %-13s job: handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
+		logger.Debugf("%s %-7s - handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
 	default:
-		logger.Debugf("%s %-13s job: handle: %s%s", prefix, received.typ, job.Handle(), suffix)
+		logger.Debugf("%s %-7s - handle: %s%s", prefix, received.typ, job.Handle(), suffix)
 		if result != nil && logger.IsV(2) {
 			logger.Tracef("Output:\n%s", result.output)
 		}

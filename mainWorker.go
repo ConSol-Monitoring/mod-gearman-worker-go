@@ -157,6 +157,11 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 
 	// check if we need more workers
 	w.adjustWorkerTopLevel()
+
+	newTotalWorker := len(w.workerMap)
+	if newTotalWorker != totalWorker {
+		logger.Debugf("adjusted workers: %d (utilization: %d%%)", newTotalWorker, w.workerUtilization)
+	}
 }
 
 // check if we need more workers and start new ones
@@ -186,7 +191,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 		if len(w.workerMap) >= w.config.maxWorker {
 			break
 		}
-		logger.Debugf("manageWorkers: starting one...")
+		logger.Tracef("manageWorkers: starting one...")
 		worker := newWorker("check", w.config, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
