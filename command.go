@@ -1,6 +1,7 @@
 package modgearman
 
 import (
+	"regexp"
 	"strings"
 
 	shellwords "github.com/mattn/go-shellwords"
@@ -21,6 +22,11 @@ const (
 
 	// Internal is for internal checks
 	Internal
+)
+
+var (
+	shellCharacters = "!$^&*()~[]\\|{};<>?`"
+	reCommandQuotes = regexp.MustCompile("'[^']*'|\"[^$`\"]*\"")
 )
 
 type command struct {
@@ -48,7 +54,9 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		}
 	}()
 
-	if strings.ContainsAny(rawCommand, "!$^&*()~[]\\|{};<>?`") {
+	// remove quoted strings from command line, then check if we find shell characters
+	testCommand := reCommandQuotes.ReplaceAllString(rawCommand, "")
+	if strings.ContainsAny(testCommand, shellCharacters) {
 		return parsed
 	}
 

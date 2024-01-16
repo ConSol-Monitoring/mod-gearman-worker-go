@@ -3,6 +3,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 next:
           - update internal check_nsc_web to 0.6.2
           - unify return code to unknown if file was not found
+          - take quotes into account when checking for shell characters
 
 1.3.7    Fri Jul 14 13:07:32 CEST 2023
           - add usage for testcmd command
