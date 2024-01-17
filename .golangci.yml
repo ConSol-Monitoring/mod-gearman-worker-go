@@ -6,6 +6,18 @@ linters-settings:
     min-occurrences: 5
   lll:
     line-length: 120
+  govet:
+    check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - Tracef
+          - Infof
+          - Warnf
+          - Errorf
+          - Fatalf
+          - Criticalf
+          - Panicf
 linters:
   enable-all: true
   disable:
@@ -77,6 +89,7 @@ issues:
     - 'O_WRONLY contains underscore'
     - 'O_CREATE contains underscore'
     - 'Duplicate words.*sadhajshdka'
+    - 'FactorLog.*does not support error-wrapping directive'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go

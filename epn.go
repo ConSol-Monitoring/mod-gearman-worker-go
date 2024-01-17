@@ -114,9 +114,9 @@ func startEmbeddedPerl(config *configurationStruct) {
 
 	go func(d *EPNDaemon) {
 		defer logPanicExit()
-		err := cmd.Wait()
-		if err != nil {
-			logger.Errorf("epn server errored: %w: %s", err, err.Error())
+		err2 := cmd.Wait()
+		if err2 != nil {
+			logger.Errorf("epn server errored: %w: %s", err2, err2.Error())
 		}
 		d.Stop(0)
 	}(daemon)
