@@ -287,6 +287,9 @@ func execEPN(result *answer, cmd *command, received *receivedStruct) {
 
 func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
+		if config.workerNameInResult {
+		result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
+		}
 		return
 	}
 	if result.returnCode == exitCodeNotExecutable {
