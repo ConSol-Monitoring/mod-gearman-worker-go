@@ -187,6 +187,7 @@ sub _handle_connection {
     eval {
         my $req     = <$client>;
         my $request = _parse_request($req);
+        die("**ePN: invalid request: ".($req // 'undef')) unless $request->{'bin'};
         $res        = _handle_request($request);
     };
     my $err = $@;
@@ -324,6 +325,7 @@ sub _test_run {
     eval {
         my $req     = join(" ", @{$args});
         my $request = _parse_request($req);
+        die("**ePN: invalid request: ".($req // 'undef')) unless $request->{'bin'};
         $res        = _handle_request($request, 1);
     };
     my $err = $@;

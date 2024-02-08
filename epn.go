@@ -59,6 +59,8 @@ var (
 	ePNRestartPattern = []string{
 		"Attempt to free nonexistent shared string",
 		", Perl interpreter: ",
+		"**ePN: invalid request:",
+		"/mod_gearman_worker_epn.pl line ",
 	}
 )
 
@@ -316,6 +318,16 @@ func executeWithEmbeddedPerl(cmd *command, result *answer, received *receivedStr
 	err = json.Unmarshal(buf, &res)
 	if err != nil {
 		return fmt.Errorf("json unpacking failed: %w: %s", err, err.Error())
+	}
+
+	for _, p := range ePNRestartPattern {
+		if strings.Contains(res.Stdout, p) {
+			logger.Errorf("found epn error, triggering epn server restart")
+			logger.Errorf("%s", res.Stdout)
+			ePNStarted = nil
+			received.Canceled = true
+			return fmt.Errorf("check result matched restart pattern: %s", p)
+		}
 	}
 
 	result.output = res.Stdout
