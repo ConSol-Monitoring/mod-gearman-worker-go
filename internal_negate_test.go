@@ -48,6 +48,6 @@ func TestExecuteCommandWithNegateTimeout(t *testing.T) {
 
 	executeCommandLine(result, &receivedStruct{commandLine: "lib/negate -t 1 -s /bin/sh -c 'sleep 3'", timeout: 10}, &config)
 	assert.Equal(t, "exec", result.execType, "exec type")
-	assert.Equal(t, 2, result.returnCode, "return code")
+	assert.Equal(t, 3, result.returnCode, "return code")
 	assert.Contains(t, result.output, "Check Timed Out On", "timeout output")
 }
