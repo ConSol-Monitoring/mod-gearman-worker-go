@@ -87,7 +87,7 @@ func (config *configurationStruct) setDefaultValues() {
 	config.logmode = "automatic"
 	config.dupResultsArePassive = true
 	config.dupServerBacklogQueueSize = 1000
-	config.timeoutReturn = 2
+	config.timeoutReturn = 3
 	config.jobTimeout = 60
 	config.idleTimeout = 10
 	config.daemon = false
