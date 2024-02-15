@@ -95,6 +95,10 @@ test: fmt dump vendor
 	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
 	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
 
+# test with filter
+testf: vendor
+	go test -short -v -run "$(filter-out $@,$(MAKECMDGOALS))"
+
 longtest: fmt dump vendor
 	go test -v -timeout=1m
 
