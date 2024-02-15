@@ -355,7 +355,7 @@ func (config *configurationStruct) readSettingsPath(path string) error {
 	}
 
 	if fileInfo.IsDir() {
-		err = filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+		err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
 			if info.IsDir() {
 				return nil
 			}

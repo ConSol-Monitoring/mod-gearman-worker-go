@@ -6,8 +6,8 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-MINGOVERSION:=00010020
-MINGOVERSIONSTR:=1.20
+MINGOVERSION:=00010021
+MINGOVERSIONSTR:=1.21
 BUILD:=$(shell git rev-parse --short HEAD)
 # see https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 # and https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
@@ -35,9 +35,17 @@ updatedeps: versioncheck
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
 		go get $$DEP; \
 	done
+
 	go get -u ./...
 	go get -t -u ./...
+
+	# pin these dependencies
+	go get github.com/golangci/golangci-lint@latest
+	$(MAKE) cleandeps
+
+cleandeps:
 	go mod tidy
+
 
 vendor:
 	go mod download
@@ -181,13 +189,15 @@ clean:
 	rm -rf vendor/
 	rm -rf $(TOOLSFOLDER)
 
+GOVET=go vet -all
 fmt: tools
-	goimports -w *.go ./cmd/
-	go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable .
 	set -e; for CMD in $(CMDS); do \
-		go vet -all -assign -atomic -bool -composites -copylocks -nilfunc -rangeloops -unsafeptr -unreachable ./cmd/$$CMD; \
+		$(GOVET) ./cmd/$$CMD; \
 	done
-	gofmt -w -s *.go ./cmd/
+	gofmt -w -s ./cmd/
+	./tools/gofumpt -w ./cmd/
+	./tools/gci write ./cmd/. --skip-generated
+	goimports -w ./cmd/
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \

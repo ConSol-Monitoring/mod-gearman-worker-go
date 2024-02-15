@@ -90,6 +90,7 @@ issues:
     - 'O_CREATE contains underscore'
     - 'Duplicate words.*sadhajshdka'
     - 'FactorLog.*does not support error-wrapping directive'
+    - 'replacement are not allowed: utils'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go

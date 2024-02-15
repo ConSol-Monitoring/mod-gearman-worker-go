@@ -130,8 +130,8 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	result = &answer{}
 	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo '\\\"'\"", timeout: 10}, &config)
 
-	if result.output != "\"" || result.returnCode != 0 {
-		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "\"", 0)
+	if result.output != `\"` || result.returnCode != 0 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `\"`, 0)
 	}
 
 	// none-existing command

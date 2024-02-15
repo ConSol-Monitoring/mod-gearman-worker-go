@@ -3,8 +3,7 @@ package modgearman
 import (
 	"regexp"
 	"strings"
-
-	shellwords "github.com/mattn/go-shellwords"
+	"utils"
 )
 
 // CommandExecType is used to set the execution path
@@ -71,9 +70,11 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 			return parsed
 		}
 
-		envs, args, err = shellwords.ParseWithEnvs(rawCommand)
+		args = utils.Tokenize(rawCommand)
+		envs, args = extractEnvFromArgv(args)
+		args, err = utils.TrimQuotesAll(args)
 		if err != nil {
-			logger.Debugf("failed to parse shell words: %w: %s", err, err.Error())
+			logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
 			return parsed
 		}
 	}
@@ -82,7 +83,8 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 	parsed.ExecType = Exec
 	for _, env := range envs {
 		splitted := strings.SplitN(env, "=", 2)
-		parsed.Env[splitted[0]] = splitted[1]
+		val, _ := utils.TrimQuotes(splitted[1])
+		parsed.Env[splitted[0]] = val
 	}
 
 	if fileUsesEmbeddedPerl(parsed.Command, config) {
@@ -111,8 +113,13 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 
 func parseShellArgsWithoutQuotes(rawCommand string) (envs []string, args []string) {
 	splitted := strings.Fields(rawCommand)
+
+	return extractEnvFromArgv(splitted)
+}
+
+func extractEnvFromArgv(argv []string) (envs, args []string) {
 	inEnv := true
-	for _, s := range splitted {
+	for _, s := range argv {
 		if inEnv {
 			if strings.Contains(s, "=") {
 				envs = append(envs, s)
