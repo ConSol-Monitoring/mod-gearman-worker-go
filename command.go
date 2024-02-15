@@ -3,6 +3,7 @@ package modgearman
 import (
 	"regexp"
 	"strings"
+
 	"utils"
 )
 

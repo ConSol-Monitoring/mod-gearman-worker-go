@@ -24,7 +24,6 @@ func sendAnswer(c *client.Client, answer *answer, server string, encrypted bool)
 
 	// send the data in the background to the right queue
 	_, err := c.DoBg(answer.resultQueue, byteAnswer, runtime.JobNormal)
-
 	if err != nil {
 		return c, fmt.Errorf("bgclient: %w", err)
 	}

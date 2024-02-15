@@ -13,8 +13,10 @@ type resultServerConsumer struct {
 	config             *configurationStruct
 }
 
-var resultServerConsumers []*resultServerConsumer
-var resultServerQueue chan *answer
+var (
+	resultServerConsumers []*resultServerConsumer
+	resultServerQueue     chan *answer
+)
 
 func initializeResultServerConsumers(config *configurationStruct) {
 	numResultServer := ResultServerWorker

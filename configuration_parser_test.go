@@ -64,7 +64,7 @@ func TestReadSettingsPath(t *testing.T) {
 	// set default values so we can check if they get overwritten
 	testConfig.setDefaultValues()
 
-	err := os.Mkdir("testConfigFolder", 0755)
+	err := os.Mkdir("testConfigFolder", 0o755)
 	if err != nil {
 		t.Errorf("could not create config test folder")
 		return

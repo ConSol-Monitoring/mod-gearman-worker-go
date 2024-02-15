@@ -366,7 +366,6 @@ func (config *configurationStruct) readSettingsPath(path string) error {
 
 			return config.readSettingsFile(path)
 		})
-
 		if err != nil {
 			return fmt.Errorf("error reading configuration from %s: %s", path, err.Error())
 		}

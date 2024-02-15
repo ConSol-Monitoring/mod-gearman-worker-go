@@ -194,10 +194,10 @@ fmt: tools
 	set -e; for CMD in $(CMDS); do \
 		$(GOVET) ./cmd/$$CMD; \
 	done
-	gofmt -w -s ./cmd/
-	./tools/gofumpt -w ./cmd/
-	./tools/gci write ./cmd/. --skip-generated
-	goimports -w ./cmd/
+	gofmt -w -s *.go ./cmd/*/*.go
+	./tools/gofumpt -w *.go ./cmd/*/*.go
+	./tools/gci write *.go ./cmd/*/*.go --skip-generated
+	goimports -w *.go ./cmd/*/*.go
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
