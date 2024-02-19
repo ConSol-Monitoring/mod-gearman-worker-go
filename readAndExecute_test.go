@@ -130,8 +130,8 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	result = &answer{}
 	executeCommandLine(result, &receivedStruct{commandLine: "/bin/sh -c \"echo '\\\"'\"", timeout: 10}, &config)
 
-	if result.output != `\"` || result.returnCode != 0 {
-		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, `\"`, 0)
+	if result.output != "\"" || result.returnCode != 0 {
+		t.Errorf("got %s, with code: %d but expected: %s and code: %d", result.output, result.returnCode, "\"", 0)
 	}
 
 	// none-existing command
@@ -220,6 +220,23 @@ func TestExecuteCommandOutOfFilesError(t *testing.T) {
 	if !strings.Contains(result.output, `too many open files`) || result.returnCode != 3 {
 		t.Errorf("got result %s, but expected containing %s", result.output, `too many open files`)
 	}
+}
+
+func TestExecuteCommandFunnyQuotes(t *testing.T) {
+	config := configurationStruct{}
+	config.setDefaultValues()
+	config.encryption = false
+	result := &answer{}
+
+	// create a cmd which should trigger out of files error
+	executeCommandLine(result, &receivedStruct{commandLine: `echo a '''b''' '' """c""" ''d'' ee""ee f' 'f '" "' "' ''"`, timeout: 10}, &config)
+	assert.Equal(t, "exec", result.execType)
+	assert.Equal(t, `a b  c d eeee f f " " ' ''`, result.output, "output from funny quoted argument")
+
+	expect := `$VAR1 = [\n          'a',\n          'b',\n          '',\n          'c',\n          'd',\n          'eeee',\n          'f f',\n          '" "',\n          '\' \'\''\n        ];`
+	executeCommandLine(result, &receivedStruct{commandLine: `perl -MData::Dumper -e 'print Dumper \@ARGV' -- a """b""" '' ''c'' ''d'' ee""ee f' 'f '" "' "' ''"`, timeout: 10}, &config)
+	assert.Equal(t, expect, result.output, "output from funny quoted argument")
+	assert.Equal(t, "exec", result.execType)
 }
 
 func TestGetCommandBasename(t *testing.T) {

@@ -53,7 +53,7 @@ vendor:
 	go mod vendor
 
 dump:
-	if [ $(shell grep -rc Dump *.go ./cmd/*/*.go | grep -v :0 | grep -v dump.go | wc -l) -ne 0 ]; then \
+	if [ $(shell grep -r Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go | wc -l) -ne 0 ]; then \
 		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
 	else \
 		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
@@ -101,7 +101,7 @@ devbuild: debugbuild
 test: fmt dump vendor
 	go test -short -v -timeout=1m
 	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
-	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
+	if grep -rn Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go; then exit 1; fi
 
 # test with filter
 testf: vendor
@@ -126,7 +126,7 @@ citest: vendor
 	#
 	# Checking remaining debug calls
 	#
-	if grep -rn Dump *.go ./cmd/*/*.go | grep -v dump.go; then exit 1; fi
+	if grep -rn Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go; then exit 1; fi
 	#
 	# Darwin and Linux should be handled equal
 	#

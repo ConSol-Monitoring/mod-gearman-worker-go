@@ -71,13 +71,12 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 			return parsed
 		}
 
-		args = utils.Tokenize(rawCommand)
-		envs, args = extractEnvFromArgv(args)
-		args, err = utils.TrimQuotesAll(args)
+		args, err = utils.TokenizeShell(rawCommand)
 		if err != nil {
 			logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
 			return parsed
 		}
+		envs, args = extractEnvFromArgv(args)
 	}
 	parsed.Command = args[0]
 	parsed.Args = args[1:]
