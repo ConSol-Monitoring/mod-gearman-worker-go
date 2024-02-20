@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"utils"
+	"github.com/sni/shelltoken"
 )
 
 // CommandExecType is used to set the execution path
@@ -60,31 +60,18 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		return parsed
 	}
 
-	var envs []string
-	var args []string
-	var err error
-	if !strings.ContainsAny(rawCommand, `'"`) {
-		envs, args = parseShellArgsWithoutQuotes(rawCommand)
-	} else {
-		// don't try to parse super long command lines, shellwords is pretty slow
-		if len(rawCommand) > 100000 {
-			return parsed
-		}
-
-		args, err = utils.TokenizeShell(rawCommand)
-		if err != nil {
-			logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
-			return parsed
-		}
-		envs, args = extractEnvFromArgv(args)
+	envs, args, err := shelltoken.Parse(rawCommand)
+	if err != nil {
+		logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
+		return parsed
 	}
+
 	parsed.Command = args[0]
 	parsed.Args = args[1:]
 	parsed.ExecType = Exec
 	for _, env := range envs {
 		splitted := strings.SplitN(env, "=", 2)
-		val, _ := utils.TrimQuotes(splitted[1])
-		parsed.Env[splitted[0]] = val
+		parsed.Env[splitted[0]] = splitted[1]
 	}
 
 	if fileUsesEmbeddedPerl(parsed.Command, config) {
@@ -109,25 +96,4 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 	}
 
 	return parsed
-}
-
-func parseShellArgsWithoutQuotes(rawCommand string) (envs []string, args []string) {
-	splitted := strings.Fields(rawCommand)
-
-	return extractEnvFromArgv(splitted)
-}
-
-func extractEnvFromArgv(argv []string) (envs, args []string) {
-	inEnv := true
-	for _, s := range argv {
-		if inEnv {
-			if strings.Contains(s, "=") {
-				envs = append(envs, s)
-				continue
-			}
-			inEnv = false
-		}
-		args = append(args, s)
-	}
-	return
 }

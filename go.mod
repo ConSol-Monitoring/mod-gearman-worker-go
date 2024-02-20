@@ -1,22 +1,17 @@
-module github.com/ConSol/mod-gearman-worker-go
+module github.com/consol-monitoring/mod-gearman-worker-go
 
 go 1.21
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
+	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20231227233328-73f534d3989b
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/prometheus/client_golang v1.18.0
 	github.com/sevlyar/go-daemon v0.1.6
+	github.com/sni/shelltoken v0.0.0-20240220170033-a140281ef06f
 	github.com/stretchr/testify v1.8.4
 )
-
-require (
-	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20231227233328-73f534d3989b
-	utils v0.0.0-00010101000000-000000000000
-)
-
-replace utils => github.com/consol-monitoring/snclient/pkg/utils v0.0.0-20240219164943-8e08589f92a4
 
 require (
 	github.com/appscode/go v0.0.0-20201105063637-5613f3b8169f // indirect
@@ -34,7 +29,6 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.47.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
