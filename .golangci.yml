@@ -50,6 +50,7 @@ linters:
     - forcetypeassert
     - depguard
     - mirror
+    - interfacer
   fast: false
 
 issues:

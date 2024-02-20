@@ -7,3 +7,5 @@ send_gearman
 coverage.txt
 vendor/
 tools/
+go.work
+go.work.sum

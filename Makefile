@@ -20,7 +20,7 @@ all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
 
-tools: versioncheck vendor dump
+tools: | versioncheck vendor go.work dump
 	$(GO) mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
 		( cd buildtools && $(GO) install $$DEP ) ; \
@@ -46,11 +46,16 @@ updatedeps: versioncheck
 
 cleandeps:
 	$(GO) mod tidy
+	( cd buildtools && $(GO) mod tidy )
 
-vendor:
+vendor: go.work
 	$(GO) mod download
 	$(GO) mod tidy
 	$(GO) mod vendor
+
+go.work:
+	echo "go $(MINGOVERSIONSTR)" > go.work
+	$(GO) work use . buildtools/.
 
 dump:
 	if [ $(shell grep -r Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go | wc -l) -ne 0 ]; then \
