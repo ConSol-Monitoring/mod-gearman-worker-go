@@ -14,43 +14,43 @@ BUILD:=$(shell git rev-parse --short HEAD)
 TOOLSFOLDER=$(shell pwd)/tools
 export GOBIN := $(TOOLSFOLDER)
 export PATH := $(GOBIN):$(PATH)
-
-.PHONY: vendor
+GO=go
 
 all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
 
 tools: versioncheck vendor dump
-	go mod download
+	$(GO) mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
-		go install $$DEP; \
+		( cd buildtools && $(GO) install $$DEP ) ; \
 	done
-	go mod tidy
-	go mod vendor
+	$(GO) mod tidy
+	( cd buildtools && $(GO) mod tidy )
+	# pin these dependencies
+	( cd buildtools && $(GO) get github.com/golangci/golangci-lint@latest )
+	$(GO) mod vendor
 
 updatedeps: versioncheck
 	$(MAKE) clean
-	go mod download
+	$(MAKE) tools
+	$(GO) mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
-		go get $$DEP; \
+		( cd buildtools && $(GO) get $$DEP ) ; \
 	done
-
-	go get -u ./...
-	go get -t -u ./...
-
-	# pin these dependencies
-	go get github.com/golangci/golangci-lint@latest
+	( cd buildtools && $(GO) get -u )
+	$(GO) mod download
+	$(GO) get -u
+	$(GO) get -t -u
 	$(MAKE) cleandeps
 
 cleandeps:
-	go mod tidy
-
+	$(GO) mod tidy
 
 vendor:
-	go mod download
-	go mod tidy
-	go mod vendor
+	$(GO) mod download
+	$(GO) mod tidy
+	$(GO) mod vendor
 
 dump:
 	if [ $(shell grep -r Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go | wc -l) -ne 0 ]; then \
@@ -98,7 +98,7 @@ debugbuild: fmt dump vendor
 
 devbuild: debugbuild
 
-test: fmt dump vendor
+test: dump vendor
 	go test -short -v -timeout=1m
 	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
 	if grep -rn Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go; then exit 1; fi
@@ -223,3 +223,12 @@ version:
 		NEWVERSION=$$(echo $$NEWVERSION | sed "s/^v//g"); \
 		if [ "v$$OLDVERSION" = "v$$NEWVERSION" -o "x$$NEWVERSION" = "x" ]; then echo "no changes"; exit 1; fi; \
 		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' *.go cmd/*/*.go
+
+# just skip unknown make targets
+.DEFAULT:
+	@if [[ "$(MAKECMDGOALS)" =~ ^testf ]]; then \
+		: ; \
+	else \
+		echo "unknown make target(s): $(MAKECMDGOALS)"; \
+		exit 1; \
+	fi
