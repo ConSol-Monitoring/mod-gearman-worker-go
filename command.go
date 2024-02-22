@@ -1,7 +1,6 @@
 package modgearman
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/sni/shelltoken"
@@ -24,11 +23,6 @@ const (
 	Internal
 )
 
-var (
-	shellCharacters = "!$^&*()~[]\\|{};<>?`"
-	reCommandQuotes = regexp.MustCompile("'[^']*'|\"[^$`\"]*\"")
-)
-
 type command struct {
 	ExecType      CommandExecType
 	Command       string
@@ -46,23 +40,16 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		Env:      make(map[string]string),
 	}
 
-	// adjust command to run with a shell
-	defer func() {
-		if parsed.ExecType == Shell {
-			parsed.Args = []string{"-c", parsed.Command}
-			parsed.Command = "/bin/sh"
-		}
-	}()
-
-	// remove quoted strings from command line, then check if we find shell characters
-	testCommand := reCommandQuotes.ReplaceAllString(rawCommand, "")
-	if strings.ContainsAny(testCommand, shellCharacters) {
-		return parsed
-	}
-
-	envs, args, err := shelltoken.Parse(rawCommand)
-	if err != nil {
+	envs, args, hasShellCode, err := shelltoken.Parse(rawCommand, false)
+	switch {
+	case err != nil:
 		logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
+
+		fallthrough
+	case hasShellCode:
+		parsed.Args = []string{"-c", parsed.Command}
+		parsed.Command = "/bin/sh"
+
 		return parsed
 	}
 

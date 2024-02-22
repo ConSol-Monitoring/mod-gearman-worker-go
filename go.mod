@@ -9,7 +9,7 @@ require (
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/prometheus/client_golang v1.18.0
 	github.com/sevlyar/go-daemon v0.1.6
-	github.com/sni/shelltoken v0.0.0-20240220170033-a140281ef06f
+	github.com/sni/shelltoken v0.0.0-20240221152848-71db8ecdd4dc
 	github.com/stretchr/testify v1.8.4
 )
 
