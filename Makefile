@@ -40,8 +40,8 @@ updatedeps: versioncheck
 	done
 	( cd buildtools && $(GO) get -u )
 	$(GO) mod download
-	$(GO) get -u
-	$(GO) get -t -u
+	GOPROXY=direct $(GO) get -u
+	GOPROXY=direct $(GO) get -t -u
 	$(MAKE) cleandeps
 
 cleandeps:
