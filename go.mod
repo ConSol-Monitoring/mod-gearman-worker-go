@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
-	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20231227233328-73f534d3989b
+	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20240228115051-5e08543eef0c
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/prometheus/client_golang v1.19.0
