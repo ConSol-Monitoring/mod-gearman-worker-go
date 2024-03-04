@@ -9,8 +9,8 @@ require (
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/prometheus/client_golang v1.19.0
 	github.com/sevlyar/go-daemon v0.1.6
-	github.com/sni/shelltoken v0.0.0-20240221152848-71db8ecdd4dc
-	github.com/stretchr/testify v1.8.4
+	github.com/sni/shelltoken v0.0.0-20240304221024-c69690f3de23
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
@@ -27,9 +27,9 @@ require (
 	github.com/namsral/flag v1.7.4-pre // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/common v0.49.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

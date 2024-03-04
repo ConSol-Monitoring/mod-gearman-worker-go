@@ -40,13 +40,9 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 		Env:      make(map[string]string),
 	}
 
-	envs, args, hasShellCode, err := shelltoken.Parse(rawCommand, false)
-	switch {
-	case err != nil:
-		logger.Debugf("failed to parse shell args: %w: %s", err, err.Error())
-
-		fallthrough
-	case hasShellCode:
+	envs, args, err := shelltoken.SplitLinux(rawCommand)
+	if err != nil {
+		logger.Tracef("failed to parse shell args: %w: %s", err, err.Error())
 		parsed.Args = []string{"-c", parsed.Command}
 		parsed.Command = "/bin/sh"
 
