@@ -1,5 +1,6 @@
 #!/usr/bin/make -f
 
+PROJECT=mod-gearman-worker
 MAKE:=make
 SHELL:=bash
 GOVERSION:=$(shell \
@@ -33,13 +34,9 @@ updatedeps: versioncheck
 	$(MAKE) clean
 	$(MAKE) tools
 	$(GO) mod download
-	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
-		( cd buildtools && $(GO) get $$DEP ) ; \
-	done
-	( cd buildtools && $(GO) get -u )
-	$(GO) mod download
 	GOPROXY=direct $(GO) get -u
 	GOPROXY=direct $(GO) get -t -u
+	$(GO) mod download
 	$(MAKE) cleandeps
 
 cleandeps:
@@ -69,7 +66,7 @@ build: vendor
 	done
 
 # run build watch, ex. with tracing: make build-watch -- -debug=3 --logfile=stderr
-build-watch: vendor
+build-watch: vendor tools
 	set -x ; ls *.go cmd/*/*.go worker.cfg | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
 
 build-linux-amd64: vendor
@@ -143,11 +140,11 @@ citest: vendor
 	#
 	# Normal test cases
 	#
-	go test -v -timeout=1m
+	$(MAKE) test
 	#
 	# Benchmark tests
 	#
-	go test -v -timeout=1m -bench=B\* -run=^$$ . -benchmem
+	$(MAKE) benchmark
 	#
 	# Race rondition tests
 	#
@@ -161,22 +158,21 @@ citest: vendor
 	#
 	# All CI tests successful
 	#
-	go mod tidy
 
-benchmark: fmt
+benchmark:
 	go test -timeout=1m -ldflags "-s -w -X main.Build=$(BUILD)" -v -bench=B\* -run=^$$ . -benchmem
 
-racetest: fmt
+racetest:
 	go test -race -v -timeout=3m -coverprofile=coverage.txt -covermode=atomic
 
-covertest: fmt
-	go test -v -coverprofile=cover.out -timeout=1m
-	go tool cover -func=cover.out
-	go tool cover -html=cover.out -o coverage.html
+covertest:
+	$(GO) test -v -coverprofile=cover.out -timeout=1m
+	$(GO) tool cover -func=cover.out
+	$(GO) tool cover -html=cover.out -o coverage.html
 
-coverweb: fmt
-	go test -v -coverprofile=cover.out -timeout=1m
-	go tool cover -html=cover.out
+coverweb:
+	$(GO) test -v -coverprofile=cover.out -timeout=1m
+	$(GO) tool cover -html=cover.out
 
 clean:
 	set -e; for CMD in $(CMDS); do \
@@ -185,29 +181,30 @@ clean:
 	rm -f $(CMDS)
 	rm -f *.windows.*.exe
 	rm -f *.linux.*
+	rm -rf go.work
+	rm -rf go.work.sum
 	rm -f cover.out
 	rm -f coverage.html
 	rm -f coverage.txt
 	rm -f mod-gearman*.html
 	rm -rf vendor/
-	rm -rf go.work
-	rm -rf go.work.sum
 	rm -rf $(TOOLSFOLDER)
 
-GOVET=go vet -all
+GOVET=$(GO) vet -all
+SRCFOLDER=*.go ./cmd/*/*.go
 fmt: tools
 	set -e; for CMD in $(CMDS); do \
 		$(GOVET) ./cmd/$$CMD; \
 	done
-	gofmt -w -s *.go ./cmd/*/*.go
-	./tools/gofumpt -w *.go ./cmd/*/*.go
-	./tools/gci write *.go ./cmd/*/*.go --skip-generated
-	goimports -w *.go ./cmd/*/*.go
+	gofmt -w -s $(SRCFOLDER)
+	./tools/gofumpt -w $(SRCFOLDER)
+	./tools/gci write --skip-generated $(SRCFOLDER)
+	goimports -w $(SRCFOLDER)
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
 		echo "**** ERROR:"; \
-		echo "**** Mod-Gearman-Worker-Go requires at least golang version $(MINGOVERSIONSTR) or higher"; \
+		echo "**** $(PROJECT) requires at least golang version $(MINGOVERSIONSTR) or higher"; \
 		echo "**** this is: $$(go version)"; \
 		exit 1; \
 	}
