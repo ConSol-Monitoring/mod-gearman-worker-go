@@ -20,12 +20,13 @@ all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
 
-tools: | versioncheck vendor
-	$(GO) mod download
-	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
+tools: | versioncheck
+	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }' | grep -v go-spew); do \
 		( cd buildtools && $(GO) install $$DEP@latest ) ; \
 	done
-	$(GO) mod tidy
+	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }' | grep go-spew); do \
+		( cd buildtools && $(GO) install $$DEP ) ; \
+	done
 	( cd buildtools && $(GO) mod tidy )
 
 updatedeps: versioncheck
