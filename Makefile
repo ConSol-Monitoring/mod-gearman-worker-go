@@ -20,7 +20,7 @@ all: build
 
 CMDS = $(shell cd ./cmd && ls -1)
 
-tools: | versioncheck vendor go.work dump
+tools: | versioncheck vendor
 	$(GO) mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
 		( cd buildtools && $(GO) install $$DEP ) ; \
@@ -29,7 +29,7 @@ tools: | versioncheck vendor go.work dump
 	( cd buildtools && $(GO) mod tidy )
 	# pin these dependencies
 	( cd buildtools && $(GO) get github.com/golangci/golangci-lint@latest )
-	$(GO) mod vendor
+	$(MAKE) vendor
 
 updatedeps: versioncheck
 	$(MAKE) clean
@@ -51,7 +51,7 @@ cleandeps:
 vendor: go.work
 	$(GO) mod download
 	$(GO) mod tidy
-	$(GO) mod vendor
+	GOWORK=off $(GO) mod vendor
 
 go.work:
 	echo "go $(MINGOVERSIONSTR)" > go.work
@@ -192,6 +192,8 @@ clean:
 	rm -f coverage.txt
 	rm -f mod-gearman*.html
 	rm -rf vendor/
+	rm -rf go.work
+	rm -rf go.work.sum
 	rm -rf $(TOOLSFOLDER)
 
 GOVET=go vet -all
