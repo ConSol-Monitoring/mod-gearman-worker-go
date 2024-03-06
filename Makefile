@@ -23,13 +23,10 @@ CMDS = $(shell cd ./cmd && ls -1)
 tools: | versioncheck vendor
 	$(GO) mod download
 	set -e; for DEP in $(shell grep "_ " buildtools/tools.go | awk '{ print $$2 }'); do \
-		( cd buildtools && $(GO) install $$DEP ) ; \
+		( cd buildtools && $(GO) install $$DEP@latest ) ; \
 	done
 	$(GO) mod tidy
 	( cd buildtools && $(GO) mod tidy )
-	# pin these dependencies
-	( cd buildtools && $(GO) get github.com/golangci/golangci-lint@latest )
-	$(MAKE) vendor
 
 updatedeps: versioncheck
 	$(MAKE) clean
