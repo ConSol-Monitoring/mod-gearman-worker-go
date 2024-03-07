@@ -64,7 +64,7 @@ var (
 	}
 )
 
-func startEmbeddedPerl(config *configurationStruct) {
+func startEmbeddedPerl(config *config) {
 	ePNServer = nil
 	if !config.enableEmbeddedPerl {
 		return
@@ -175,6 +175,7 @@ func (d *EPNDaemon) Stop(gracefulSeconds int64) {
 			time.Sleep(time.Duration(gracefulSeconds) * time.Second)
 			stop()
 		}()
+
 		return
 	}
 
@@ -186,11 +187,12 @@ func stopAllEmbeddedPerl() {
 		d := value.(*EPNDaemon)
 		d.Stop(0)
 		ePNServerStopQueue.Delete(key)
+
 		return true
 	})
 }
 
-func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
+func fileUsesEmbeddedPerl(file string, config *config) bool {
 	if !config.enableEmbeddedPerl {
 		return false
 	}
@@ -198,6 +200,7 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 	fileinfo, err := os.Stat(file)
 	if err != nil {
 		logger.Debugf("stat on %s failed: %w: %s", file, err, err.Error())
+
 		return false
 	}
 
@@ -210,13 +213,15 @@ func fileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 		Mtime: fileinfo.ModTime().Unix(),
 		EPN:   fileUsesEPN,
 	}
+
 	return fileUsesEPN
 }
 
-func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
+func detectFileUsesEmbeddedPerl(file string, config *config) bool {
 	readFile, err := os.Open(file)
 	if err != nil {
 		logger.Debugf("failed to open %s: %w: %s", file, err, err.Error())
+
 		return false
 	}
 	defer readFile.Close()
@@ -231,6 +236,7 @@ func detectFileUsesEmbeddedPerl(file string, config *configurationStruct) bool {
 			if !strings.Contains(line, "/bin/perl") {
 				return false
 			}
+
 			continue
 		}
 		if !strings.HasPrefix(line, "# ") {
@@ -320,13 +326,14 @@ func executeWithEmbeddedPerl(cmd *command, result *answer, received *receivedStr
 		return fmt.Errorf("json unpacking failed: %w: %s", err, err.Error())
 	}
 
-	for _, p := range ePNRestartPattern {
-		if strings.Contains(res.Stdout, p) {
+	for _, pattern := range ePNRestartPattern {
+		if strings.Contains(res.Stdout, pattern) {
 			logger.Errorf("found epn error, triggering epn server restart")
 			logger.Errorf("%s", res.Stdout)
 			ePNStarted = nil
 			received.Canceled = true
-			return fmt.Errorf("check result matched restart pattern: %s", p)
+
+			return fmt.Errorf("check result matched restart pattern: %s", pattern)
 		}
 	}
 
@@ -350,6 +357,7 @@ func ePNConnect() (c net.Conn, err error) {
 			if retries > ePNMaxRetries {
 				return nil, fmt.Errorf("epn socket connect failed: no socket exists")
 			}
+
 			continue
 		}
 
@@ -383,7 +391,7 @@ func ePNConnect() (c net.Conn, err error) {
 }
 
 // checkRestartEPNServer checks if epn server needs to be restarted
-func checkRestartEPNServer(config *configurationStruct) {
+func checkRestartEPNServer(config *config) {
 	if !config.enableEmbeddedPerl {
 		return
 	}
@@ -412,10 +420,12 @@ func ePNReadResponse(conn io.Reader) ([]byte, error) {
 			if !errors.Is(err, io.EOF) {
 				return nil, fmt.Errorf("io.CopyN: %w: %s", err, err.Error())
 			}
+
 			break
 		}
 	}
 	res := body.Bytes()
+
 	return res, nil
 }
 

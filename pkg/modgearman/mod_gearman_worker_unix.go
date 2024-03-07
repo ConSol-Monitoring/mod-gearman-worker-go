@@ -17,7 +17,7 @@ func setupUsrSignalChannel(osSignalUsrChannel chan os.Signal) {
 	signal.Notify(osSignalUsrChannel, syscall.SIGUSR2)
 }
 
-func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType {
+func mainSignalHandler(sig os.Signal, config *config) MainStateType {
 	switch sig {
 	case syscall.SIGTERM:
 		logger.Infof("got sigterm, quiting gracefully")

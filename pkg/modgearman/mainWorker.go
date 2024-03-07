@@ -45,7 +45,7 @@ type mainWorker struct {
 	maxOpenFiles        uint64
 	maxPossibleWorker   int
 	curBallooningWorker int
-	config              *configurationStruct
+	cfg                 *config
 	key                 []byte
 	tasks               int
 	idleSince           time.Time
@@ -54,11 +54,11 @@ type mainWorker struct {
 	cpuProfileHandler   *os.File
 }
 
-func newMainWorker(configuration *configurationStruct, key []byte, workerMap *map[string]*worker) *mainWorker {
+func newMainWorker(configuration *config, key []byte, workerMap *map[string]*worker) *mainWorker {
 	w := &mainWorker{
 		activeWorkers: 0,
 		key:           key,
-		config:        configuration,
+		cfg:           configuration,
 		workerMap:     *workerMap,
 		workerMapLock: new(sync.RWMutex),
 		idleSince:     time.Now(),
@@ -67,14 +67,15 @@ func newMainWorker(configuration *configurationStruct, key []byte, workerMap *ma
 	atomic.StoreInt64(&aIsRunning, 1)
 	w.InitDebugOptions()
 	w.RetryFailedConnections()
-	initializeResultServerConsumers(w.config)
-	initializeDupServerConsumers(w.config)
+	initializeResultServerConsumers(w.cfg)
+	initializeDupServerConsumers(w.cfg)
+
 	return w
 }
 
 func (w *mainWorker) InitDebugOptions() {
-	if w.config.flagProfile != "" {
-		if w.config.flagCPUProfile != "" || w.config.flagMemProfile != "" {
+	if w.cfg.flagProfile != "" {
+		if w.cfg.flagCPUProfile != "" || w.cfg.flagMemProfile != "" {
 			fmt.Print("ERROR: either use --debug-profile or --cpu/memprofile, not both\n")
 			cleanExit(ExitCodeError)
 		}
@@ -84,18 +85,18 @@ func (w *mainWorker) InitDebugOptions() {
 			// make sure we log panics properly
 			defer logPanicExit()
 			_ = hpprof.Handler("/debug/pprof/")
-			err := http.ListenAndServe(w.config.flagProfile, http.DefaultServeMux)
+			err := http.ListenAndServe(w.cfg.flagProfile, http.DefaultServeMux)
 			if err != nil {
 				logger.Warnf("http.ListenAndServe finished with: %e", err)
 			}
 		}()
 
-		logger.Warnf("pprof profiler listening at http://%s/debug/pprof/", w.config.flagProfile)
+		logger.Warnf("pprof profiler listening at http://%s/debug/pprof/", w.cfg.flagProfile)
 	}
 
-	if w.config.flagCPUProfile != "" {
+	if w.cfg.flagCPUProfile != "" {
 		runtime.SetBlockProfileRate(BlockProfileRateInterval)
-		cpuProfileHandler, err := os.Create(w.config.flagCPUProfile)
+		cpuProfileHandler, err := os.Create(w.cfg.flagCPUProfile)
 		if err != nil {
 			fmt.Printf("ERROR: could not create CPU profile: %s", err.Error())
 			cleanExit(ExitCodeError)
@@ -112,12 +113,13 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 	// if there are no servers, we cannot do anything
 	if len(w.ActiveServerList()) == 0 {
 		logger.Tracef("manageWorkers: no active servers available, retrying...")
+
 		return
 	}
 
 	// start status worker
 	if w.statusWorker == nil {
-		w.statusWorker = newStatusWorker(w.config, w)
+		w.statusWorker = newStatusWorker(w.cfg, w)
 	}
 
 	activeWorkers := 0
@@ -128,20 +130,21 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 		}
 	}
 	w.activeWorkers = activeWorkers
-	logger.Tracef("manageWorkers: total: %d, active: %d (min: %d, max: %d)", totalWorker, activeWorkers, w.config.minWorker, w.config.maxWorker)
+	logger.Tracef("manageWorkers: total: %d, active: %d (min: %d, max: %d)",
+		totalWorker, activeWorkers, w.cfg.minWorker, w.cfg.maxWorker)
 	workerCount.Set(float64(totalWorker))
 	workingWorkerCount.Set(float64(activeWorkers))
 	idleWorkerCount.Set(float64(totalWorker - activeWorkers))
 
 	// as long as there are to few workers start them without a limit
-	minWorker := w.config.minWorker
+	minWorker := w.cfg.minWorker
 	if initialStart > 0 {
 		minWorker = initialStart
 	}
 	logger.Tracef("manageWorkers: total: %d, active: %d, minWorker: %d", totalWorker, activeWorkers, minWorker)
 	for i := minWorker - len(w.workerMap); i > 0; i-- {
 		logger.Tracef("manageWorkers: starting minworker: %d, %d", minWorker-len(w.workerMap), i)
-		worker := newWorker("check", w.config, w)
+		worker := newWorker("check", w.cfg, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
@@ -171,7 +174,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 		return
 	}
 	// do not exceed maxWorker level
-	if len(w.workerMap) >= w.config.maxWorker {
+	if len(w.workerMap) >= w.cfg.maxWorker {
 		return
 	}
 	// check load levels
@@ -187,12 +190,12 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 	}
 
 	// start new workers at spawn speed
-	for i := 0; i < w.config.spawnRate; i++ {
-		if len(w.workerMap) >= w.config.maxWorker {
+	for i := 0; i < w.cfg.spawnRate; i++ {
+		if len(w.workerMap) >= w.cfg.maxWorker {
 			break
 		}
 		logger.Tracef("manageWorkers: starting one...")
-		worker := newWorker("check", w.config, w)
+		worker := newWorker("check", w.cfg, w)
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
@@ -204,7 +207,7 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		return
 	}
 	// below minimum level
-	if len(w.workerMap) <= w.config.minWorker {
+	if len(w.workerMap) <= w.cfg.minWorker {
 		return
 	}
 	// above 90% (UtilizationWatermarkLow) utilization
@@ -212,17 +215,17 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		return
 	}
 	// not idling long enough
-	if time.Now().Unix()-w.idleSince.Unix() <= int64(w.config.idleTimeout) {
+	if time.Now().Unix()-w.idleSince.Unix() <= int64(w.cfg.idleTimeout) {
 		return
 	}
 
 	// reduce workers at sinkrate
-	sinkRate := w.config.sinkRate
+	sinkRate := w.cfg.sinkRate
 	if sinkRate <= 0 {
-		sinkRate = w.config.spawnRate
+		sinkRate = w.cfg.spawnRate
 	}
 	for i := 0; i < sinkRate; i++ {
-		if len(w.workerMap) <= w.config.minWorker {
+		if len(w.workerMap) <= w.cfg.minWorker {
 			break
 		}
 		// stop first idle worker
@@ -230,6 +233,7 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 		for _, worker := range w.workerMap {
 			if worker.activeJobs == 0 {
 				worker.Shutdown()
+
 				break
 			}
 		}
@@ -238,16 +242,17 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 
 // applyConfigChanges reloads configuration and returns true if config has been reloaded and no restart is required
 // returns false if mainloop needs to be restarted
-func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configurationStruct) {
-	config, err := initConfiguration("mod_gearman_worker", w.config.build, printUsage, checkForReasonableConfig)
+func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *config) {
+	config, err := initConfiguration("mod_gearman_worker", w.cfg.build, printUsage, checkForReasonableConfig)
 	if err != nil {
 		restartRequired = false
 		logger.Errorf("cannot reload configuration: %w", err)
+
 		return
 	}
 
 	// restart prometheus if necessary
-	if config.prometheusServer != w.config.prometheusServer {
+	if config.prometheusServer != w.cfg.prometheusServer {
 		if prometheusListener != nil {
 			(*prometheusListener).Close()
 		}
@@ -255,7 +260,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 	}
 
 	// restart epn worker if necessary
-	if config.enableEmbeddedPerl != w.config.enableEmbeddedPerl || config.usePerlCache != w.config.usePerlCache || config.debug != w.config.debug {
+	if config.enableEmbeddedPerl != w.cfg.enableEmbeddedPerl || config.usePerlCache != w.cfg.usePerlCache || config.debug != w.cfg.debug {
 		if ePNServer != nil {
 			ePNServer.Stop(ePNGraceDelay)
 			ePNServer = nil
@@ -265,23 +270,23 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 
 	// do we have to restart our worker routines?
 	switch {
-	case strings.Join(config.server, "\n") != strings.Join(w.config.server, "\n"):
+	case strings.Join(config.server, "\n") != strings.Join(w.cfg.server, "\n"):
 		restartRequired = true
-	case strings.Join(config.dupserver, "\n") != strings.Join(w.config.dupserver, "\n"):
+	case strings.Join(config.dupserver, "\n") != strings.Join(w.cfg.dupserver, "\n"):
 		restartRequired = true
-	case config.dupServerBacklogQueueSize != w.config.dupServerBacklogQueueSize:
+	case config.dupServerBacklogQueueSize != w.cfg.dupServerBacklogQueueSize:
 		restartRequired = true
-	case config.host != w.config.host:
+	case config.host != w.cfg.host:
 		restartRequired = true
-	case config.service != w.config.service:
+	case config.service != w.cfg.service:
 		restartRequired = true
-	case strings.Join(config.hostgroups, "\n") != strings.Join(w.config.hostgroups, "\n"):
+	case strings.Join(config.hostgroups, "\n") != strings.Join(w.cfg.hostgroups, "\n"):
 		restartRequired = true
-	case strings.Join(config.servicegroups, "\n") != strings.Join(w.config.servicegroups, "\n"):
+	case strings.Join(config.servicegroups, "\n") != strings.Join(w.cfg.servicegroups, "\n"):
 		restartRequired = true
-	case config.eventhandler != w.config.eventhandler:
+	case config.eventhandler != w.cfg.eventhandler:
 		restartRequired = true
-	case config.notifications != w.config.notifications:
+	case config.notifications != w.cfg.notifications:
 		restartRequired = true
 	}
 
@@ -292,7 +297,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 		// recreate cipher
 		key := getKey(config)
 		myCipher = createCipher(key, config.encryption)
-		w.config = config
+		w.cfg = config
 		logger.Debugf("reloading configuration finished, no worker restart necessary")
 	}
 
@@ -301,7 +306,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, config *configu
 
 // reads the avg loads from /procs/loadavg
 func (w *mainWorker) updateLoadAvg() {
-	if w.config.loadLimit1 <= 0 && w.config.loadLimit5 <= 0 && w.config.loadLimit15 <= 0 {
+	if w.cfg.loadLimit1 <= 0 && w.cfg.loadLimit5 <= 0 && w.cfg.loadLimit15 <= 0 {
 		return
 	}
 	file, err := os.Open("/proc/loadavg")
@@ -322,22 +327,25 @@ func (w *mainWorker) updateLoadAvg() {
 
 // checks if all the loadlimits get checked, when values are set
 func (w *mainWorker) checkLoads() bool {
-	if w.config.loadLimit1 <= 0 && w.config.loadLimit5 <= 0 && w.config.loadLimit15 <= 0 {
+	if w.cfg.loadLimit1 <= 0 && w.cfg.loadLimit5 <= 0 && w.cfg.loadLimit15 <= 0 {
 		return true
 	}
 
-	if w.config.loadLimit1 > 0 && w.min1 > 0 && w.config.loadLimit1 < w.min1 {
-		logger.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.config.loadLimit1)
+	if w.cfg.loadLimit1 > 0 && w.min1 > 0 && w.cfg.loadLimit1 < w.min1 {
+		logger.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.cfg.loadLimit1)
+
 		return false
 	}
 
-	if w.config.loadLimit5 > 0 && w.min5 > 0 && w.config.loadLimit5 < w.min5 {
-		logger.Debugf("not starting any more worker, load5 is too high: %f > %f", w.min5, w.config.loadLimit5)
+	if w.cfg.loadLimit5 > 0 && w.min5 > 0 && w.cfg.loadLimit5 < w.min5 {
+		logger.Debugf("not starting any more worker, load5 is too high: %f > %f", w.min5, w.cfg.loadLimit5)
+
 		return false
 	}
 
-	if w.config.loadLimit15 > 0 && w.min15 > 0 && w.config.loadLimit15 < w.min15 {
-		logger.Debugf("not starting any more worker, load15 is too high: %f > %f", w.min15, w.config.loadLimit15)
+	if w.cfg.loadLimit15 > 0 && w.min15 > 0 && w.cfg.loadLimit15 < w.min15 {
+		logger.Debugf("not starting any more worker, load15 is too high: %f > %f", w.min15, w.cfg.loadLimit15)
+
 		return false
 	}
 
@@ -346,7 +354,7 @@ func (w *mainWorker) checkLoads() bool {
 
 // reads the total/free memory by parsing /proc/meminfo
 func (w *mainWorker) updateMemInfo() {
-	if w.config.memLimit <= 0 {
+	if w.cfg.memLimit <= 0 {
 		return
 	}
 	file, err := os.Open("/proc/meminfo")
@@ -385,7 +393,7 @@ func (w *mainWorker) updateMemInfo() {
 
 // checks the memory threshold in percent
 func (w *mainWorker) checkMemory() bool {
-	if w.config.memLimit <= 0 {
+	if w.cfg.memLimit <= 0 {
 		return true
 	}
 
@@ -394,8 +402,9 @@ func (w *mainWorker) checkMemory() bool {
 	}
 
 	usedPercent := 100 - (w.memFree*100)/w.memTotal
-	if w.config.memLimit > 0 && usedPercent >= w.config.memLimit {
-		logger.Debugf("not starting any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.config.memLimit)
+	if w.cfg.memLimit > 0 && usedPercent >= w.cfg.memLimit {
+		logger.Debugf("not starting any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.cfg.memLimit)
+
 		return false
 	}
 
@@ -434,7 +443,7 @@ func (w *mainWorker) registerWorker(worker *worker) {
 // returns true if server list has changed
 func (w *mainWorker) RetryFailedConnections() bool {
 	changed := false
-	for _, address := range w.config.server {
+	for _, address := range w.cfg.server {
 		w.workerMapLock.RLock()
 		status, ok := w.serverStatus[address]
 		w.workerMapLock.RUnlock()
@@ -458,6 +467,7 @@ func (w *mainWorker) RetryFailedConnections() bool {
 		}
 		w.workerMapLock.Unlock()
 	}
+
 	return changed
 }
 
@@ -467,11 +477,12 @@ func (w *mainWorker) ActiveServerList() (servers []string) {
 	defer w.workerMapLock.RUnlock()
 
 	servers = make([]string, 0)
-	for _, address := range w.config.server {
+	for _, address := range w.cfg.server {
 		if w.serverStatus[address] == "" {
 			servers = append(servers, address)
 		}
 	}
+
 	return
 }
 
@@ -481,6 +492,7 @@ func (w *mainWorker) GetServerStatus(addr string) (err string) {
 	defer w.workerMapLock.RUnlock()
 
 	err = w.serverStatus[addr]
+
 	return err
 }
 
@@ -507,7 +519,7 @@ func (w *mainWorker) Shutdown(exitState MainStateType) {
 	if w.cpuProfileHandler != nil {
 		pprof.StopCPUProfile()
 		w.cpuProfileHandler.Close()
-		logger.Warnf("cpu profile written to: %s", w.config.flagCPUProfile)
+		logger.Warnf("cpu profile written to: %s", w.cfg.flagCPUProfile)
 	}
 	terminateDupServerConsumers()
 	terminateResultServerConsumers()
@@ -556,6 +568,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 			for _, wo := range workerMap {
 				wo.Cancel()
 			}
+
 			return
 		case <-exited:
 			alreadyExited++
@@ -563,6 +576,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 			if alreadyExited >= workerNum {
 				timeout.Stop()
 				w.StopStatusWorker()
+
 				return
 			}
 		}

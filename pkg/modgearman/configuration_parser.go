@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type configurationStruct struct {
+type config struct {
 	binary                    string
 	build                     string
 	identifier                string
@@ -79,7 +79,7 @@ type configurationStruct struct {
 }
 
 // setDefaultValues sets reasonable defaults
-func (config *configurationStruct) setDefaultValues() {
+func (config *config) setDefaultValues() {
 	config.logmode = "automatic"
 	config.encryption = true
 	config.showErrorOutput = true
@@ -118,7 +118,7 @@ func (config *configurationStruct) setDefaultValues() {
 }
 
 // removeDuplicates removes duplicate entries from all string lists
-func (config *configurationStruct) removeDuplicates() {
+func (config *config) removeDuplicates() {
 	config.server = removeDuplicateStrings(config.server)
 	config.dupserver = removeDuplicateStrings(config.dupserver)
 	config.hostgroups = removeDuplicateStrings(config.hostgroups)
@@ -127,7 +127,7 @@ func (config *configurationStruct) removeDuplicates() {
 }
 
 // dump logs all config items
-func (config *configurationStruct) dump() {
+func (config *config) dump() {
 	logger.Debugf("binary                        %s\n", config.binary)
 	logger.Debugf("build                         %s\n", config.build)
 	logger.Debugf("identifier                    %s\n", config.identifier)
@@ -182,7 +182,7 @@ func (config *configurationStruct) dump() {
 }
 
 // parses the key value pairs and stores them in the configuration struct
-func (config *configurationStruct) parseConfigItem(raw string) error {
+func (config *config) parseConfigItem(raw string) error {
 	values := strings.SplitN(raw, "=", 2)
 	if len(values) <= 1 {
 		return fmt.Errorf("parse error, expected key=value in %s", raw)
@@ -348,7 +348,7 @@ func (config *configurationStruct) parseConfigItem(raw string) error {
 }
 
 // read settings from file or folder
-func (config *configurationStruct) readSettingsPath(path string) error {
+func (config *config) readSettingsPath(path string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("cannot read %s: %s", path, err.Error())
@@ -376,7 +376,7 @@ func (config *configurationStruct) readSettingsPath(path string) error {
 
 // opens the config file and reads all key value pairs, separated through = and commented out with #
 // also reads the config files specified in the config= value
-func (config *configurationStruct) readSettingsFile(path string) error {
+func (config *config) readSettingsFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("cannot read file %s: %s", path, err.Error())
@@ -419,6 +419,7 @@ func getInt(input string) int {
 		logger.Debugf("Error converting %s to int, try with float", input)
 		result = int(getFloat(input))
 	}
+
 	return result
 }
 
@@ -431,6 +432,7 @@ func getFloat(input string) float64 {
 		logger.Errorf("error Converting %s to float", input)
 		result = 0
 	}
+
 	return result
 }
 
@@ -438,6 +440,7 @@ func getBool(input string) bool {
 	if input == "yes" || input == "on" || input == "1" {
 		return true
 	}
+
 	return false
 }
 
@@ -451,6 +454,7 @@ func fixGearmandServerAddress(address string) string {
 	if len(parts) == 2 && parts[0] == "" {
 		return "0.0.0.0:" + parts[1]
 	}
+
 	return address
 }
 
@@ -464,5 +468,6 @@ func removeDuplicateStrings(elements []string) []string {
 			uniq = append(uniq, elements[v])
 		}
 	}
+
 	return uniq
 }

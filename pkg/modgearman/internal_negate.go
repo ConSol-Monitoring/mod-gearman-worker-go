@@ -104,12 +104,14 @@ func ParseNegate(com *command) {
 		// main command must start with an /
 		if strings.HasPrefix(arg, "/") {
 			mainProgIndex = i
+
 			break
 		}
 	}
 
 	if mainProgIndex == -1 {
 		logger.Debugf("cannot parse negate args, didn't find main program")
+
 		return
 	}
 
@@ -117,6 +119,7 @@ func ParseNegate(com *command) {
 	err := negate.Parse(com.Args[0:mainProgIndex])
 	if err != nil {
 		logger.Debugf("cannot parse negate args: %w: %s", err, err.Error())
+
 		return
 	}
 	com.Command = com.Args[mainProgIndex]

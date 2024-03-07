@@ -10,12 +10,12 @@ type dupServerConsumer struct {
 	queue              chan *answer
 	address            string
 	terminationRequest chan bool
-	config             *configurationStruct
+	config             *config
 }
 
 var dupServerConsumers map[string]*dupServerConsumer
 
-func initializeDupServerConsumers(config *configurationStruct) {
+func initializeDupServerConsumers(config *config) {
 	if len(config.dupserver) > 0 {
 		dupServerConsumers = make(map[string]*dupServerConsumer)
 		for _, dupAddress := range config.dupserver {
@@ -42,6 +42,7 @@ func terminateDupServerConsumers() bool {
 	}
 	logger.Debugf("Completed all consumer termination")
 	dupServerConsumers = nil
+
 	return true
 }
 
@@ -56,6 +57,7 @@ func runDupServerConsumer(dupServer *dupServerConsumer) {
 			if client != nil {
 				client.Close()
 			}
+
 			return
 		case item = <-dupServer.queue:
 			for {
@@ -65,29 +67,29 @@ func runDupServerConsumer(dupServer *dupServerConsumer) {
 					logger.Debugf("failed to send back result (to dupserver): %w", err)
 					select {
 					case <-dupServer.terminationRequest:
-						if client != nil {
-							client.Close()
-						}
 						return
 					default:
 						time.Sleep(ConnectionRetryInterval * time.Second)
+
 						continue
 					}
 				}
+
 				break
 			}
 		}
 	}
 }
 
-func sendResultDup(client *client.Client, item *answer, dupAddress string, config *configurationStruct) (*client.Client, error) {
+func sendResultDup(client *client.Client, item *answer, dupAddress string, config *config) (*client.Client, error) {
 	if config.dupResultsArePassive {
 		item.active = "passive"
 	}
+
 	return sendAnswer(client, item, dupAddress, config.encryption)
 }
 
-func enqueueDupServerResult(config *configurationStruct, result *answer) {
+func enqueueDupServerResult(config *config, result *answer) {
 	if len(config.dupserver) == 0 {
 		return
 	}
@@ -98,7 +100,10 @@ func enqueueDupServerResult(config *configurationStruct, result *answer) {
 		select {
 		case channel <- &duplicateResult:
 		default:
-			logger.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s", config.dupServerBacklogQueueSize, dupAddress)
+			logger.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s",
+				config.dupServerBacklogQueueSize,
+				dupAddress,
+			)
 		}
 	}
 }

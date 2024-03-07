@@ -13,7 +13,7 @@ const (
 )
 
 // returns the secret_key as byte array from the location in the worker.cfg
-func getKey(config *configurationStruct) []byte {
+func getKey(config *config) []byte {
 	if config.encryption {
 		if config.key != "" {
 			return fixKeySize([]byte(config.key))
@@ -22,8 +22,10 @@ func getKey(config *configurationStruct) []byte {
 			return fixKeySize(readKeyFile(config.keyfile))
 		}
 		logger.Panic("no key set but encyption enabled!")
+
 		return nil
 	}
+
 	return nil
 }
 
@@ -58,14 +60,17 @@ func openFileOrCreate(path string) (os.File, error) {
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Errorf("could not open file %s: %w", path, err)
+
 			return *file, fmt.Errorf("open file %s failed: %w", path, err)
 		}
+
 		return *file, nil
 	}
 	file, err := os.Open(path)
 	if err != nil {
 		logger.Errorf("could not open file %s: %w", path, err)
 	}
+
 	return *file, nil
 }
 

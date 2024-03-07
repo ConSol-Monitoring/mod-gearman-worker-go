@@ -15,9 +15,12 @@ const (
 	LogLevelTrace2 = 3
 )
 
-func createLogger(config *configurationStruct) {
+func createLogger(config *config) {
 	// logging format
-	frmt := `%{Color \"yellow\" \"WARN\"}%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}[%{Date} %{Time "15:04:05.000"}][%{Severity}][%{File}:%{Line}] %{Message}`
+	frmt := `%{Color \"yellow\" \"WARN\"}` +
+		`%{Color \"red\" \"ERROR\"}%{Color \"red\" \"FATAL\"}` +
+		`[%{Date} %{Time "15:04:05.000"}]` +
+		`[%{Severity}][%{File}:%{Line}] %{Message}`
 
 	// check in config file if file is specified
 	verbosity := getSeverity(config.debug)
@@ -60,6 +63,7 @@ func getSeverity(input int) string {
 	case LogLevelTrace, LogLevelTrace2:
 		return "TRACE"
 	}
+
 	return "ERROR"
 }
 

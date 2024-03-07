@@ -150,7 +150,7 @@ func Worker(build string) {
 	}
 }
 
-func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitState MainStateType, numWorker int, newConfig *configurationStruct) {
+func mainLoop(config *config, osSignalChannel chan os.Signal, workerMap *map[string]*worker, initialStart int) (exitState MainStateType, numWorker int, newConfig *config) {
 	if osSignalChannel == nil {
 		osSignalChannel = make(chan os.Signal, 1)
 	}
@@ -248,11 +248,11 @@ func mainLoop(config *configurationStruct, osSignalChannel chan os.Signal, worke
 
 type (
 	helpCallback   func()
-	verifyCallback func(*configurationStruct) error
+	verifyCallback func(*config) error
 )
 
-func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*configurationStruct, error) {
-	config := &configurationStruct{binary: name, build: build}
+func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc verifyCallback) (*config, error) {
+	config := &config{binary: name, build: build}
 	config.setDefaultValues()
 	createLogger(config)
 	for i := 1; i < len(os.Args); i++ {
@@ -320,7 +320,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 	return config, err
 }
 
-func checkForReasonableConfig(config *configurationStruct) error {
+func checkForReasonableConfig(config *config) error {
 	if len(config.server) == 0 {
 		return fmt.Errorf("no server specified")
 	}
@@ -414,7 +414,7 @@ func logThreaddump() {
 }
 
 // printVersion prints the version
-func printVersion(config *configurationStruct) {
+func printVersion(config *config) {
 	fmt.Printf("%s - version %s (Build: %s, %s)\n", config.binary, VERSION, config.build, runtime.Version())
 }
 

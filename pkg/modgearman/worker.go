@@ -14,14 +14,14 @@ type worker struct {
 	what       string
 	worker     *libworker.Worker
 	activeJobs int
-	config     *configurationStruct
+	config     *config
 	mainWorker *mainWorker
 	jobs       []*receivedStruct
 	lock       sync.RWMutex
 }
 
 // creates a new worker and returns a pointer to it
-func newWorker(what string, configuration *configurationStruct, mainWorker *mainWorker) *worker {
+func newWorker(what string, configuration *config, mainWorker *mainWorker) *worker {
 	logger.Tracef("starting new %sworker", what)
 	worker := &worker{
 		what:       what,
@@ -73,7 +73,7 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 	return worker
 }
 
-func (worker *worker) registerFunctions(configuration *configurationStruct) {
+func (worker *worker) registerFunctions(configuration *config) {
 	w := worker.worker
 	// specifies what events the worker listens
 	switch worker.what {

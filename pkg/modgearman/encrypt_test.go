@@ -11,7 +11,7 @@ func TestEncodeBase64(t *testing.T) {
 }
 
 func TestEncrypt(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
 	config.encryption = true
 	myCipher = createCipher(getKey(&config), config.encryption)

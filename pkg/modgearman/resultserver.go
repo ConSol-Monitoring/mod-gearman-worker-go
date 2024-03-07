@@ -10,7 +10,7 @@ import (
 type resultServerConsumer struct {
 	queue              chan *answer
 	terminationRequest chan bool
-	config             *configurationStruct
+	config             *config
 }
 
 var (
@@ -18,7 +18,7 @@ var (
 	resultServerQueue     chan *answer
 )
 
-func initializeResultServerConsumers(config *configurationStruct) {
+func initializeResultServerConsumers(config *config) {
 	numResultServer := ResultServerWorker
 	if numResultServer > config.maxWorker {
 		numResultServer = config.maxWorker

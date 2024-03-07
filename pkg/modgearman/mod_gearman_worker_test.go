@@ -21,7 +21,7 @@ func BenchmarkJobs(b *testing.B) {
 	b.StopTimer()
 	resultChannel = make(chan bool, b.N)
 	resultsTotal := 0
-	config := configurationStruct{
+	config := config{
 		server:     []string{"127.0.0.1:54730"},
 		key:        "testkey",
 		encryption: true,

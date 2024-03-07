@@ -22,7 +22,7 @@ func TestCreateMap(t *testing.T) {
 }
 
 func TestDecrypt(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.encryption = true
 	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
 	key := getKey(&config)

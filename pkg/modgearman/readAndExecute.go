@@ -71,7 +71,7 @@ output=%s
 * @return: answer, struct containing al information to be sent back to the server
 *
  */
-func readAndExecute(received *receivedStruct, config *configurationStruct) *answer {
+func readAndExecute(received *receivedStruct, config *config) *answer {
 	var result answer
 	// first set the start time
 	result.startTime = float64(time.Now().UnixNano()) / float64(time.Second)
@@ -135,7 +135,7 @@ func checkRestrictPath(cmdString string, restrictPath []string) bool {
 
 // executes a command in the bash, returns whatever gets printed on the bash
 // and as second value a status Code between 0 and 3
-func executeCommandLine(result *answer, received *receivedStruct, config *configurationStruct) {
+func executeCommandLine(result *answer, received *receivedStruct, config *config) {
 	result.returnCode = 3
 	command := parseCommand(received.commandLine, config)
 	defer updatePrometheusExecMetrics(config, result, received, command)
@@ -185,7 +185,7 @@ func executeCommandLine(result *answer, received *receivedStruct, config *config
 	}
 }
 
-func execCmd(command *command, received *receivedStruct, result *answer, config *configurationStruct) {
+func execCmd(command *command, received *receivedStruct, result *answer, config *config) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(received.timeout)*time.Second)
 	defer cancel()
 
@@ -285,7 +285,7 @@ func execEPN(result *answer, cmd *command, received *receivedStruct) {
 	}
 }
 
-func fixReturnCodes(result *answer, config *configurationStruct, state *os.ProcessState) {
+func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
 		if config.workerNameInResult {
 			result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
@@ -313,7 +313,7 @@ func fixReturnCodes(result *answer, config *configurationStruct, state *os.Proce
 	result.returnCode = 3
 }
 
-func setTimeoutResult(result *answer, config *configurationStruct, received *receivedStruct, negate *Negate) {
+func setTimeoutResult(result *answer, config *config, received *receivedStruct, negate *Negate) {
 	result.timedOut = true
 	result.returnCode = config.timeoutReturn
 	originalOutput := result.output
@@ -336,7 +336,7 @@ func setTimeoutResult(result *answer, config *configurationStruct, received *rec
 	}
 }
 
-func setProcessErrorResult(result *answer, config *configurationStruct, err error) {
+func setProcessErrorResult(result *answer, config *config, err error) {
 	if os.IsNotExist(err) {
 		result.output = fmt.Sprintf("UNKNOWN: Return code of 127 is out of bounds. Make sure the plugin you're trying to run actually exists. (worker: %s)", config.identifier)
 		result.returnCode = 3

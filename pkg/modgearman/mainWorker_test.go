@@ -10,7 +10,7 @@ func TestCheckLoads(t *testing.T) {
 		t.Skip("skipping test without /proc/")
 	}
 	disableLogging()
-	config := configurationStruct{}
+	config := config{}
 	config.loadLimit1 = 999
 	config.loadLimit5 = 999
 	config.loadLimit15 = 999

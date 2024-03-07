@@ -11,6 +11,9 @@ linters-settings:
     min-occurrences: 5
   lll:
     line-length: 120
+  funlen:
+    lines: 80
+    statements: 45
   gomoddirectives:
     replace-local: true
   govet:

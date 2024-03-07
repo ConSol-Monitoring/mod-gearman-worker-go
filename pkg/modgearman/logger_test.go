@@ -10,7 +10,7 @@ import (
 )
 
 func TestCreateLogger(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	file, err := os.Create("loggertest")
 	if err != nil {
 		t.Errorf("could not create testfile")

@@ -34,7 +34,7 @@ func Sendgearman(build string) {
 	cleanExit(ExitCodeError)
 }
 
-func sendgearmanInit(build string) *configurationStruct {
+func sendgearmanInit(build string) *config {
 	// reads the args, check if they are params, if so sends them to the configuration reader
 	config, err := initConfiguration("send_gearman", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
@@ -58,7 +58,7 @@ func sendgearmanInit(build string) *configurationStruct {
 	return config
 }
 
-func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess bool, resultsCounter int, lastAddress string, err error) {
+func sendgearmanLoop(config *config, result *answer) (sendSuccess bool, resultsCounter int, lastAddress string, err error) {
 	read := make([]byte, 1024*1024*1024)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(read, cap(read))
@@ -108,7 +108,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 	return
 }
 
-func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
+func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=.../--host=...", config.timeout)
 		cleanExit(ExitCodeError)
@@ -130,7 +130,7 @@ func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.S
 	return err == nil
 }
 
-func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) {
+func readStdinData(config *config, result *answer, scanner *bufio.Scanner) {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
 		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
 		cleanExit(ExitCodeError)
@@ -154,7 +154,7 @@ func readStdinData(config *configurationStruct, result *answer, scanner *bufio.S
 	}
 }
 
-func createResultFromArgs(config *configurationStruct) *answer {
+func createResultFromArgs(config *config) *answer {
 	active := "passive"
 	if config.active {
 		active = "active"
@@ -174,7 +174,7 @@ func createResultFromArgs(config *configurationStruct) *answer {
 	return result
 }
 
-func checkForReasonableConfigSendGearman(config *configurationStruct) error {
+func checkForReasonableConfigSendGearman(config *config) error {
 	if len(config.server) == 0 {
 		return fmt.Errorf("no server specified")
 	}
@@ -184,7 +184,7 @@ func checkForReasonableConfigSendGearman(config *configurationStruct) error {
 	return nil
 }
 
-func parseLine2Answer(config *configurationStruct, result *answer, input string) error {
+func parseLine2Answer(config *config, result *answer, input string) error {
 	fields := strings.Split(input, config.delimiter)
 	if len(fields) >= ServiceAnswerSize {
 		// service result

@@ -7,7 +7,7 @@ import (
 
 func TestGetKey(t *testing.T) {
 	// set the key in the config struct
-	config := configurationStruct{key: "MeinTestKey", encryption: true}
+	config := config{key: "MeinTestKey", encryption: true}
 
 	// get the key from the method
 	result := getKey(&config)

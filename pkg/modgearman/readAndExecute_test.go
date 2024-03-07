@@ -15,7 +15,7 @@ import (
 )
 
 func TestReadAndExecute(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.encryption = false
 	config.jobTimeout = 30
 	config.setDefaultValues()
@@ -57,7 +57,7 @@ func TestReadAndExecute(t *testing.T) {
 }
 
 func TestExecuteCommandWithTimeout(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
@@ -172,7 +172,7 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 }
 
 func TestExecuteCommandArgListTooLongError(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
@@ -199,7 +199,7 @@ func TestExecuteCommandOutOfFilesError(t *testing.T) {
 	if os.Getenv("PANIC_TESTS") == "" {
 		t.Skip("test will panic, run manually with PANIC_TESTS=1 env set")
 	}
-	config := configurationStruct{}
+	config := config{}
 	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
@@ -223,7 +223,7 @@ func TestExecuteCommandOutOfFilesError(t *testing.T) {
 }
 
 func TestExecuteCommandFunnyQuotes(t *testing.T) {
-	config := configurationStruct{}
+	config := config{}
 	config.setDefaultValues()
 	config.encryption = false
 	result := &answer{}
@@ -265,14 +265,14 @@ func TestGetCommandBasename(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		com := parseCommand(test.command, &configurationStruct{internalNegate: true})
+		com := parseCommand(test.command, &config{internalNegate: true})
 		base := getCommandQualifier(com)
 		assert.Equal(t, test.expect, base, "getCommandQualifier")
 	}
 }
 
 func BenchmarkReadAndExecuteShell(b *testing.B) {
-	config := configurationStruct{}
+	config := config{}
 	config.debug = 0
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd \"|\"", timeout: 10}
@@ -282,7 +282,7 @@ func BenchmarkReadAndExecuteShell(b *testing.B) {
 }
 
 func BenchmarkReadAndExecuteExec(b *testing.B) {
-	config := configurationStruct{}
+	config := config{}
 	config.debug = 0
 	createLogger(&config)
 	received := &receivedStruct{commandLine: "/bin/pwd", timeout: 10}
@@ -292,7 +292,7 @@ func BenchmarkReadAndExecuteExec(b *testing.B) {
 }
 
 func BenchmarkParseCommandI(b *testing.B) {
-	config := configurationStruct{}
+	config := config{}
 	config.debug = 0
 	cmdLine := `VAR1=test VAR2=test /bin/test -f "sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd"`
 	for n := 0; n < b.N; n++ {
@@ -305,7 +305,7 @@ func BenchmarkParseCommandI(b *testing.B) {
 }
 
 func BenchmarkParseCommandII(b *testing.B) {
-	config := configurationStruct{}
+	config := config{}
 	config.debug = 0
 	cmdLine := `VAR1=test VAR2=test /bin/test -f sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd`
 	for n := 0; n < b.N; n++ {

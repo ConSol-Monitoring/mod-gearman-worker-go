@@ -55,8 +55,10 @@ func createCipher(key []byte, encrypt bool) cipher.Block {
 		if err != nil {
 			logger.Panic(err)
 		}
+
 		return newCipher
 	}
+
 	return nil
 }
 
@@ -67,6 +69,7 @@ func createCipher(key []byte, encrypt bool) cipher.Block {
  */
 func decodeBase64(data string) []byte {
 	decodedBase, _ := b64.StdEncoding.DecodeString(data)
+
 	return decodedBase
 }
 
@@ -123,6 +126,7 @@ func parseTimeStringToFloat64(input string) float64 {
 	if err != nil {
 		return 0
 	}
+
 	return floatValue
 }
 
@@ -146,5 +150,6 @@ func createMap(input []byte) map[string]string {
 			resultMap[access[0]] = access[1]
 		}
 	}
+
 	return resultMap
 }

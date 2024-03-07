@@ -7,7 +7,7 @@ import (
 )
 
 // creates a new status worker and returns a pointer to it
-func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker) *worker {
+func newStatusWorker(configuration *config, mainWorker *mainWorker) *worker {
 	return newWorker("status", configuration, mainWorker)
 }
 

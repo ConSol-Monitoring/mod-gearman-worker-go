@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 )
 
-func runTestCmd(conf *configurationStruct, args []string) (rc int, output string) {
+func runTestCmd(conf *config, args []string) (rc int, output string) {
 	conf.enableEmbeddedPerl = true
 	check := &receivedStruct{
 		typ:                "service",

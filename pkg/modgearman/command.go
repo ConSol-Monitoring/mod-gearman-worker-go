@@ -32,7 +32,7 @@ type command struct {
 	InternalCheck InternalCheck
 }
 
-func parseCommand(rawCommand string, config *configurationStruct) *command {
+func parseCommand(rawCommand string, config *config) *command {
 	parsed := &command{
 		ExecType: Shell,
 		Command:  rawCommand,

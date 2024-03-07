@@ -6,7 +6,7 @@ import (
 )
 
 func TestReadSettingsFile(t *testing.T) {
-	var testConfig configurationStruct
+	var testConfig config
 
 	// set default values so we can check if they get overwritten
 	testConfig.setDefaultValues()
@@ -59,7 +59,7 @@ server=hostname2
 }
 
 func TestReadSettingsPath(t *testing.T) {
-	var testConfig configurationStruct
+	var testConfig config
 
 	// set default values so we can check if they get overwritten
 	testConfig.setDefaultValues()

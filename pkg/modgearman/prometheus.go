@@ -68,7 +68,7 @@ var (
 		[]string{"description", "exec"})
 )
 
-func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {
+func startPrometheus(config *config) (prometheusListener *net.Listener) {
 	registerMetrics()
 	build := ""
 	if config.build != "" {
@@ -163,7 +163,7 @@ func buildExecExemplarLabels(result *answer, received *receivedStruct, basename 
 	return label
 }
 
-func updatePrometheusExecMetrics(config *configurationStruct, result *answer, received *receivedStruct, com *command) {
+func updatePrometheusExecMetrics(config *config, result *answer, received *receivedStruct, com *command) {
 	if config.prometheusServer == "" {
 		return
 	}
