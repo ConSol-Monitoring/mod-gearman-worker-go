@@ -22,16 +22,16 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - uses: actions/checkout@v4
     - run: make clean
-    #- run: make updatedeps
-    #  if: github.event_name != 'pull_request'
     - run: make citest
-    - run: make
-    - name: extract built binary
+    - run: CGO_ENABLED=0 make
+    - run: make build-windows-amd64
+    - name: extract mod_gearman_worker
       uses: actions/upload-artifact@v4
       with:
         name: mod_gearman_worker-go${{ matrix.go-version }}
         path: mod_gearman_worker
-    - run: make clean
-    - run: make build
-    - run: make clean
-    - run: make debugbuild
+    - name: extract built send_gearman.exe
+      uses: actions/upload-artifact@v4
+      with:
+        name: send_gearman.windows.amd64.exe${{ matrix.go-version }}
+        path: send_gearman.windows.amd64.exe
