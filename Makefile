@@ -15,6 +15,9 @@ BUILD:=$(shell git rev-parse --short HEAD)
 TOOLSFOLDER=$(shell pwd)/tools
 export GOBIN := $(TOOLSFOLDER)
 export PATH := $(GOBIN):$(PATH)
+
+BUILD_FLAGS=-ldflags "-s -w -X main.Build=$(BUILD)"
+TEST_FLAGS=-timeout=5m $(BUILD_FLAGS)
 GO=go
 
 all: build
@@ -34,12 +37,18 @@ updatedeps: versioncheck
 	$(MAKE) clean
 	$(MAKE) tools
 	$(GO) mod download
-	GOPROXY=direct $(GO) get -u
-	GOPROXY=direct $(GO) get -t -u
+	set -e; for dir in $(shell ls -d1 pkg/*); do \
+		( cd ./$$dir && $(GO) mod download ); \
+		( cd ./$$dir && GOPROXY=direct $(GO) get -u ); \
+		( cd ./$$dir && GOPROXY=direct $(GO) get -t -u ); \
+	done
 	$(GO) mod download
 	$(MAKE) cleandeps
 
 cleandeps:
+	set -e; for dir in $(shell ls -d1 pkg/*); do \
+		( cd ./$$dir && $(GO) mod tidy ); \
+	done
 	$(GO) mod tidy
 	( cd buildtools && $(GO) mod tidy )
 
@@ -48,21 +57,21 @@ vendor: go.work
 	$(GO) mod tidy
 	GOWORK=off $(GO) mod vendor
 
-go.work:
+go.work: pkg/*
 	echo "go $(MINGOVERSIONSTR)" > go.work
-	$(GO) work use . buildtools/.
+	$(GO) work use . pkg/* buildtools/.
 
 dump:
-	if [ $(shell grep -r Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go | wc -l) -ne 0 ]; then \
-		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' dump.go; \
+	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v dump.go | wc -l) -ne 0 ]; then \
+		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' pkg/modgearman/dump.go; \
 	else \
-		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' dump.go; \
+		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/modgearman/dump.go; \
 	fi
-	rm -f dump.go.bak
+	rm -f pkg/modgearman/dump.go.bak
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
-		( cd ./cmd/$$CMD && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD ) ; \
+		( cd ./cmd/$$CMD && $(GO) build $(BUILD_FLAGS) -o ../../$$CMD ) ; \
 	done
 
 # run build watch, ex. with tracing: make build-watch -- -debug=3 --logfile=stderr
@@ -71,66 +80,54 @@ build-watch: vendor tools
 
 build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.linux.amd64; cd ../..; \
+		( cd ./cmd/$$CMD && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../../$$CMD.linux.amd64 ) ; \
 	done
 
 build-windows-i386: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.windows.i386.exe; cd ../..; \
+		( cd ./cmd/$$CMD && GOOS=windows GOARCH=386 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../../$$CMD.windows.i386.exe ) ; \
 	done
 
 build-windows-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../$$CMD.windows.amd64.exe; cd ../..; \
+		( cd ./cmd/$$CMD && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../../$$CMD.windows.amd64.exe ) ; \
 	done
 
-send_gearman: *.go cmd/send_gearman/*.go
-	cd ./cmd/send_gearman && go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../send_gearman
+send_gearman: pkg/*/*.go cmd/send_gearman/*.go
+	( cd ./cmd/send_gearman && $(GO) build $(BUILD_FLAGS) -o ../../send_gearman )
 
-send_gearman.exe: *.go cmd/send_gearman/*.go
-	cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -X main.Build=$(BUILD)" -o ../../send_gearman.exe
-
-debugbuild: fmt dump vendor
-	go build -race -ldflags "-X main.Build=$(BUILD)"
-	set -e; for CMD in $(CMDS); do \
-		cd ./cmd/$$CMD && go build -race -ldflags "-X main.Build=$(BUILD)"; cd ../..; \
-	done
-
-devbuild: debugbuild
+send_gearman.exe: pkg/*/*.go cmd/send_gearman/*.go
+	( cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../../send_gearman.exe )
 
 test: dump vendor
-	go test -short -v -timeout=1m
-	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
-	if grep -rn Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go; then exit 1; fi
+	$(GO) test -short -v $(TEST_FLAGS) pkg/*
+	if grep -Irn TODO: ./cmd/ ./pkg/;  then exit 1; fi
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v dump.go; then exit 1; fi
 
 # test with filter
 testf: vendor
-	go test -short -v -run "$(filter-out $@,$(MAKECMDGOALS))"
+	$(GO) test -short -v $(TEST_FLAGS) pkg/* pkg/*/cmd -run "$(filter-out $@,$(MAKECMDGOALS))" 2>&1 | grep -v "no test files" | grep -v "no tests to run" | grep -v "^PASS"
 
-longtest: fmt dump vendor
-	go test -v -timeout=1m
+longtest: vendor
+	$(GO) test -v $(TEST_FLAGS) pkg/*
 
 citest: vendor
 	#
 	# Checking gofmt errors
 	#
-	if [ $$(gofmt -s -l *.go ./cmd/ | wc -l) -gt 0 ]; then \
+	if [ $$(gofmt -s -l ./cmd/ ./pkg/ | wc -l) -gt 0 ]; then \
 		echo "found format errors in these files:"; \
-		gofmt -s -l *.go ./cmd/; \
+		gofmt -s -l ./cmd/ ./pkg/ ; \
 		exit 1; \
 	fi
 	#
 	# Checking TODO items
 	#
-	if grep -rn TODO: *.go ./cmd/; then exit 1; fi
+	if grep -Irn TODO: ./cmd/ ./pkg/ ; then exit 1; fi
 	#
 	# Checking remaining debug calls
 	#
-	if grep -rn Dump *.go ./cmd/*/*.go | grep -v Data::Dumper | grep -v dump.go; then exit 1; fi
-	#
-	# Darwin and Linux should be handled equal
-	#
-	diff mod_gearman_worker_linux.go mod_gearman_worker_darwin.go
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v dump.go; then exit 1; fi
 	#
 	# Run other subtests
 	#
@@ -160,18 +157,18 @@ citest: vendor
 	#
 
 benchmark:
-	go test -timeout=1m -ldflags "-s -w -X main.Build=$(BUILD)" -v -bench=B\* -run=^$$ . -benchmem
+	$(GO) test $(TEST_FLAGS) -v -bench=B\* -run=^$$ -benchmem ./pkg/*
 
 racetest:
-	go test -race -v -timeout=3m -coverprofile=coverage.txt -covermode=atomic
+	$(GO) test -race $(TEST_FLAGS) -coverprofile=coverage.txt -covermode=atomic ./pkg/*
 
 covertest:
-	$(GO) test -v -coverprofile=cover.out -timeout=1m
+	$(GO) test -v $(TEST_FLAGS) -coverprofile=cover.out ./pkg/*
 	$(GO) tool cover -func=cover.out
 	$(GO) tool cover -html=cover.out -o coverage.html
 
 coverweb:
-	$(GO) test -v -coverprofile=cover.out -timeout=1m
+	$(GO) test -v $(TEST_FLAGS) -coverprofile=cover.out ./pkg/*
 	$(GO) tool cover -html=cover.out
 
 clean:
@@ -191,10 +188,13 @@ clean:
 	rm -rf $(TOOLSFOLDER)
 
 GOVET=$(GO) vet -all
-SRCFOLDER=*.go ./cmd/*/*.go
+SRCFOLDER=./cmd/. ./pkg/. ./buildtools/.
 fmt: tools
 	set -e; for CMD in $(CMDS); do \
 		$(GOVET) ./cmd/$$CMD; \
+	done
+	set -e; for dir in $(shell ls -d1 pkg/*); do \
+		$(GOVET) ./$$dir; \
 	done
 	gofmt -w -s $(SRCFOLDER)
 	./tools/gofumpt -w $(SRCFOLDER)
@@ -214,17 +214,20 @@ golangci: tools
 	# golangci combines a few static code analyzer
 	# See https://github.com/golangci/golangci-lint
 	#
-	golangci-lint run ./...; \
+	set -e; for dir in $$(ls -1d pkg/* cmd t); do \
+		echo $$dir; \
+		( cd $$dir && golangci-lint run --timeout=5m ./... ); \
+	done
 
 govulncheck: tools
 	govulncheck ./...
 
 version:
-	OLDVERSION="$(shell grep "VERSION =" ./mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
+	OLDVERSION="$(shell grep "VERSION =" ./pkg/modgearman/mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
 	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "v$$OLDVERSION") && \
 		NEWVERSION=$$(echo $$NEWVERSION | sed "s/^v//g"); \
 		if [ "v$$OLDVERSION" = "v$$NEWVERSION" -o "x$$NEWVERSION" = "x" ]; then echo "no changes"; exit 1; fi; \
-		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' *.go cmd/*/*.go
+		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' pkg/modgearman/go cmd/*/*.go
 
 # just skip unknown make targets
 .DEFAULT:

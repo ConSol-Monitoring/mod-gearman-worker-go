@@ -1,7 +1,7 @@
 package main
 
 import (
-	modgearman "github.com/consol-monitoring/mod-gearman-worker-go"
+	"pkg/modgearman"
 )
 
 // Build contains the current git commit id
