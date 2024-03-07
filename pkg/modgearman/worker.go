@@ -238,14 +238,14 @@ func (worker *worker) executeJob(received *receivedStruct) *answer {
 }
 
 // errorHandler gets called if the libworker worker throws an error
-func (worker *worker) errorHandler(e error) {
-	switch err := e.(type) {
+func (worker *worker) errorHandler(err error) {
+	switch err2 := err.(type) {
 	case *libworker.WorkerDisconnectError:
-		_, addr := err.Server()
-		logger.Debugf("worker disconnect: %w from %s", e, addr)
-		worker.mainWorker.SetServerStatus(addr, err.Error())
+		_, addr := err2.Server()
+		logger.Debugf("worker disconnect: %w from %s", err, addr)
+		worker.mainWorker.SetServerStatus(addr, err2.Error())
 	default:
-		logger.Errorf("worker error: %w: %s", e, e.Error())
+		logger.Errorf("worker error: %w: %s", err, err.Error())
 		logger.Errorf("%s", debug.Stack())
 	}
 	worker.Shutdown()

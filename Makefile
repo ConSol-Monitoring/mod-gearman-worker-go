@@ -214,7 +214,7 @@ golangci: tools
 	# golangci combines a few static code analyzer
 	# See https://github.com/golangci/golangci-lint
 	#
-	set -e; for dir in $$(ls -1d pkg/* cmd t); do \
+	set -e; for dir in $$(ls -1d pkg/* cmd); do \
 		echo $$dir; \
 		( cd $$dir && golangci-lint run --timeout=5m ./... ); \
 	done

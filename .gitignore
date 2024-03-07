@@ -9,3 +9,4 @@ vendor/
 tools/
 go.work
 go.work.sum
+test*.pl

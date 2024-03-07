@@ -27,21 +27,21 @@ func NewNegate() *Negate {
 	}
 }
 
-func (n *Negate) DefineFlags(fs *flag.FlagSet) {
-	fs.IntVar(&n.Timeout, "timeout", n.Timeout, "Seconds before plugin times out")
-	fs.IntVar(&n.Timeout, "t", n.Timeout, "Seconds before plugin times out")
-	fs.StringVar(&n.TimeoutResult, "timeout-result", "", "Custom result on Negate timeouts")
-	fs.StringVar(&n.TimeoutResult, "T", "", "Custom result on Negate timeouts")
-	fs.StringVar(&n.OKStatus, "ok", "", "STATUS for OK result")
-	fs.StringVar(&n.OKStatus, "o", "", "STATUS for OK result")
-	fs.StringVar(&n.WarningStatus, "warning", "", "STATUS for WARNING result")
-	fs.StringVar(&n.WarningStatus, "w", "", "STATUS for WARNING result")
-	fs.StringVar(&n.CriticalStatus, "critical", "", "STATUS for CRITICAL result")
-	fs.StringVar(&n.CriticalStatus, "c", "", "STATUS for CRITICAL result")
-	fs.StringVar(&n.UnknownStatus, "unknown", "", "STATUS for UNKNOWN result")
-	fs.StringVar(&n.UnknownStatus, "u", "", "STATUS for UNKNOWN result")
-	fs.BoolVar(&n.Substitute, "substitute", false, "Substitute output text as well")
-	fs.BoolVar(&n.Substitute, "s", false, "Substitute output text as well")
+func (n *Negate) DefineFlags(flags *flag.FlagSet) {
+	flags.IntVar(&n.Timeout, "timeout", n.Timeout, "Seconds before plugin times out")
+	flags.IntVar(&n.Timeout, "t", n.Timeout, "Seconds before plugin times out")
+	flags.StringVar(&n.TimeoutResult, "timeout-result", "", "Custom result on Negate timeouts")
+	flags.StringVar(&n.TimeoutResult, "T", "", "Custom result on Negate timeouts")
+	flags.StringVar(&n.OKStatus, "ok", "", "STATUS for OK result")
+	flags.StringVar(&n.OKStatus, "o", "", "STATUS for OK result")
+	flags.StringVar(&n.WarningStatus, "warning", "", "STATUS for WARNING result")
+	flags.StringVar(&n.WarningStatus, "w", "", "STATUS for WARNING result")
+	flags.StringVar(&n.CriticalStatus, "critical", "", "STATUS for CRITICAL result")
+	flags.StringVar(&n.CriticalStatus, "c", "", "STATUS for CRITICAL result")
+	flags.StringVar(&n.UnknownStatus, "unknown", "", "STATUS for UNKNOWN result")
+	flags.StringVar(&n.UnknownStatus, "u", "", "STATUS for UNKNOWN result")
+	flags.BoolVar(&n.Substitute, "substitute", false, "Substitute output text as well")
+	flags.BoolVar(&n.Substitute, "s", false, "Substitute output text as well")
 }
 
 func (n *Negate) Parse(args []string) error {

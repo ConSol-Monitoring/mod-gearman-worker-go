@@ -114,13 +114,13 @@ func startEmbeddedPerl(config *configurationStruct) {
 	ePNServerStopQueue.Store(pid, daemon)
 	ePNServer = daemon
 
-	go func(d *EPNDaemon) {
+	go func(daemon *EPNDaemon) {
 		defer logPanicExit()
 		err2 := cmd.Wait()
 		if err2 != nil {
 			logger.Errorf("epn server errored: %w: %s", err2, err2.Error())
 		}
-		d.Stop(0)
+		daemon.Stop(0)
 	}(daemon)
 
 	// wait till socket appears

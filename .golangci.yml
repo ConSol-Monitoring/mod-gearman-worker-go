@@ -1,4 +1,9 @@
 linters-settings:
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
   gocyclo:
     min-complexity: 19
   goconst:
@@ -6,6 +11,8 @@ linters-settings:
     min-occurrences: 5
   lll:
     line-length: 120
+  gomoddirectives:
+    replace-local: true
   govet:
     check-shadowing: true
     settings:
@@ -20,39 +27,32 @@ linters-settings:
           - Panicf
 linters:
   enable-all: true
+  fast: false
   disable:
-    - maligned
-    - prealloc
-    - nakedret
-    - gochecknoglobals
-    - errcheck
-    - lll
-    - gochecknoinits
-    - dupl
-    - funlen
-    - wsl
-    - exhaustive
-    - gofumpt
-    - nlreturn
+    - cyclop
+    - depguard
     - exhaustivestruct
     - exhaustruct
-    - errorlint
-    - paralleltest
+    - gochecknoglobals
+    - gochecknoinits
     - godot
-    - forbidigo
+    - gofumpt
     - ifshort
-    - cyclop
-    - perfsprint
-    - promlinter
-    - varnamelen
-    - nonamedreturns
-    - tagliatelle
-    - forcetypeassert
-    - depguard
-    - mirror
     - interfacer
-  fast: false
-
+    - maligned
+    - nonamedreturns
+    - paralleltest
+    - perfsprint
+    - tagliatelle
+    - testpackage
+    - wsl
+    # deprecated
+    - deadcode
+    - structcheck
+    - varcheck
+    - scopelint
+    - nosnakecase
+    - golint
 issues:
   max-same-issues: 0
   exclude-use-default: true
@@ -79,8 +79,6 @@ issues:
     - 'Magic number: 0664\D '
     - 'Magic number: 100000\D '
     - 'Magic number: 65536\D '
-    - 'Top level comment should end in a period'
-    - 'package should be `modgearman_test` instead of `modgearman`'
     - 'Expect WriteFile permissions to be 0600 or less'
     - 'err113:'
     - 'G204: Subprocess launched'
@@ -91,6 +89,7 @@ issues:
     - 'O_CREATE contains underscore'
     - 'Duplicate words.*sadhajshdka'
     - 'FactorLog.*does not support error-wrapping directive'
+    - 'local replacement are not allowed: pkg/'
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go

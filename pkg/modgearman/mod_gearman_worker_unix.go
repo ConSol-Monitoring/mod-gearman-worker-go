@@ -63,7 +63,7 @@ func setSysProcAttr(cmd *exec.Cmd) {
 	}
 }
 
-func processTimeoutKill(p *os.Process) {
+func processTimeoutKill(proc *os.Process) {
 	go func(pid int) {
 		// kill the process itself and the hole process group
 		syscall.Kill(-pid, syscall.SIGTERM)
@@ -73,7 +73,7 @@ func processTimeoutKill(p *os.Process) {
 		time.Sleep(1 * time.Second)
 
 		syscall.Kill(-pid, syscall.SIGKILL)
-	}(p.Pid)
+	}(proc.Pid)
 }
 
 func getMaxOpenFiles() uint64 {
