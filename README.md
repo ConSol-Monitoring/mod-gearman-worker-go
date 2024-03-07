@@ -7,9 +7,8 @@
 this is a Mod-Gearman-Worker rewrite in golang. It supports all original
 command line parameters and therefor can be replace the c-worker without any
 config changes.
-Since it uses a go routines model instead of preforking workers, it uses much
-less ressources than the original worker.
-
+Since it uses a go routines model instead of pre-forking workers, it uses much
+less resources than the original worker.
 
 ## Embedded Perl
 
@@ -17,6 +16,7 @@ This worker does support embedded perl as well. This is done by a (managed) perl
 epn daemon which will handle the perl plugins.
 
 ## Negate
+
 To make checks more efficient, this worker has implemented its own negate plugin.
 Whenever the command line starts with something like .../negate (if the basename
 of the first command equals "negate") it will use the internal negate instead of
@@ -30,18 +30,12 @@ Prometheus metrics will get exported when started with the `prometheus-server` o
 
     %> .../mod_gearman_worker --prometheus_server=127.0.0.1:8001
 
-
 ## Build Instructions / Installation
 
-Either use `go install` like:
+Clone the repository and run the build make target:
 
-    %> go install github.com/consol-monitoring/mod-gearman-worker-go/cmd/mod_gearman_worker
-    %> go install github.com/consol-monitoring/mod-gearman-worker-go/cmd/send_gearman
-
-Or clone the repository and build it manually:
-
-    %> go get github.com/consol-monitoring/mod-gearman-worker-go
-    %> cd $GOPATH/src/ConSol/mod-gearman-worker-go
+    %> git clone http://github.com/consol-monitoring/mod-gearman-worker-go
+    %> cd mod-gearman-worker-go
     %> make
 
 ### Windows Builds
