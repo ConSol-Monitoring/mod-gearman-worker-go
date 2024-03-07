@@ -28,10 +28,10 @@ jobs:
     - name: extract mod_gearman_worker
       uses: actions/upload-artifact@v4
       with:
-        name: mod_gearman_worker-go${{ matrix.go-version }}
+        name: mod_gearman_worker_linux_amd64_go${{ matrix.go-version }}
         path: mod_gearman_worker
     - name: extract built send_gearman.exe
       uses: actions/upload-artifact@v4
       with:
-        name: send_gearman.windows.amd64.exe${{ matrix.go-version }}
+        name: send_gearman_windows_amd64_go${{ matrix.go-version }}.exe
         path: send_gearman.windows.amd64.exe
