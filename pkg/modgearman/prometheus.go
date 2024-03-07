@@ -68,7 +68,7 @@ var (
 		[]string{"description", "exec"})
 )
 
-func startPrometheus(config *configurationStruct) (prometheusListener *net.Listener) {
+func startPrometheus(config *config) (prometheusListener net.Listener) {
 	registerMetrics()
 	build := ""
 	if config.build != "" {
@@ -77,27 +77,29 @@ func startPrometheus(config *configurationStruct) (prometheusListener *net.Liste
 	infoCount.WithLabelValues(fmt.Sprintf("%s%s", VERSION, build), config.identifier).Set(1)
 
 	if config.prometheusServer == "" {
-		return
+		return nil
 	}
 
-	l, err := net.Listen("tcp", config.prometheusServer)
+	listen, err := net.Listen("tcp", config.prometheusServer)
 	if err != nil {
-		logger.Fatalf("starting prometheus exporter failed: %s", err)
+		log.Fatalf("starting prometheus exporter failed: %s", err)
 	}
-	prometheusListener = &l
+	prometheusListener = listen
 	go func() {
 		// make sure we log panics properly
 		defer logPanicExit()
 		mux := http.NewServeMux()
 		handler := promhttp.InstrumentMetricHandler(
-			prometheus.DefaultRegisterer, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
+			prometheus.DefaultRegisterer,
+			promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
 		)
 		mux.Handle("/metrics", handler)
-		http.Serve(l, mux)
-		logger.Debugf("prometheus listener %s stopped", config.prometheusServer)
+		logError(http.Serve(listen, mux))
+		log.Debugf("prometheus listener %s stopped", config.prometheusServer)
 	}()
-	logger.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
-	return
+	log.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
+
+	return prometheusListener
 }
 
 var prometheusRegistered bool
@@ -111,43 +113,43 @@ func registerMetrics() {
 
 	// register the metrics
 	if err := prometheus.Register(infoCount); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(workerCount); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(taskCounter); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(errorCounter); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(idleWorkerCount); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(workingWorkerCount); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(ballooningWorkerCount); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(userTimes); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 
 	if err := prometheus.Register(systemTimes); err != nil {
-		fmt.Println(err)
+		log.Errorf("prometheus register failed: %s", err.Error())
 	}
 }
 
-func buildExecExemplarLabels(result *answer, received *receivedStruct, basename string) prometheus.Labels {
+func buildExecExemplarLabels(result *answer, received *request, basename string) prometheus.Labels {
 	// prometheus panics if exemplars are too long, so make sure basename is small enough
 	if len(basename) > 30 {
 		basename = basename[0:30]
@@ -160,10 +162,11 @@ func buildExecExemplarLabels(result *answer, received *receivedStruct, basename 
 		"runtime_duration": fmt.Sprintf("%.5f", result.runUserDuration+result.runSysDuration),
 		"type":             received.typ,
 	}
+
 	return label
 }
 
-func updatePrometheusExecMetrics(config *configurationStruct, result *answer, received *receivedStruct, com *command) {
+func updatePrometheusExecMetrics(config *config, result *answer, received *request, com *command) {
 	if config.prometheusServer == "" {
 		return
 	}
@@ -177,6 +180,8 @@ func updatePrometheusExecMetrics(config *configurationStruct, result *answer, re
 
 	if result.returnCode > 0 {
 		exemplarLabels := buildExecExemplarLabels(result, received, basename)
-		errorCounter.WithLabelValues(received.typ, result.execType).(prometheus.ExemplarAdder).AddWithExemplar(1, exemplarLabels)
+		if exemplarAdd, ok := errorCounter.WithLabelValues(received.typ, result.execType).(prometheus.ExemplarAdder); ok {
+			exemplarAdd.AddWithExemplar(1, exemplarLabels)
+		}
 	}
 }

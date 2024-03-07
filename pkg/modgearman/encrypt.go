@@ -8,6 +8,7 @@ const EncryptionBlockSize = 16
 
 func createAnswer(value *answer, withEncrypt bool) []byte {
 	encrypted := encrypt([]byte(value.String()), withEncrypt)
+
 	return encodeBase64(encrypted)
 }
 
@@ -43,5 +44,6 @@ func encrypt(data []byte, encrypt bool) []byte {
  */
 func encodeBase64(data []byte) []byte {
 	encodedBase := b64.StdEncoding.EncodeToString(data)
+
 	return []byte(encodedBase)
 }

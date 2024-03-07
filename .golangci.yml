@@ -10,7 +10,10 @@ linters-settings:
     min-len: 3
     min-occurrences: 5
   lll:
-    line-length: 120
+    line-length: 160
+  funlen:
+    lines: 80
+    statements: 45
   gomoddirectives:
     replace-local: true
   govet:
@@ -89,10 +92,22 @@ issues:
     - 'O_CREATE contains underscore'
     - 'Duplicate words.*sadhajshdka'
     - 'FactorLog.*does not support error-wrapping directive'
+    - "Function 'dump' has too many statements"
+    - "Function 'parseConfigItem' has too many statements"
+    - "Function 'startEmbeddedPerl' has too many statements"
+    - "Function 'mainLoop' has too many statements"
+    - "Function 'mainLoop' is too long"
+    - "Function 'initConfiguration' has too many statements"
+    - "Function 'printUsage' has too many statements"
+    - "Function 'execCmd' has too many statements"
+    - "Metric: modgearmanworker_workers_total Error: non-counter metrics"
     - 'local replacement are not allowed: pkg/'
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
+    - path: _test.*\.go
       linters:
+        - errcheck
         - gomnd
         - dupword
+        - funlen
+        - lll

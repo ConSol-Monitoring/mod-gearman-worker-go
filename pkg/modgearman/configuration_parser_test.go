@@ -6,18 +6,19 @@ import (
 )
 
 func TestReadSettingsFile(t *testing.T) {
-	var testConfig configurationStruct
+	var testConfig config
 
 	// set default values so we can check if they get overwritten
 	testConfig.setDefaultValues()
 
-	f, err := os.Create("testConfigFile")
+	file, err := os.Create("testConfigFile")
 	if err != nil {
 		t.Errorf("could not create config testfile")
+
 		return
 	}
 
-	f.Write([]byte(`#ich bin ein kommentar also werde ich ignoriert
+	file.WriteString(`#ich bin ein kommentar also werde ich ignoriert
 debug=2
 servicegroups=a,b,c
 servicegroups=d
@@ -26,7 +27,7 @@ server=hostname:4730
 server=:4730
 server=hostname
 server=hostname2
-`))
+`)
 
 	testConfig.readSettingsFile("testConfigFile")
 	testConfig.removeDuplicates()
@@ -59,7 +60,7 @@ server=hostname2
 }
 
 func TestReadSettingsPath(t *testing.T) {
-	var testConfig configurationStruct
+	var testConfig config
 
 	// set default values so we can check if they get overwritten
 	testConfig.setDefaultValues()
@@ -67,16 +68,18 @@ func TestReadSettingsPath(t *testing.T) {
 	err := os.Mkdir("testConfigFolder", 0o755)
 	if err != nil {
 		t.Errorf("could not create config test folder")
+
 		return
 	}
 
-	f, err := os.Create("testConfigFolder/file.cfg")
+	file, err := os.Create("testConfigFolder/file.cfg")
 	if err != nil {
 		t.Errorf("could not create config testfile")
+
 		return
 	}
 
-	f.Write([]byte(`#ich bin ein kommentar also werde ich ignoriert
+	file.WriteString(`#ich bin ein kommentar also werde ich ignoriert
 debug=2
 servicegroups=a,b,c
 servicegroups=d
@@ -85,7 +88,7 @@ server=hostname:4730
 server=:4730
 server=hostname
 server=hostname2
-`))
+`)
 
 	testConfig.readSettingsPath("testConfigFolder")
 	testConfig.removeDuplicates()

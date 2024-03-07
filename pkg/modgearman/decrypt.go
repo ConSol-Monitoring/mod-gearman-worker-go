@@ -12,7 +12,7 @@ import (
 
 var myCipher cipher.Block
 
-type receivedStruct struct {
+type request struct {
 	typ                string
 	resultQueue        string
 	hostName           string
@@ -27,7 +27,7 @@ type receivedStruct struct {
 	Canceled           bool
 }
 
-func (r *receivedStruct) String() string {
+func (r *request) String() string {
 	return fmt.Sprintf(
 		"\n\t type: %s\n"+
 			"\t result_queue: %s\n"+
@@ -53,10 +53,12 @@ func createCipher(key []byte, encrypt bool) cipher.Block {
 	if encrypt {
 		newCipher, err := aes.NewCipher(key)
 		if err != nil {
-			logger.Panic(err)
+			log.Panic(err)
 		}
+
 		return newCipher
 	}
+
 	return nil
 }
 
@@ -67,6 +69,7 @@ func createCipher(key []byte, encrypt bool) cipher.Block {
  */
 func decodeBase64(data string) []byte {
 	decodedBase, _ := b64.StdEncoding.DecodeString(data)
+
 	return decodedBase
 }
 
@@ -74,7 +77,7 @@ func decodeBase64(data string) []byte {
 *  Decodes the bytes from data with the given key
 *  returns a received struct
  */
-func decrypt(data []byte, encryption bool) (*receivedStruct, error) {
+func decrypt(data []byte, encryption bool) (*request, error) {
 	if !encryption {
 		return createReceived(data)
 	}
@@ -93,8 +96,8 @@ func decrypt(data []byte, encryption bool) (*receivedStruct, error) {
 *@input: the bytes received from the gearman
 *@return: a received struct containing the values received
  */
-func createReceived(input []byte) (*receivedStruct, error) {
-	var result receivedStruct
+func createReceived(input []byte) (*request, error) {
+	var result request
 
 	if !bytes.HasPrefix(input, []byte("type=")) {
 		return nil, fmt.Errorf("decrypt error, invalid data package received, check encryption key")
@@ -123,6 +126,7 @@ func parseTimeStringToFloat64(input string) float64 {
 	if err != nil {
 		return 0
 	}
+
 	return floatValue
 }
 
@@ -146,5 +150,6 @@ func createMap(input []byte) map[string]string {
 			resultMap[access[0]] = access[1]
 		}
 	}
+
 	return resultMap
 }

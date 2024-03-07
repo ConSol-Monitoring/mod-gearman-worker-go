@@ -10,19 +10,19 @@ import (
 )
 
 func TestCreateLogger(t *testing.T) {
-	config := configurationStruct{}
+	cfg := config{}
 	file, err := os.Create("loggertest")
 	if err != nil {
 		t.Errorf("could not create testfile")
 	}
-	config.logfile = "loggertest"
-	config.logmode = "automatic"
-	config.debug = 2
+	cfg.logfile = "loggertest"
+	cfg.logmode = "automatic"
+	cfg.debug = 2
 
-	createLogger(&config)
+	createLogger(&cfg)
 
-	logger.Error("testError")
-	logger.Debug("testDebug")
+	log.Error("testError")
+	log.Debug("testDebug")
 
 	content, _ := io.ReadAll(file)
 
@@ -40,8 +40,8 @@ func TestCreateLogger(t *testing.T) {
 	}
 
 	// test with file that does not exist
-	logger = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
-	createLogger(&config)
+	log = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
+	createLogger(&cfg)
 	// remove the file again
 	err = os.Remove("loggertest")
 	if err != nil {
@@ -49,12 +49,12 @@ func TestCreateLogger(t *testing.T) {
 	}
 
 	// test logmode
-	config.debug = 0 // only errors
-	createLogger(&config)
+	cfg.debug = 0 // only errors
+	createLogger(&cfg)
 
-	logger.Error("TestError")
-	logger.Debug("TestDebug")
-	logger.Info("TestInfo")
+	log.Error("TestError")
+	log.Debug("TestDebug")
+	log.Info("TestInfo")
 
 	file, err = os.Open("loggertest")
 	if err != nil {

@@ -6,35 +6,40 @@ import (
 	"syscall"
 )
 
-func setupUsrSignalChannel(osSignalUsrChannel chan os.Signal) {
+func setupUsrSignalChannel(_ chan os.Signal) {
 	// not supported on windows
 }
 
-func mainSignalHandler(sig os.Signal, config *configurationStruct) MainStateType {
+func mainSignalHandler(sig os.Signal, _ *config) MainStateType {
 	switch sig {
 	case syscall.SIGTERM:
-		logger.Infof("got sigterm, quiting gracefully")
+		log.Infof("got sigterm, exiting gracefully")
+
 		return ShutdownGraceFully
-	case syscall.SIGINT:
-		fallthrough
-	case os.Interrupt:
-		logger.Infof("got sigint, quitting")
+	case syscall.SIGINT, os.Interrupt:
+		log.Infof("got sigint, quitting")
+
 		return Shutdown
 	case syscall.SIGHUP:
-		logger.Infof("got sighup, reloading configuration...")
+		log.Infof("got sighup, reloading configuration...")
+
 		return Reload
+	case syscall.SIGSEGV:
+		logThreadDump()
+		os.Exit(1)
 	default:
-		logger.Warnf("Signal not handled: %v", sig)
+		log.Warnf("Signal not handled: %v", sig)
 	}
+
 	return Resume
 }
 
-func setSysProcAttr(cmd *exec.Cmd) {
+func setSysProcAttr(_ *exec.Cmd) {
 	// not supported on windows
 }
 
 func processTimeoutKill(p *os.Process) {
-	p.Kill()
+	logDebug(p.Kill())
 }
 
 func getMaxOpenFiles() uint64 {

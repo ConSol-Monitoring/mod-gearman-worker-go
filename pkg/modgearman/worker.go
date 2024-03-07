@@ -1,6 +1,7 @@
 package modgearman
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -14,15 +15,15 @@ type worker struct {
 	what       string
 	worker     *libworker.Worker
 	activeJobs int
-	config     *configurationStruct
+	config     *config
 	mainWorker *mainWorker
-	jobs       []*receivedStruct
+	jobs       []*request
 	lock       sync.RWMutex
 }
 
 // creates a new worker and returns a pointer to it
-func newWorker(what string, configuration *configurationStruct, mainWorker *mainWorker) *worker {
-	logger.Tracef("starting new %sworker", what)
+func newWorker(what string, configuration *config, mainWorker *mainWorker) *worker {
+	log.Tracef("starting new %sworker", what)
 	worker := &worker{
 		what:       what,
 		activeJobs: 0,
@@ -31,10 +32,10 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 	}
 	worker.id = fmt.Sprintf("%p", worker)
 
-	w := libworker.New(libworker.OneByOne)
-	worker.worker = w
+	wrk := libworker.New(libworker.OneByOne)
+	worker.worker = wrk
 
-	w.ErrorHandler = func(e error) {
+	wrk.ErrorHandler = func(e error) {
 		worker.errorHandler(e)
 	}
 
@@ -50,84 +51,87 @@ func newWorker(what string, configuration *configurationStruct, mainWorker *main
 		if status != "" {
 			continue
 		}
-		err := w.AddServer("tcp", address)
+		err := wrk.AddServer("tcp", address)
 		if err != nil {
 			worker.mainWorker.SetServerStatus(address, err.Error())
+
 			return nil
 		}
 	}
 
 	// check if worker is ready
-	if err := w.Ready(); err != nil {
-		logger.Debugf("worker not ready closing again: %w", err)
+	if err := wrk.Ready(); err != nil {
+		log.Debugf("worker not ready closing again: %w", err)
 		worker.Shutdown()
+
 		return nil
 	}
 
 	// start the worker
 	go func() {
 		defer logPanicExit()
-		w.Work()
+		wrk.Work()
 	}()
 
 	return worker
 }
 
-func (worker *worker) registerFunctions(configuration *configurationStruct) {
-	w := worker.worker
+func (worker *worker) registerFunctions(configuration *config) {
+	wrk := worker.worker
 	// specifies what events the worker listens
 	switch worker.what {
 	case "check":
 		if worker.config.eventhandler {
-			w.AddFunc("eventhandler", worker.doWork, libworker.Unlimited)
+			logError(wrk.AddFunc("eventhandler", worker.doWork, libworker.Unlimited))
 		}
 		if worker.config.hosts {
-			w.AddFunc("host", worker.doWork, libworker.Unlimited)
+			logError(wrk.AddFunc("host", worker.doWork, libworker.Unlimited))
 		}
 		if worker.config.services {
-			w.AddFunc("service", worker.doWork, libworker.Unlimited)
+			logError(wrk.AddFunc("service", worker.doWork, libworker.Unlimited))
 		}
 		if worker.config.notifications {
-			w.AddFunc("notification", worker.doWork, libworker.Unlimited)
+			logError(wrk.AddFunc("notification", worker.doWork, libworker.Unlimited))
 		}
 
 		// register for the hostgroups
 		if len(worker.config.hostgroups) > 0 {
 			for _, element := range worker.config.hostgroups {
-				w.AddFunc("hostgroup_"+element, worker.doWork, libworker.Unlimited)
+				logError(wrk.AddFunc("hostgroup_"+element, worker.doWork, libworker.Unlimited))
 			}
 		}
 
 		// register for servicegroups
 		if len(worker.config.servicegroups) > 0 {
 			for _, element := range worker.config.servicegroups {
-				w.AddFunc("servicegroup_"+element, worker.doWork, libworker.Unlimited)
+				logError(wrk.AddFunc("servicegroup_"+element, worker.doWork, libworker.Unlimited))
 			}
 		}
 	case "status":
 		statusQueue := fmt.Sprintf("worker_%s", configuration.identifier)
-		w.AddFunc(statusQueue, worker.returnStatus, libworker.Unlimited)
+		logError(wrk.AddFunc(statusQueue, worker.returnStatus, libworker.Unlimited))
 	default:
-		logger.Panicf("type not implemented: %s", worker.what)
+		log.Panicf("type not implemented: %s", worker.what)
 	}
 }
 
 func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	res = []byte("OK")
-	logger.Tracef("worker got a job: %s", job.Handle())
+	log.Tracef("worker got a job: %s", job.Handle())
 
 	worker.activeJobs++
 
 	received, err := decrypt((decodeBase64(string(job.Data()))), worker.config.encryption)
 	if err != nil {
-		logger.Errorf("decrypt failed: %w", err)
+		log.Errorf("decrypt failed: %w", err)
 		worker.activeJobs--
-		return
+
+		return nil, err
 	}
 	worker.mainWorker.tasks++
 
 	logJob(job, received, "incoming", nil)
-	logger.Trace(received)
+	log.Trace(received)
 
 	worker.addJob(received)
 	defer worker.removeJob(received)
@@ -138,10 +142,12 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 		if received.Canceled {
 			logJob(job, received, "canceled", answer)
 			res = make([]byte, 0)
+
 			return res, fmt.Errorf("job has been canceled")
 		}
 		logJob(job, received, "finished", answer)
-		return
+
+		return res, nil
 	}
 
 	finChan := make(chan bool, 1)
@@ -168,15 +174,17 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	for {
 		select {
 		case <-finChan:
-			return
+			return res, nil
 		case <-ticker.C:
 			// check again if are there open files left for ballooning
 			if worker.startballooning() {
-				logger.Debugf("job: %s runs for more than %d seconds, backgrounding...", job.Handle(), worker.config.backgroundingThreshold)
+				log.Debugf("job: %s runs for more than %d seconds, backgrounding...",
+					job.Handle(), worker.config.backgroundingThreshold)
 				worker.mainWorker.curBallooningWorker++
 				ballooningWorkerCount.Set(float64(worker.mainWorker.curBallooningWorker))
 				received.ballooning = true
-				return
+
+				return res, nil
 			}
 		}
 	}
@@ -196,7 +204,8 @@ func (worker *worker) considerballooning() bool {
 	return true
 }
 
-// startballooning returns true if conditions for ballooning are met (backgrounding jobs after backgroundingThreshold of seconds)
+// startballooning returns true if conditions for ballooning are met
+// (backgrounding jobs after backgroundingThreshold of seconds)
 func (worker *worker) startballooning() bool {
 	if worker.config.backgroundingThreshold <= 0 {
 		return false
@@ -220,16 +229,18 @@ func (worker *worker) startballooning() bool {
 		return false
 	}
 
-	logger.Debugf("ballooning: cur: %d max: %d", worker.mainWorker.curBallooningWorker, (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker))
+	log.Debugf("ballooning: cur: %d max: %d",
+		worker.mainWorker.curBallooningWorker, (worker.mainWorker.maxPossibleWorker - worker.config.maxWorker))
+
 	return true
 }
 
 // executeJob executes the job and handles sending the result
-func (worker *worker) executeJob(received *receivedStruct) *answer {
+func (worker *worker) executeJob(received *request) *answer {
 	result := readAndExecute(received, worker.config)
 
 	if !received.Canceled && received.resultQueue != "" {
-		logger.Tracef("result:\n%s", result)
+		log.Tracef("result:\n%s", result)
 		enqueueServerResult(result)
 		enqueueDupServerResult(worker.config, result)
 	}
@@ -239,21 +250,21 @@ func (worker *worker) executeJob(received *receivedStruct) *answer {
 
 // errorHandler gets called if the libworker worker throws an error
 func (worker *worker) errorHandler(err error) {
-	switch err2 := err.(type) {
-	case *libworker.WorkerDisconnectError:
-		_, addr := err2.Server()
-		logger.Debugf("worker disconnect: %w from %s", err, addr)
-		worker.mainWorker.SetServerStatus(addr, err2.Error())
-	default:
-		logger.Errorf("worker error: %w: %s", err, err.Error())
-		logger.Errorf("%s", debug.Stack())
+	var discoErr *libworker.WorkerDisconnectError
+	if errors.As(err, &discoErr) {
+		_, addr := discoErr.Server()
+		log.Debugf("worker disconnect: %w from %s", err, addr)
+		worker.mainWorker.SetServerStatus(addr, discoErr.Error())
+	} else {
+		log.Errorf("worker error: %w: %s", err, err.Error())
+		log.Errorf("%s", debug.Stack())
 	}
 	worker.Shutdown()
 }
 
 // Shutdown and deregister this worker
 func (worker *worker) Shutdown() {
-	logger.Debugf("worker shutting down")
+	log.Debugf("worker shutting down")
 	defer func() {
 		if worker.mainWorker != nil && worker.mainWorker.running {
 			worker.mainWorker.unregisterWorker(worker)
@@ -277,7 +288,7 @@ func (worker *worker) Cancel() {
 	if worker.activeJobs == 0 {
 		return
 	}
-	logger.Debugf("worker %s cancling current jobs", worker.id)
+	log.Debugf("worker %s cancling current jobs", worker.id)
 	worker.lock.Lock()
 	for _, j := range worker.jobs {
 		if j.Cancel != nil {
@@ -287,31 +298,33 @@ func (worker *worker) Cancel() {
 	worker.lock.Unlock()
 }
 
-func logJob(job libworker.Job, received *receivedStruct, prefix string, result *answer) {
+func logJob(job libworker.Job, received *request, prefix string, result *answer) {
 	suffix := ""
 	if result != nil {
-		suffix = fmt.Sprintf(" (took: %.3fs | rc: %d | exec: %s)", result.finishTime-result.startTime, result.returnCode, result.execType)
+		suffix = fmt.Sprintf(" (took: %.3fs | rc: %d | exec: %s)",
+			result.finishTime-result.startTime, result.returnCode, result.execType)
 	}
 	switch {
 	case received.serviceDescription != "":
-		logger.Debugf("%s %-7s - handle: %s - host: %20s - service: %s%s", prefix, received.typ, job.Handle(), received.hostName, received.serviceDescription, suffix)
+		log.Debugf("%s %-7s - handle: %s - host: %20s - service: %s%s",
+			prefix, received.typ, job.Handle(), received.hostName, received.serviceDescription, suffix)
 	case received.hostName != "":
-		logger.Debugf("%s %-7s - handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
+		log.Debugf("%s %-7s - handle: %s - host: %20s%s", prefix, received.typ, job.Handle(), received.hostName, suffix)
 	default:
-		logger.Debugf("%s %-7s - handle: %s%s", prefix, received.typ, job.Handle(), suffix)
-		if result != nil && logger.IsV(2) {
-			logger.Tracef("Output:\n%s", result.output)
+		log.Debugf("%s %-7s - handle: %s%s", prefix, received.typ, job.Handle(), suffix)
+		if result != nil && log.IsV(2) {
+			log.Tracef("Output:\n%s", result.output)
 		}
 	}
 }
 
-func (worker *worker) addJob(received *receivedStruct) {
+func (worker *worker) addJob(received *request) {
 	worker.lock.Lock()
 	worker.jobs = append(worker.jobs, received)
 	worker.lock.Unlock()
 }
 
-func (worker *worker) removeJob(received *receivedStruct) {
+func (worker *worker) removeJob(received *request) {
 	worker.lock.Lock()
 	for i, j := range worker.jobs {
 		if j == received {

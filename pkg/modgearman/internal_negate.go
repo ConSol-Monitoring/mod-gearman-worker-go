@@ -104,19 +104,22 @@ func ParseNegate(com *command) {
 		// main command must start with an /
 		if strings.HasPrefix(arg, "/") {
 			mainProgIndex = i
+
 			break
 		}
 	}
 
 	if mainProgIndex == -1 {
-		logger.Debugf("cannot parse negate args, didn't find main program")
+		log.Debugf("cannot parse negate args, didn't find main program")
+
 		return
 	}
 
 	negate := NewNegate()
 	err := negate.Parse(com.Args[0:mainProgIndex])
 	if err != nil {
-		logger.Debugf("cannot parse negate args: %w: %s", err, err.Error())
+		log.Debugf("cannot parse negate args: %w: %s", err, err.Error())
+
 		return
 	}
 	com.Command = com.Args[mainProgIndex]
@@ -137,17 +140,17 @@ func (n *Negate) Apply(result *answer) {
 	}
 }
 
-func (n *Negate) ApplyNewCode(result *answer, from string, to string) {
+func (n *Negate) ApplyNewCode(result *answer, from, target string) {
 	// no new value set at all
-	if to == "" {
+	if target == "" {
 		return
 	}
-	result.returnCode = n.Status2Int(to)
+	result.returnCode = n.Status2Int(target)
 
 	if !n.Substitute {
 		return
 	}
-	result.output = strings.Replace(result.output, from, to, 1)
+	result.output = strings.Replace(result.output, from, target, 1)
 }
 
 func (n *Negate) SetTimeoutReturnCode(result *answer) {

@@ -5,9 +5,9 @@ import (
 	"sync/atomic"
 )
 
-func runTestCmd(conf *configurationStruct, args []string) (rc int, output string) {
+func runTestCmd(conf *config, args []string) (rc int, output string) {
 	conf.enableEmbeddedPerl = true
-	check := &receivedStruct{
+	check := &request{
 		typ:                "service",
 		hostName:           "test check from commandline",
 		serviceDescription: "test",
@@ -16,7 +16,7 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 	if len(args) == 0 {
 		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
 	}
-	logger.Debugf("test cmd: %s\n", check.commandLine)
+	log.Debugf("test cmd: %s\n", check.commandLine)
 
 	// parse command line to see if we need to start the epn daemon
 	command := parseCommand(check.commandLine, conf)
@@ -29,7 +29,8 @@ func runTestCmd(conf *configurationStruct, args []string) (rc int, output string
 	res := readAndExecute(check, conf)
 	rc = res.returnCode
 	output = res.output
-	logger.Debugf("test cmd rc: %d\n", rc)
+	log.Debugf("test cmd rc: %d\n", rc)
+
 	return
 }
 
@@ -41,5 +42,6 @@ func buildCommandLine(args []string) string {
 		a = strings.ReplaceAll(a, `"`, `\"`)
 		cmd = cmd + ` "` + a + `"`
 	}
+
 	return cmd
 }

@@ -7,12 +7,12 @@ import (
 )
 
 // creates a new status worker and returns a pointer to it
-func newStatusWorker(configuration *configurationStruct, mainWorker *mainWorker) *worker {
+func newStatusWorker(configuration *config, mainWorker *mainWorker) *worker {
 	return newWorker("status", configuration, mainWorker)
 }
 
 func (worker *worker) returnStatus(job libworker.Job) (result []byte, err error) {
-	logger.Debugf("status worker got a job: %s", job.Handle())
+	log.Debugf("status worker got a job: %s", job.Handle())
 
 	err = job.Err()
 	if err != nil {
@@ -20,7 +20,7 @@ func (worker *worker) returnStatus(job libworker.Job) (result []byte, err error)
 	}
 
 	received := string(job.Data())
-	logger.Tracef("job data: %s", received)
+	log.Tracef("job data: %s", received)
 
 	result = []byte(fmt.Sprintf("%s has %d worker and is working on %d jobs. Version: %s|worker=%d;;;%d;%d jobs=%dc",
 		worker.config.identifier,

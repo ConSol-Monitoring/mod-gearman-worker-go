@@ -21,7 +21,7 @@ func BenchmarkJobs(b *testing.B) {
 	b.StopTimer()
 	resultChannel = make(chan bool, b.N)
 	resultsTotal := 0
-	config := configurationStruct{
+	cfg := config{
 		server:     []string{"127.0.0.1:54730"},
 		key:        "testkey",
 		encryption: true,
@@ -31,10 +31,16 @@ func BenchmarkJobs(b *testing.B) {
 		jobTimeout: 10,
 		debug:      0,
 	}
-	config.setDefaultValues()
-	config.debug = -1
+	cfg.setDefaultValues()
+	cfg.debug = -1
 	disableLogging()
-	cmd := exec.Command("gearmand", "--port", "54730", "--listen", "127.0.0.1", "--log-file", "stderr", "--verbose", "DEBUG")
+	cmd := exec.Command(
+		"gearmand",
+		"--port", "54730",
+		"--listen", "127.0.0.1",
+		"--log-file", "stderr",
+		"--verbose", "DEBUG",
+	)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -44,8 +50,8 @@ func BenchmarkJobs(b *testing.B) {
 	defer cmd.Process.Kill()
 	time.Sleep(1 * time.Second)
 
-	key := getKey(&config)
-	myCipher = createCipher(key, config.encryption)
+	key := getKey(&cfg)
+	myCipher = createCipher(key, cfg.encryption)
 	testData := fmt.Sprintf("type=host\nresult_queue=%s\nhost_name=%s\nstart_time=%f\ncore_time=%f\ncommand_line=%s\n",
 		"results",
 		"testhost",
@@ -69,7 +75,7 @@ func BenchmarkJobs(b *testing.B) {
 	workerMap := make(map[string]*worker)
 	osSignalChannel := make(chan os.Signal, 1)
 	go func() {
-		mainLoop(&config, osSignalChannel, &workerMap, 0)
+		mainLoop(&cfg, osSignalChannel, workerMap, 0)
 	}()
 	defer func() {
 		osSignalChannel <- syscall.SIGINT
@@ -104,5 +110,6 @@ func countResults(job libworker.Job) (result []byte, err error) {
 	}
 	resultChannel <- true
 	result = []byte("")
+
 	return
 }

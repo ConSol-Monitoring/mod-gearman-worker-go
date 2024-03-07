@@ -32,7 +32,7 @@ type command struct {
 	InternalCheck InternalCheck
 }
 
-func parseCommand(rawCommand string, config *configurationStruct) *command {
+func parseCommand(rawCommand string, config *config) *command {
 	parsed := &command{
 		ExecType: Shell,
 		Command:  rawCommand,
@@ -42,7 +42,7 @@ func parseCommand(rawCommand string, config *configurationStruct) *command {
 
 	envs, args, err := shelltoken.SplitLinux(rawCommand)
 	if err != nil {
-		logger.Tracef("failed to parse shell args: %w: %s", err, err.Error())
+		log.Tracef("failed to parse shell args: %w: %s", err, err.Error())
 		parsed.Args = []string{"-c", parsed.Command}
 		parsed.Command = "/bin/sh"
 

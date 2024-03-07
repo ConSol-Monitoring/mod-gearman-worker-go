@@ -31,7 +31,9 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.50.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

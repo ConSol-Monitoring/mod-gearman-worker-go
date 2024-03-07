@@ -10,7 +10,7 @@ import (
 type resultServerConsumer struct {
 	queue              chan *answer
 	terminationRequest chan bool
-	config             *configurationStruct
+	config             *config
 }
 
 var (
@@ -18,13 +18,13 @@ var (
 	resultServerQueue     chan *answer
 )
 
-func initializeResultServerConsumers(config *configurationStruct) {
+func initializeResultServerConsumers(config *config) {
 	numResultServer := ResultServerWorker
 	if numResultServer > config.maxWorker {
 		numResultServer = config.maxWorker
 	}
 
-	logger.Debugf("creating %d result worker for: [%s]", numResultServer, strings.Join(config.server, ", "))
+	log.Debugf("creating %d result worker for: [%s]", numResultServer, strings.Join(config.server, ", "))
 	resultServerConsumers = make([]*resultServerConsumer, 0, numResultServer)
 
 	// all result worker share one queue
@@ -44,11 +44,12 @@ func initializeResultServerConsumers(config *configurationStruct) {
 }
 
 func terminateResultServerConsumers() bool {
-	logger.Debugf("Terminating ResultServers")
+	log.Debugf("Terminating ResultServers")
 	for i := range resultServerConsumers {
 		resultServerConsumers[i].terminationRequest <- true
 	}
 	resultServerConsumers = nil
+
 	return true
 }
 
@@ -61,6 +62,7 @@ func runResultServerConsumer(server *resultServerConsumer) {
 			if curClient != nil {
 				curClient.Close()
 			}
+
 			return
 		case result = <-server.queue:
 			var err error
@@ -69,42 +71,44 @@ func runResultServerConsumer(server *resultServerConsumer) {
 			shouldExit, sendSuccess, curClient, err = sendResult(server, curClient, result)
 
 			if !sendSuccess && err != nil {
-				logger.Errorf("failed to send back result: %w", err)
+				log.Errorf("failed to send back result: %w", err)
 			}
 			if shouldExit {
 				return
 			}
+
 			break
 		}
 	}
 }
 
-func sendResult(server *resultServerConsumer, curClient *client.Client, result *answer) (shouldExit bool, sendSuccess bool, retClient *client.Client, err error) {
+func sendResult(server *resultServerConsumer, curClient *client.Client, result *answer) (shouldExit, success bool, retClient *client.Client, err error) {
 	// send result back to any server
-	sendSuccess = false
+	success = false
 	retries := 0
 	for {
-		var c *client.Client
+		var clt *client.Client
 		for _, address := range server.config.server {
-			c, err = sendAnswer(curClient, result, address, server.config.encryption)
+			clt, err = sendAnswer(curClient, result, address, server.config.encryption)
 			if err == nil {
-				curClient = c
-				sendSuccess = true
+				curClient = clt
+				success = true
+
 				break
 			}
 			curClient = nil
-			if c != nil {
-				c.Close()
+			if clt != nil {
+				clt.Close()
 			}
 		}
-		if sendSuccess || retries > 120 {
+		if success || retries > 120 {
 			break
 		}
 		if err != nil {
 			if retries == 30 {
-				logger.Warnf("failed to send back result, will continue to retry for 2 minutes: %w", err)
+				log.Warnf("failed to send back result, will continue to retry for 2 minutes: %w", err)
 			} else {
-				logger.Tracef("still failing to send back result: %w", err)
+				log.Tracef("still failing to send back result: %w", err)
 			}
 		}
 		retries++
@@ -114,14 +118,17 @@ func sendResult(server *resultServerConsumer, curClient *client.Client, result *
 				curClient.Close()
 			}
 			shouldExit = true
-			return
+
+			return shouldExit, success, retClient, err
 		default:
 			time.Sleep(1 * time.Second)
+
 			continue
 		}
 	}
 	retClient = curClient
-	return
+
+	return shouldExit, success, retClient, err
 }
 
 func enqueueServerResult(result *answer) {

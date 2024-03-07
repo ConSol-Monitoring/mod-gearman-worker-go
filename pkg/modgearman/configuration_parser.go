@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type configurationStruct struct {
+type config struct {
 	binary                    string
 	build                     string
 	identifier                string
@@ -79,7 +79,7 @@ type configurationStruct struct {
 }
 
 // setDefaultValues sets reasonable defaults
-func (config *configurationStruct) setDefaultValues() {
+func (config *config) setDefaultValues() {
 	config.logmode = "automatic"
 	config.encryption = true
 	config.showErrorOutput = true
@@ -118,7 +118,7 @@ func (config *configurationStruct) setDefaultValues() {
 }
 
 // removeDuplicates removes duplicate entries from all string lists
-func (config *configurationStruct) removeDuplicates() {
+func (config *config) removeDuplicates() {
 	config.server = removeDuplicateStrings(config.server)
 	config.dupserver = removeDuplicateStrings(config.dupserver)
 	config.hostgroups = removeDuplicateStrings(config.hostgroups)
@@ -127,62 +127,62 @@ func (config *configurationStruct) removeDuplicates() {
 }
 
 // dump logs all config items
-func (config *configurationStruct) dump() {
-	logger.Debugf("binary                        %s\n", config.binary)
-	logger.Debugf("build                         %s\n", config.build)
-	logger.Debugf("identifier                    %s\n", config.identifier)
-	logger.Debugf("debug                         %d\n", config.debug)
-	logger.Debugf("logfile                       %s\n", config.logfile)
-	logger.Debugf("logmode                       %s\n", config.logmode)
-	logger.Debugf("server                        %v\n", config.server)
-	logger.Debugf("dupserver                     %v\n", config.dupserver)
-	logger.Debugf("eventhandler                  %v\n", config.eventhandler)
-	logger.Debugf("notifications                 %v\n", config.notifications)
-	logger.Debugf("services                      %v\n", config.services)
-	logger.Debugf("hosts                         %v\n", config.hosts)
-	logger.Debugf("hostgroups                    %v\n", config.hostgroups)
-	logger.Debugf("servicegroups                 %v\n", config.servicegroups)
-	logger.Debugf("encryption                    %v\n", config.encryption)
-	logger.Debugf("keyfile                       %s\n", config.keyfile)
-	logger.Debugf("pidfile                       %s\n", config.pidfile)
-	logger.Debugf("jobTimeout                    %ds\n", config.jobTimeout)
-	logger.Debugf("minWorker                     %d\n", config.minWorker)
-	logger.Debugf("maxWorker                     %d\n", config.maxWorker)
-	logger.Debugf("idleTimeout                   %ds\n", config.idleTimeout)
-	logger.Debugf("maxAge                        %d\n", config.maxAge)
-	logger.Debugf("spawnRate                     %d/s\n", config.spawnRate)
-	logger.Debugf("sinkRate                      %d/s\n", config.sinkRate)
-	logger.Debugf("loadLimit1                    %.2f\n", config.loadLimit1)
-	logger.Debugf("loadLimit5                    %.2f\n", config.loadLimit5)
-	logger.Debugf("loadLimit15                   %.2f\n", config.loadLimit15)
-	logger.Debugf("loadCPUMulti                  %.2f\n", config.loadCPUMulti)
-	logger.Debugf("memLimit                      %d%%\n", config.memLimit)
-	logger.Debugf("backgroundingThreshold        %ds\n", config.backgroundingThreshold)
-	logger.Debugf("showErrorOutput               %v\n", config.showErrorOutput)
-	logger.Debugf("dupResultsArePassive          %v\n", config.dupResultsArePassive)
-	logger.Debugf("dupServerBacklogQueueSize     %d\n", config.dupServerBacklogQueueSize)
-	logger.Debugf("restrictPath                  %v\n", config.restrictPath)
-	logger.Debugf("timeoutReturn                 %d\n", config.timeoutReturn)
-	logger.Debugf("daemon                        %v\n", config.daemon)
-	logger.Debugf("prometheusServer              %s\n", config.prometheusServer)
-	logger.Debugf("enableEmbeddedPerl            %v\n", config.enableEmbeddedPerl)
-	logger.Debugf("useEmbeddedPerlImplicitly     %v\n", config.useEmbeddedPerlImplicitly)
-	logger.Debugf("usePerlCache                  %v\n", config.usePerlCache)
-	logger.Debugf("p1File                        %s\n", config.p1File)
-	logger.Debugf("internal_negate               %v\n", config.internalNegate)
-	logger.Debugf("internal_check_dummy          %v\n", config.internalCheckDummy)
-	logger.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
-	logger.Debugf("worker_name_in_result         %v\n", config.workerNameInResult)
+func (config *config) dump() {
+	log.Debugf("binary                        %s\n", config.binary)
+	log.Debugf("build                         %s\n", config.build)
+	log.Debugf("identifier                    %s\n", config.identifier)
+	log.Debugf("debug                         %d\n", config.debug)
+	log.Debugf("logfile                       %s\n", config.logfile)
+	log.Debugf("logmode                       %s\n", config.logmode)
+	log.Debugf("server                        %v\n", config.server)
+	log.Debugf("dupserver                     %v\n", config.dupserver)
+	log.Debugf("eventhandler                  %v\n", config.eventhandler)
+	log.Debugf("notifications                 %v\n", config.notifications)
+	log.Debugf("services                      %v\n", config.services)
+	log.Debugf("hosts                         %v\n", config.hosts)
+	log.Debugf("hostgroups                    %v\n", config.hostgroups)
+	log.Debugf("servicegroups                 %v\n", config.servicegroups)
+	log.Debugf("encryption                    %v\n", config.encryption)
+	log.Debugf("keyfile                       %s\n", config.keyfile)
+	log.Debugf("pidfile                       %s\n", config.pidfile)
+	log.Debugf("jobTimeout                    %ds\n", config.jobTimeout)
+	log.Debugf("minWorker                     %d\n", config.minWorker)
+	log.Debugf("maxWorker                     %d\n", config.maxWorker)
+	log.Debugf("idleTimeout                   %ds\n", config.idleTimeout)
+	log.Debugf("maxAge                        %d\n", config.maxAge)
+	log.Debugf("spawnRate                     %d/s\n", config.spawnRate)
+	log.Debugf("sinkRate                      %d/s\n", config.sinkRate)
+	log.Debugf("loadLimit1                    %.2f\n", config.loadLimit1)
+	log.Debugf("loadLimit5                    %.2f\n", config.loadLimit5)
+	log.Debugf("loadLimit15                   %.2f\n", config.loadLimit15)
+	log.Debugf("loadCPUMulti                  %.2f\n", config.loadCPUMulti)
+	log.Debugf("memLimit                      %d%%\n", config.memLimit)
+	log.Debugf("backgroundingThreshold        %ds\n", config.backgroundingThreshold)
+	log.Debugf("showErrorOutput               %v\n", config.showErrorOutput)
+	log.Debugf("dupResultsArePassive          %v\n", config.dupResultsArePassive)
+	log.Debugf("dupServerBacklogQueueSize     %d\n", config.dupServerBacklogQueueSize)
+	log.Debugf("restrictPath                  %v\n", config.restrictPath)
+	log.Debugf("timeoutReturn                 %d\n", config.timeoutReturn)
+	log.Debugf("daemon                        %v\n", config.daemon)
+	log.Debugf("prometheusServer              %s\n", config.prometheusServer)
+	log.Debugf("enableEmbeddedPerl            %v\n", config.enableEmbeddedPerl)
+	log.Debugf("useEmbeddedPerlImplicitly     %v\n", config.useEmbeddedPerlImplicitly)
+	log.Debugf("usePerlCache                  %v\n", config.usePerlCache)
+	log.Debugf("p1File                        %s\n", config.p1File)
+	log.Debugf("internal_negate               %v\n", config.internalNegate)
+	log.Debugf("internal_check_dummy          %v\n", config.internalCheckDummy)
+	log.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
+	log.Debugf("worker_name_in_result         %v\n", config.workerNameInResult)
 	if config.binary == "send_gearman" {
-		logger.Debugf("returncode                    %d\n", config.returnCode)
-		logger.Debugf("message                       %s\n", config.message)
-		logger.Debugf("host                          %s\n", config.host)
-		logger.Debugf("service                       %s\n", config.service)
+		log.Debugf("returncode                    %d\n", config.returnCode)
+		log.Debugf("message                       %s\n", config.message)
+		log.Debugf("host                          %s\n", config.host)
+		log.Debugf("service                       %s\n", config.service)
 	}
 }
 
 // parses the key value pairs and stores them in the configuration struct
-func (config *configurationStruct) parseConfigItem(raw string) error {
+func (config *config) parseConfigItem(raw string) error {
 	values := strings.SplitN(raw, "=", 2)
 	if len(values) <= 1 {
 		return fmt.Errorf("parse error, expected key=value in %s", raw)
@@ -341,21 +341,21 @@ func (config *configurationStruct) parseConfigItem(raw string) error {
 	case "workaround_rc_25":
 		// skip legacy option
 	default:
-		logger.Warnf("unknown configuration option: %s", raw)
+		log.Warnf("unknown configuration option: %s", raw)
 	}
 
 	return nil
 }
 
 // read settings from file or folder
-func (config *configurationStruct) readSettingsPath(path string) error {
-	fileInfo, err := os.Stat(path)
+func (config *config) readSettingsPath(filename string) error {
+	fileInfo, err := os.Stat(filename)
 	if err != nil {
-		return fmt.Errorf("cannot read %s: %s", path, err.Error())
+		return fmt.Errorf("cannot read %s: %s", filename, err.Error())
 	}
 
 	if fileInfo.IsDir() {
-		err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
+		err = filepath.Walk(filename, func(path string, info fs.FileInfo, _ error) error {
 			if info.IsDir() {
 				return nil
 			}
@@ -367,32 +367,32 @@ func (config *configurationStruct) readSettingsPath(path string) error {
 			return config.readSettingsFile(path)
 		})
 		if err != nil {
-			return fmt.Errorf("error reading configuration from %s: %s", path, err.Error())
+			return fmt.Errorf("error reading configuration from %s: %s", filename, err.Error())
 		}
 	}
 
-	return config.readSettingsFile(path)
+	return config.readSettingsFile(filename)
 }
 
 // opens the config file and reads all key value pairs, separated through = and commented out with #
 // also reads the config files specified in the config= value
-func (config *configurationStruct) readSettingsFile(path string) error {
-	file, err := os.Open(path)
+func (config *config) readSettingsFile(filename string) error {
+	file, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("cannot read file %s: %s", path, err.Error())
+		return fmt.Errorf("cannot read file %s: %s", filename, err.Error())
 	}
 
 	scanner := bufio.NewScanner(file)
 
-	nr := 0
+	lineNr := 0
 	for scanner.Scan() {
-		nr++
+		lineNr++
 		// get line and remove whitespaces
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
 
 		// skip empty lines
-		if len(line) == 0 {
+		if line == "" {
 			continue
 		}
 
@@ -402,7 +402,7 @@ func (config *configurationStruct) readSettingsFile(path string) error {
 		}
 
 		if err := config.parseConfigItem(line); err != nil {
-			return fmt.Errorf("parse error in file %s:%d: %s", path, nr, err.Error())
+			return fmt.Errorf("parse error in file %s:%d: %s", filename, lineNr, err.Error())
 		}
 	}
 
@@ -416,9 +416,10 @@ func getInt(input string) int {
 	result, err := strconv.Atoi(input)
 	if err != nil {
 		// check if it is an float value
-		logger.Debugf("Error converting %s to int, try with float", input)
+		log.Debugf("Error converting %s to int, try with float", input)
 		result = int(getFloat(input))
 	}
+
 	return result
 }
 
@@ -428,9 +429,10 @@ func getFloat(input string) float64 {
 	}
 	result, err := strconv.ParseFloat(input, 64)
 	if err != nil {
-		logger.Errorf("error Converting %s to float", input)
+		log.Errorf("error Converting %s to float", input)
 		result = 0
 	}
+
 	return result
 }
 
@@ -438,6 +440,7 @@ func getBool(input string) bool {
 	if input == "yes" || input == "on" || input == "1" {
 		return true
 	}
+
 	return false
 }
 
@@ -451,6 +454,7 @@ func fixGearmandServerAddress(address string) string {
 	if len(parts) == 2 && parts[0] == "" {
 		return "0.0.0.0:" + parts[1]
 	}
+
 	return address
 }
 
@@ -464,5 +468,6 @@ func removeDuplicateStrings(elements []string) []string {
 			uniq = append(uniq, elements[v])
 		}
 	}
+
 	return uniq
 }

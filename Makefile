@@ -62,7 +62,7 @@ go.work: pkg/*
 	$(GO) work use . pkg/* buildtools/.
 
 dump:
-	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v dump.go | wc -l) -ne 0 ]; then \
+	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go | wc -l) -ne 0 ]; then \
 		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' pkg/modgearman/dump.go; \
 	else \
 		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/modgearman/dump.go; \
@@ -102,7 +102,7 @@ send_gearman.exe: pkg/*/*.go cmd/send_gearman/*.go
 test: dump vendor
 	$(GO) test -short -v $(TEST_FLAGS) pkg/*
 	if grep -Irn TODO: ./cmd/ ./pkg/;  then exit 1; fi
-	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v dump.go; then exit 1; fi
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
 
 # test with filter
 testf: vendor
@@ -127,7 +127,7 @@ citest: vendor
 	#
 	# Checking remaining debug calls
 	#
-	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v dump.go; then exit 1; fi
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
 	#
 	# Run other subtests
 	#
@@ -214,9 +214,12 @@ golangci: tools
 	# golangci combines a few static code analyzer
 	# See https://github.com/golangci/golangci-lint
 	#
-	set -e; for dir in $$(ls -1d pkg/* cmd); do \
+	@set -e; for dir in $$(ls -1d pkg/* cmd); do \
 		echo $$dir; \
-		( cd $$dir && golangci-lint run --timeout=5m ./... ); \
+		echo "  - GOOS=linux"; \
+		( cd $$dir && GOOS=linux golangci-lint run --timeout=5m ./... ); \
+		echo "  - GOOS=windows"; \
+		( cd $$dir && GOOS=windows golangci-lint run --timeout=5m ./... ); \
 	done
 
 govulncheck: tools

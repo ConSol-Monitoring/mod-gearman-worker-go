@@ -22,10 +22,10 @@ func TestCreateMap(t *testing.T) {
 }
 
 func TestDecrypt(t *testing.T) {
-	config := configurationStruct{}
-	config.encryption = true
-	config.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
-	key := getKey(&config)
+	cfg := config{}
+	cfg.encryption = true
+	cfg.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
+	key := getKey(&cfg)
 	myCipher = createCipher(key, true)
 	encrypted := encrypt([]byte("type=test123"), true)
 	result, _ := decrypt(encrypted, true)

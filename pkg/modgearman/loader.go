@@ -2,7 +2,6 @@ package modgearman
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 )
@@ -13,7 +12,7 @@ const (
 )
 
 // returns the secret_key as byte array from the location in the worker.cfg
-func getKey(config *configurationStruct) []byte {
+func getKey(config *config) []byte {
 	if config.encryption {
 		if config.key != "" {
 			return fixKeySize([]byte(config.key))
@@ -21,17 +20,19 @@ func getKey(config *configurationStruct) []byte {
 		if config.keyfile != "" {
 			return fixKeySize(readKeyFile(config.keyfile))
 		}
-		logger.Panic("no key set but encyption enabled!")
+		log.Panic("no key set but encyption enabled!")
+
 		return nil
 	}
+
 	return nil
 }
 
 // loads the keyfile and extracts the key, if a newline is at the end it gets cut off
-func readKeyFile(path string) []byte {
-	dat, err := os.ReadFile(path)
+func readKeyFile(filename string) []byte {
+	dat, err := os.ReadFile(filename)
 	if err != nil {
-		log.Panic("could not open keyfile")
+		log.Fatalf("could not open keyfile")
 	}
 	if len(dat) > 1 && dat[len(dat)-1] == 10 {
 		return dat[:len(dat)-1]
@@ -52,20 +53,23 @@ func fixKeySize(key []byte) []byte {
 	}
 }
 
-func openFileOrCreate(path string) (os.File, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		createDirectoryAndFile(path)
-		file, err := os.Open(path)
+func openFileOrCreate(filename string) (os.File, error) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		createDirectoryAndFile(filename)
+		file, err := os.Open(filename)
 		if err != nil {
-			logger.Errorf("could not open file %s: %w", path, err)
-			return *file, fmt.Errorf("open file %s failed: %w", path, err)
+			log.Errorf("could not open file %s: %w", filename, err)
+
+			return *file, fmt.Errorf("open file %s failed: %w", filename, err)
 		}
+
 		return *file, nil
 	}
-	file, err := os.Open(path)
+	file, err := os.Open(filename)
 	if err != nil {
-		logger.Errorf("could not open file %s: %w", path, err)
+		log.Errorf("could not open file %s: %w", filename, err)
 	}
+
 	return *file, nil
 }
 
@@ -74,16 +78,16 @@ func createDirectoryAndFile(pathe string) {
 	if directory != "" {
 		err := os.MkdirAll(directory, 0o755)
 		if err != nil {
-			logger.Fatalf("mkdir: %s", err.Error())
+			log.Fatalf("mkdir: %s", err.Error())
 		}
 		_, err = os.Create(directory + "/" + file)
 		if err != nil {
-			logger.Fatalf("open: %s", err.Error())
+			log.Fatalf("open: %s", err.Error())
 		}
 	} else {
 		_, err := os.Create(file)
 		if err != nil {
-			logger.Fatalf("open: %s", err.Error())
+			log.Fatalf("open: %s", err.Error())
 		}
 	}
 }

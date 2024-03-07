@@ -10,16 +10,16 @@ type dupServerConsumer struct {
 	queue              chan *answer
 	address            string
 	terminationRequest chan bool
-	config             *configurationStruct
+	config             *config
 }
 
 var dupServerConsumers map[string]*dupServerConsumer
 
-func initializeDupServerConsumers(config *configurationStruct) {
+func initializeDupServerConsumers(config *config) {
 	if len(config.dupserver) > 0 {
 		dupServerConsumers = make(map[string]*dupServerConsumer)
 		for _, dupAddress := range config.dupserver {
-			logger.Debugf("creating dupserverConsumer for: %s", dupAddress)
+			log.Debugf("creating dupserverConsumer for: %s", dupAddress)
 			consumer := &dupServerConsumer{
 				terminationRequest: make(chan bool),
 				queue:              make(chan *answer, config.dupServerBacklogQueueSize),
@@ -34,60 +34,62 @@ func initializeDupServerConsumers(config *configurationStruct) {
 }
 
 func terminateDupServerConsumers() bool {
-	logger.Debugf("Terminating DupServers")
+	log.Debugf("Terminating DupServers")
 	for _, consumer := range dupServerConsumers {
-		logger.Debugf("Sending DupServer TerminationRequest %s", consumer.address)
+		log.Debugf("Sending DupServer TerminationRequest %s", consumer.address)
 		consumer.terminationRequest <- true
-		logger.Debugf("DupServer Terminated %s", consumer.address)
+		log.Debugf("DupServer Terminated %s", consumer.address)
 	}
-	logger.Debugf("Completed all consumer termination")
+	log.Debugf("Completed all consumer termination")
 	dupServerConsumers = nil
+
 	return true
 }
 
 func runDupServerConsumer(dupServer *dupServerConsumer) {
-	var client *client.Client
+	var clt *client.Client
 	var item *answer
 	var err error
 
 	for {
 		select {
 		case <-dupServer.terminationRequest:
-			if client != nil {
-				client.Close()
+			if clt != nil {
+				clt.Close()
 			}
+
 			return
 		case item = <-dupServer.queue:
 			for {
-				client, err = sendResultDup(client, item, dupServer.address, dupServer.config)
+				clt, err = sendResultDup(clt, item, dupServer.address, dupServer.config)
 				if err != nil {
-					client = nil
-					logger.Debugf("failed to send back result (to dupserver): %w", err)
+					clt = nil
+					log.Debugf("failed to send back result (to dupserver): %w", err)
 					select {
 					case <-dupServer.terminationRequest:
-						if client != nil {
-							client.Close()
-						}
 						return
 					default:
 						time.Sleep(ConnectionRetryInterval * time.Second)
+
 						continue
 					}
 				}
+
 				break
 			}
 		}
 	}
 }
 
-func sendResultDup(client *client.Client, item *answer, dupAddress string, config *configurationStruct) (*client.Client, error) {
+func sendResultDup(clt *client.Client, item *answer, dupAddress string, config *config) (*client.Client, error) {
 	if config.dupResultsArePassive {
 		item.active = "passive"
 	}
-	return sendAnswer(client, item, dupAddress, config.encryption)
+
+	return sendAnswer(clt, item, dupAddress, config.encryption)
 }
 
-func enqueueDupServerResult(config *configurationStruct, result *answer) {
+func enqueueDupServerResult(config *config, result *answer) {
 	if len(config.dupserver) == 0 {
 		return
 	}
@@ -98,7 +100,10 @@ func enqueueDupServerResult(config *configurationStruct, result *answer) {
 		select {
 		case channel <- &duplicateResult:
 		default:
-			logger.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s", config.dupServerBacklogQueueSize, dupAddress)
+			log.Debugf("channel is at capacity (%d), dropping message (to dupserver): %s",
+				config.dupServerBacklogQueueSize,
+				dupAddress,
+			)
 		}
 	}
 }

@@ -6,11 +6,11 @@ import (
 )
 
 func TestGetKey(t *testing.T) {
-	// set the key in the config struct
-	config := configurationStruct{key: "MeinTestKey", encryption: true}
+	// set the key in the cfg struct
+	cfg := config{key: "MeinTestKey", encryption: true}
 
 	// get the key from the method
-	result := getKey(&config)
+	result := getKey(&cfg)
 
 	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("expected: %s, got:%s", "MeinTestKey", result)
@@ -24,10 +24,10 @@ func TestGetKey(t *testing.T) {
 		t.Errorf("key must be rightpadded with zero bytes")
 	}
 
-	config.key = ""
-	config.keyfile = "testfile.key"
+	cfg.key = ""
+	cfg.keyfile = "testfile.key"
 	// create the testfile
-	f, err := os.Create(config.keyfile)
+	f, err := os.Create(cfg.keyfile)
 	if err != nil {
 		t.Errorf("could not create testKeyFile %s", err.Error())
 	}
@@ -36,14 +36,14 @@ func TestGetKey(t *testing.T) {
 		t.Errorf("could not write to testFile %s", err.Error())
 	}
 
-	result = getKey(&config)
+	result = getKey(&cfg)
 
 	if string(result[0:11]) != "MeinTestKey" {
 		t.Errorf("getkey from file expected: %s, got:%s", "MeinTestKey", result)
 	}
 
 	// remove the testfile
-	err = os.Remove(config.keyfile)
+	err = os.Remove(cfg.keyfile)
 	if err != nil {
 		t.Errorf("could not delete testKeyfile %s", err.Error())
 	}

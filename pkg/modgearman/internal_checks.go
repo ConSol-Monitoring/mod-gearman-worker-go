@@ -3,6 +3,7 @@ package modgearman
 import (
 	"bytes"
 	"context"
+	"errors"
 	time "time"
 )
 
@@ -10,8 +11,8 @@ type InternalCheck interface {
 	Check(ctx context.Context, output *bytes.Buffer, args []string) int
 }
 
-func execInternal(result *answer, cmd *command, received *receivedStruct) {
-	logger.Tracef("using internal check for: %s", cmd.Command)
+func execInternal(result *answer, cmd *command, received *request) {
+	log.Tracef("using internal check for: %s", cmd.Command)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(received.timeout)*time.Second)
 	defer cancel()
@@ -26,9 +27,10 @@ func execInternal(result *answer, cmd *command, received *receivedStruct) {
 	}()
 
 	<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
-	switch ctx.Err() {
-	case context.DeadlineExceeded:
+	ctxErr := ctx.Err()
+	switch {
+	case errors.Is(ctxErr, context.DeadlineExceeded):
 		result.timedOut = true
-	case context.Canceled:
+	case errors.Is(ctxErr, context.Canceled):
 	}
 }

@@ -27,14 +27,14 @@ func Sendgearman(build string) {
 	sendSuccess, resultsCounter, lastAddress, err := sendgearmanLoop(config, result)
 
 	if !sendSuccess {
-		logger.Errorf("failed to send back result: %s", err.Error())
+		log.Errorf("failed to send back result: %s", err.Error())
 		cleanExit(ExitCodeError)
 	}
-	logger.Infof("%d data packet(s) sent to host %s successfully.", resultsCounter, lastAddress)
+	log.Infof("%d data packet(s) sent to host %s successfully.", resultsCounter, lastAddress)
 	cleanExit(ExitCodeError)
 }
 
-func sendgearmanInit(build string) *configurationStruct {
+func sendgearmanInit(build string) *config {
 	// reads the args, check if they are params, if so sends them to the configuration reader
 	config, err := initConfiguration("send_gearman", build, printUsageSendGearman, checkForReasonableConfigSendGearman)
 	if err != nil {
@@ -44,8 +44,8 @@ func sendgearmanInit(build string) *configurationStruct {
 
 	// create the logger, everything logged until here gets printed to stdOut
 	createLogger(config)
-	logger.SetOutput(os.Stderr)
-	logger.SetFormatter(factorlog.NewStdFormatter(`[%{Severity}] %{Message}`))
+	log.SetOutput(os.Stderr)
+	log.SetFormatter(factorlog.NewStdFormatter(`[%{Severity}] %{Message}`))
 
 	// create the cipher
 	key := getKey(config)
@@ -58,13 +58,13 @@ func sendgearmanInit(build string) *configurationStruct {
 	return config
 }
 
-func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess bool, resultsCounter int, lastAddress string, err error) {
+func sendgearmanLoop(config *config, result *answer) (success bool, resultsCounter int, lastAddress string, err error) {
 	read := make([]byte, 1024*1024*1024)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(read, cap(read))
 
 	// send result back to any server
-	var c *client.Client
+	var clt *client.Client
 	for {
 		// if no host is given from command line arguments, read from stdin
 		if config.host == "" {
@@ -75,7 +75,7 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 		} else if config.message == "" {
 			// read just the message from stdin
 			readStdinData(config, result, scanner)
-			logger.Debugf("msg: %s", result.output)
+			log.Debugf("msg: %s", result.output)
 		}
 
 		if config.startTime <= 0 {
@@ -85,41 +85,44 @@ func sendgearmanLoop(config *configurationStruct, result *answer) (sendSuccess b
 			result.finishTime = float64(time.Now().Unix())
 		}
 		for _, a := range config.server {
-			if c == nil {
-				logger.Debugf("connecting to: %s", a)
+			if clt == nil {
+				log.Debugf("connecting to: %s", a)
 				lastAddress = a
 			}
-			c, err = sendAnswer(c, result, a, config.encryption)
+			clt, err = sendAnswer(clt, result, a, config.encryption)
 			if err == nil {
 				resultsCounter++
-				sendSuccess = true
+				success = true
+
 				break
 			}
-			logger.Debugf("connection failed: %w", err)
-			if c != nil {
-				c.Close()
+			log.Debugf("connection failed: %w", err)
+			if clt != nil {
+				clt.Close()
 			}
 		}
 
 		if config.host != "" {
-			return
+			return success, resultsCounter, lastAddress, err
 		}
 	}
-	return
+
+	return success, resultsCounter, lastAddress, err
 }
 
-func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.Scanner) bool {
+func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=.../--host=...", config.timeout)
+		log.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=.../--host=...", config.timeout)
 		cleanExit(ExitCodeError)
 	})
 	if !scanner.Scan() {
 		timeout.Stop()
+
 		return false
 	}
 	timeout.Stop()
 	if scanner.Err() != nil {
-		logger.Errorf("reading stdin failed: %s", scanner.Err().Error())
+		log.Errorf("reading stdin failed: %s", scanner.Err().Error())
 		cleanExit(ExitCodeError)
 	}
 	input := scanner.Text()
@@ -127,12 +130,14 @@ func readStdinLine(config *configurationStruct, result *answer, scanner *bufio.S
 		return false
 	}
 	err := parseLine2Answer(config, result, input)
+
 	return err == nil
 }
 
-func readStdinData(config *configurationStruct, result *answer, scanner *bufio.Scanner) {
+func readStdinData(config *config, result *answer, scanner *bufio.Scanner) {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-		logger.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...", config.timeout)
+		log.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...",
+			config.timeout)
 		cleanExit(ExitCodeError)
 	})
 	lines := make([]string, 0)
@@ -144,17 +149,18 @@ func readStdinData(config *configurationStruct, result *answer, scanner *bufio.S
 		if !cont || (err != nil && errors.Is(err, io.EOF)) {
 			timeout.Stop()
 			result.output = strings.Join(lines, "\\n")
+
 			return
 		}
 		if err != nil {
 			timeout.Stop()
-			logger.Errorf("reading stdin failed: %s", err)
+			log.Errorf("reading stdin failed: %s", err)
 			cleanExit(ExitCodeError)
 		}
 	}
 }
 
-func createResultFromArgs(config *configurationStruct) *answer {
+func createResultFromArgs(config *config) *answer {
 	active := "passive"
 	if config.active {
 		active = "active"
@@ -171,20 +177,22 @@ func createResultFromArgs(config *configurationStruct) *answer {
 		resultQueue:        config.resultQueue,
 		source:             "send_gearman",
 	}
+
 	return result
 }
 
-func checkForReasonableConfigSendGearman(config *configurationStruct) error {
+func checkForReasonableConfigSendGearman(config *config) error {
 	if len(config.server) == 0 {
 		return fmt.Errorf("no server specified")
 	}
 	if config.encryption && config.key == "" && config.keyfile == "" {
 		return fmt.Errorf("encryption enabled but no keys defined")
 	}
+
 	return nil
 }
 
-func parseLine2Answer(config *configurationStruct, result *answer, input string) error {
+func parseLine2Answer(config *config, result *answer, input string) error {
 	fields := strings.Split(input, config.delimiter)
 	if len(fields) >= ServiceAnswerSize {
 		// service result
@@ -202,11 +210,12 @@ func parseLine2Answer(config *configurationStruct, result *answer, input string)
 	if result.hostName == "" {
 		return fmt.Errorf("invalid data, no hostname parsed")
 	}
+
 	return nil
 }
 
 func printUsageSendGearman() {
-	fmt.Print(`Usage: send_gearman [OPTION]...
+	usage := `Usage: send_gearman [OPTION]...
 
 send_gearman sends passive (and active) check results to a gearman daemon.
 
@@ -247,7 +256,8 @@ Note: When using a delimiter you may also submit one result
 
       Host Checks:
       <host_name>[tab]<return_code>[tab]<plugin_output>[newline]
-`)
+`
+	fmt.Fprintln(os.Stdout, usage)
 
 	cleanExit(ExitCodeUnknown)
 }
