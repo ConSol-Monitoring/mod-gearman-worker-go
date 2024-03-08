@@ -81,7 +81,7 @@ func init() {
 var log = factorlog.New(os.Stdout, factorlog.NewStdFormatter(LogFormat))
 
 var (
-	prometheusListener *net.Listener
+	prometheusListener net.Listener
 	pidFile            string
 )
 
@@ -129,10 +129,10 @@ func Worker(build string) {
 	}()
 
 	// initialize prometheus
-	*prometheusListener = startPrometheus(config)
+	prometheusListener = startPrometheus(config)
 	defer func() {
 		if prometheusListener != nil {
-			(*prometheusListener).Close()
+			prometheusListener.Close()
 		}
 		log.Infof("mod-gearman-worker-go shutdown complete")
 	}()
