@@ -7,6 +7,7 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
+# also update README.md and .github/workflows/citest.yml when changing minumum version
 MINGOVERSION:=00010021
 MINGOVERSIONSTR:=1.21
 BUILD:=$(shell git rev-parse --short HEAD)
@@ -62,12 +63,12 @@ go.work: pkg/*
 	$(GO) work use . pkg/* buildtools/.
 
 dump:
-	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go | wc -l) -ne 0 ]; then \
-		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' pkg/modgearman/dump.go; \
+	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go | wc -l) -ne 0 ]; then \
+		sed -i.bak -e 's/\/\/go:build.*/\/\/ :build with debug functions/' -e 's/\/\/ +build.*/\/\/ build with debug functions/' pkg/$(PROJECT)/dump.go; \
 	else \
-		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/modgearman/dump.go; \
+		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/$(PROJECT)/dump.go; \
 	fi
-	rm -f pkg/modgearman/dump.go.bak
+	rm -f pkg/$(PROJECT)/dump.go.bak
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
@@ -76,7 +77,7 @@ build: vendor
 
 # run build watch, ex. with tracing: make build-watch -- -debug=3 --logfile=stderr
 build-watch: vendor tools
-	set -x ; ls *.go cmd/*/*.go worker.cfg | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
+	set -x ; ls pkg/*/*.go cmd/*/*.go lmd.inifg | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
 
 build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
@@ -102,7 +103,7 @@ send_gearman.exe: pkg/*/*.go cmd/send_gearman/*.go
 test: dump vendor
 	$(GO) test -short -v $(TEST_FLAGS) pkg/*
 	if grep -Irn TODO: ./cmd/ ./pkg/;  then exit 1; fi
-	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
 
 # test with filter
 testf: vendor
@@ -127,7 +128,7 @@ citest: vendor
 	#
 	# Checking remaining debug calls
 	#
-	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
+	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
 	#
 	# Run other subtests
 	#
@@ -226,11 +227,11 @@ govulncheck: tools
 	govulncheck ./...
 
 version:
-	OLDVERSION="$(shell grep "VERSION =" ./pkg/modgearman/mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
+	OLDVERSION="$(shell grep "VERSION =" ./pkg/$(PROJECT)/mod_gearman_worker.go | awk '{print $$3}' | tr -d '"')"; \
 	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "v$$OLDVERSION") && \
 		NEWVERSION=$$(echo $$NEWVERSION | sed "s/^v//g"); \
 		if [ "v$$OLDVERSION" = "v$$NEWVERSION" -o "x$$NEWVERSION" = "x" ]; then echo "no changes"; exit 1; fi; \
-		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' pkg/modgearman/go cmd/*/*.go
+		sed -i -e 's/VERSION =.*/VERSION = "'$$NEWVERSION'"/g' pkg/$(PROJECT)/*.go cmd/*/*.go
 
 # just skip unknown make targets
 .DEFAULT:
