@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-PROJECT=mod-gearman-worker
+PROJECT=modgearman
 MAKE:=make
 SHELL:=bash
 GOVERSION:=$(shell \
