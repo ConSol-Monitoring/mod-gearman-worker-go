@@ -112,7 +112,7 @@ testf: vendor
 longtest: vendor
 	$(GO) test -v $(TEST_FLAGS) pkg/*
 
-citest: vendor
+citest: tools vendor
 	#
 	# Checking gofmt errors
 	#
@@ -200,7 +200,7 @@ fmt: tools
 	gofmt -w -s $(SRCFOLDER)
 	./tools/gofumpt -w $(SRCFOLDER)
 	./tools/gci write --skip-generated $(SRCFOLDER)
-	goimports -w $(SRCFOLDER)
+	./tools/goimports -w $(SRCFOLDER)
 
 versioncheck:
 	@[ $$( printf '%s\n' $(GOVERSION) $(MINGOVERSION) | sort | head -n 1 ) = $(MINGOVERSION) ] || { \
