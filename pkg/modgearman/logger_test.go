@@ -40,7 +40,8 @@ func TestCreateLogger(t *testing.T) {
 	}
 
 	// test with file that does not exist
-	log = factorlog.New(os.Stdout, factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
+	log.SetOutput(os.Stdout)
+	log.SetFormatter(factorlog.NewStdFormatter("%{Date} %{Time} %{File}:%{Line} %{Message}"))
 	createLogger(&cfg)
 	// remove the file again
 	err = os.Remove("loggertest")
