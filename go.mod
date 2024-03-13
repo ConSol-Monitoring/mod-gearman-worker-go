@@ -6,7 +6,7 @@ replace pkg/modgearman => ./pkg/modgearman
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273 // indirect
-	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20240228115051-5e08543eef0c // indirect
+	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20240313214236-5e1cfe7a3e3f // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
@@ -26,7 +26,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/namsral/flag v1.7.4-pre // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.50.0 // indirect
