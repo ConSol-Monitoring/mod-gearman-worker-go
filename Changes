@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - update internal check_nsc_web to v0.7.1
+
 1.5.0    Tue Mar 12 14:07:47 CET 2024
           - update dependencies
           - restructure code layout
