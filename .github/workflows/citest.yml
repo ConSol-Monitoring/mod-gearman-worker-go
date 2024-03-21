@@ -1,26 +1,22 @@
-name: citest
+name: Builds
 on:
   push:
   pull_request:
-  schedule:
-    - cron: '30 4 * * 1'
+
+# set go version for all steps
+env:
+  GOVERSION: 1.22.x
+
 jobs:
   test:
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version:
-          - 1.22.x
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-    - uses: abbbi/github-actions-tune@v1
+    - uses: actions/checkout@v4
     - run: sudo apt-get -y install gearman-job-server
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go-version }}
-    - uses: actions/checkout@v4
+        go-version: ${{ env.GOVERSION }}
     - run: make clean
     - run: make citest
     - run: CGO_ENABLED=0 make
@@ -35,3 +31,37 @@ jobs:
       with:
         name: send_gearman_windows_amd64_go${{ matrix.go-version }}.exe
         path: send_gearman.windows.amd64.exe
+
+  windows-nscp:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GOVERSION }}
+    - run: |
+          echo "Testing with ${{ env.GOVERSION }}"
+          go work init
+          go work use .
+          $Env:GOWORK = "off"
+          go mod vendor
+          $Env:GOWORK = ""
+
+          # build check_nsc_web
+          go build -o ./mod_gearman_worker.exe cmd/mod_gearman_worker/main.go
+
+          # install nscp
+          Invoke-WebRequest -UseBasicParsing -Uri https://github.com/mickem/nscp/releases/download/0.5.2.35/NSCP-0.5.2.35-x64.msi -OutFile NSCP-0.5.2.35-x64.msi
+          Start-Process msiexec -Wait -ArgumentList '/i NSCP-0.5.2.35-x64.msi /qn CONF_WEB=1 NSCLIENT_PWD=test'
+
+          # activate version check
+          & 'C:\Program Files\NSClient++\nscp.exe' settings --activate-module CheckNSCP
+
+          # make sure it is started
+          net stop nscp
+          net start nscp
+
+          # check if connection works
+          .\mod_gearman_worker.exe testcmd ../check_nsc_web -k -p test -u https://127.0.0.1:8443                    ; if ($LASTEXITCODE -ne 0) { exit 1 }
+          .\mod_gearman_worker.exe testcmd ../check_nsc_web -k -p test -u https://127.0.0.1:8443 check_nscp_version ; if ($LASTEXITCODE -ne 0) { exit 1 }
