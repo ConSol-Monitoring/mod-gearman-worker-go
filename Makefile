@@ -7,9 +7,10 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-# also update README.md and .github/workflows/citest.yml when changing minumum version
-MINGOVERSION:=00010021
-MINGOVERSIONSTR:=1.21
+# also update .github/workflows/citest.yml when changing minumum version
+# find . -name go.mod
+MINGOVERSION:=00010022
+MINGOVERSIONSTR:=1.22
 BUILD:=$(shell git rev-parse --short HEAD)
 # see https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 # and https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
@@ -47,7 +48,7 @@ updatedeps: versioncheck
 	$(MAKE) cleandeps
 
 cleandeps:
-	set -e; for dir in $(shell ls -d1 pkg/*); do \
+	set -e; for dir in $(shell ls -d1 pkg/* cmd/*); do \
 		( cd ./$$dir && $(GO) mod tidy ); \
 	done
 	$(GO) mod tidy
@@ -60,7 +61,7 @@ vendor: go.work
 
 go.work: pkg/*
 	echo "go $(MINGOVERSIONSTR)" > go.work
-	$(GO) work use . pkg/* buildtools/.
+	$(GO) work use . pkg/* cmd/* buildtools/.
 
 dump:
 	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go | wc -l) -ne 0 ]; then \

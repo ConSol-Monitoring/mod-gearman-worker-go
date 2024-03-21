@@ -1,17 +1,19 @@
 module github.com/consol-monitoring/mod-gearman-worker-go
 
-go 1.21
+go 1.22
+
+toolchain go1.22.1
 
 replace pkg/modgearman => ./pkg/modgearman
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273 // indirect
-	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20240313214236-5e1cfe7a3e3f // indirect
+	github.com/consol-monitoring/check_nsc_web/pkg/checknscweb v0.0.0-20240321161425-fd9209e96e1f // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/sevlyar/go-daemon v0.1.6 // indirect
-	github.com/sni/shelltoken v0.0.0-20240305201340-d67cf5c19d23 // indirect
+	github.com/sni/shelltoken v0.0.0-20240314123449-84b0a0c05450 // indirect
 )
 
 require pkg/modgearman v0.0.0-00010101000000-000000000000
@@ -28,7 +30,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.50.0 // indirect
+	github.com/prometheus/common v0.51.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
