@@ -85,7 +85,7 @@ func BenchmarkJobs(b *testing.B) {
 	var sendError error
 	b.StartTimer()
 	go func() {
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			// run e2e test
 			_, err := sender.DoBg("host", testJob, runtime.JobNormal)
 			if err != nil {
@@ -93,7 +93,7 @@ func BenchmarkJobs(b *testing.B) {
 			}
 		}
 	}()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		<-resultChannel
 		resultsTotal++
 	}

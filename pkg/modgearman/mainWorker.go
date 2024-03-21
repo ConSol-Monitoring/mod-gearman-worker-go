@@ -189,7 +189,7 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 	}
 
 	// start new workers at spawn speed
-	for i := 0; i < w.cfg.spawnRate; i++ {
+	for range w.cfg.spawnRate {
 		if len(w.workerMap) >= w.cfg.maxWorker {
 			break
 		}
@@ -223,7 +223,7 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 	if sinkRate <= 0 {
 		sinkRate = w.cfg.spawnRate
 	}
-	for i := 0; i < sinkRate; i++ {
+	for range sinkRate {
 		if len(w.workerMap) <= w.cfg.minWorker {
 			break
 		}

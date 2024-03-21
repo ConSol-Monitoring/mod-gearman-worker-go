@@ -196,20 +196,20 @@ func (config *config) parseConfigItem(raw string) error {
 		config.dupserver = append(config.dupserver, list...)
 	case "hostgroups":
 		list := strings.Split(value, ",")
-		for i := 0; i < len(list); i++ {
-			list[i] = strings.Trim(list[i], " ")
+		for i, el := range list {
+			list[i] = strings.Trim(el, " ")
 		}
 		config.hostgroups = append(config.hostgroups, list...)
 	case "servicegroups":
 		list := strings.Split(value, ",")
-		for i := 0; i < len(list); i++ {
-			list[i] = strings.Trim(list[i], " ")
+		for i, el := range list {
+			list[i] = strings.Trim(el, " ")
 		}
 		config.servicegroups = append(config.servicegroups, list...)
 	case "server":
 		list := strings.Split(value, ",")
-		for i := 0; i < len(list); i++ {
-			list[i] = strings.Trim(list[i], " ")
+		for i, el := range list {
+			list[i] = strings.Trim(el, " ")
 		}
 		for i, s := range list {
 			list[i] = fixGearmandServerAddress(s)

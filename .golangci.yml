@@ -17,7 +17,7 @@ linters-settings:
   gomoddirectives:
     replace-local: true
   govet:
-    check-shadowing: true
+    enable-all: true
     settings:
       printf:
         funcs:
@@ -102,6 +102,7 @@ issues:
     - "Function 'execCmd' has too many statements"
     - "Metric: modgearmanworker_workers_total Error: non-counter metrics"
     - 'local replacement are not allowed: pkg/'
+    - "fieldalignment: struct"
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test.*\.go
