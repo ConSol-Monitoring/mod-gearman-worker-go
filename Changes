@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.5.1    Thu Mar 21 17:43:21 CET 2024
           - update internal check_nsc_web to v0.7.2
           - minimum go version is now 1.22
 
