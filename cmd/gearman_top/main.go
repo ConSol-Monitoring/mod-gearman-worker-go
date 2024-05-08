@@ -10,5 +10,8 @@ var Build string
 
 func main() {
 	// Demo code. Do not use
-	modgearman.Worker(Build)
+	//modgearman.Worker(Build)
+
+	//modgearman.Send2gearmandadmin("status\nversion\n", "127.0.0.1", 4730)
+	modgearman.GetGearmanServerData("127.0.0.1", 4730)
 }
