@@ -13,5 +13,5 @@ func main() {
 	//modgearman.Worker(Build)
 
 	//modgearman.Send2gearmandadmin("status\nversion\n", "127.0.0.1", 4730)
-	modgearman.GetGearmanServerData("127.0.0.1", 4730)
+	modgearman.PrintSatus()
 }
