@@ -5,53 +5,99 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/consol-monitoring/snclient/pkg/utils"
 )
 
-// func printStatus(queues [][]string) {
-// 	// Find longest queue name if the name is longer than the column description
-// 	maxLength := len("Queue Name")
-// 	for i, queue := range queues {
-// 		if len(queues[i]) < 4 {
-// 			continue
-// 		}
-// 		queueNameLen := len(queue[0])
-// 		if queueNameLen > maxLength {
-// 			maxLength = queueNameLen
-// 		}
-// 	}
-// 	fmt.Println(maxLength)
+type queue struct {
+	Name        string // queue names
+	Total       string // total number of jobs
+	Running     string // number of running jobs
+	Waiting     string // number of waiting jobs
+	AvailWorker string // total number of available worker
+}
 
-// 	// Find queue name length difference
-// 	defaultLen := len("Queue Name")
-// 	runeDiff := 0
-// 	if maxLength > defaultLen {
-// 		runeDiff = maxLength - defaultLen
-// 	}
+var totalQueues []queue
 
-// 	// Print table
-// 	// First Line
-// 	fmt.Printf(" Queue Name")
+func PrintSatus() {
+	//Create table headers
+	var tableHeaders = []utils.ASCIITableHeader{
+		{
+			Name:     "Queue Name",
+			Field:    "queueName",
+			Centered: false,
+		},
+		{
+			Name:     "Worker Available",
+			Field:    "workerAvailable",
+			Centered: false,
+		},
+		{
+			Name:     "Jobs Waiting",
+			Field:    "jobsWaiting",
+			Centered: false,
+		},
+		{
+			Name:     "Jobs running",
+			Field:    "jobsRunning",
+			Centered: false,
+		},
+	}
 
-// }
+	// Create table rows
+	type DataRow struct {
+		queueName       string
+		workerAvailable string
+		jobsWaiting     string
+		jobsRunning     string
+	}
 
-func GetGearmanServerData(hostname string, port int) [][]string {
+	var rows []DataRow
+	for _, queue := range totalQueues {
+
+		rows = append(rows, DataRow{
+			queueName:       queue.Name,
+			workerAvailable: queue.AvailWorker,
+			jobsWaiting:     queue.Waiting,
+			jobsRunning:     queue.Running,
+		})
+	}
+
+	table, err := utils.ASCIITable(tableHeaders, rows, true)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return
+	}
+	fmt.Println(table)
+}
+
+func GetGearmanServerData(hostname string, port int) {
 	var gearmanStatus string = Send2gearmandadmin("status\nversion\n", hostname, port)
 
 	if gearmanStatus == "" {
-		return nil
+		return
 	}
 
 	// Organize queues into a list
-	var queues [][]string
 	lines := strings.Split(gearmanStatus, "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)
-		fmt.Println(parts)
-		fmt.Println(len(parts))
-		queues = append(queues, parts)
+
+		if len(parts) < 4 || parts[0] == "dummy" {
+			continue
+		}
+		totalInt, _ := strconv.Atoi(parts[1])
+		runningInt, _ := strconv.Atoi(parts[2])
+		totalQueues = append(totalQueues, queue{
+			Name:        parts[0],
+			Total:       parts[1],
+			Running:     parts[2],
+			AvailWorker: parts[3],
+			Waiting:     fmt.Sprintf("%d", totalInt-runningInt),
+		})
 	}
 
-	return queues
+	PrintSatus()
 }
 
 func Send2gearmandadmin(cmd string, hostname string, port int) string {
@@ -68,7 +114,6 @@ func Send2gearmandadmin(cmd string, hostname string, port int) string {
 	}
 
 	// Read response
-	//var buffer []byte
 	buffer := make([]byte, 512)
 	n, readErr := conn.Read(buffer)
 	if readErr != nil {
