@@ -11,10 +11,10 @@ import (
 
 type queue struct {
 	Name        string // queue names
-	Total       string // total number of jobs
-	Running     string // number of running jobs
-	Waiting     string // number of waiting jobs
-	AvailWorker string // total number of available worker
+	Total       int    // total number of jobs
+	Running     int    // number of running jobs
+	Waiting     int    // number of waiting jobs
+	AvailWorker int    // total number of available worker
 }
 
 var totalQueues []queue
@@ -57,9 +57,9 @@ func PrintSatus() {
 
 		rows = append(rows, DataRow{
 			queueName:       queue.Name,
-			workerAvailable: queue.AvailWorker,
-			jobsWaiting:     queue.Waiting,
-			jobsRunning:     queue.Running,
+			workerAvailable: strconv.Itoa(queue.AvailWorker),
+			jobsWaiting:     strconv.Itoa(queue.Waiting),
+			jobsRunning:     strconv.Itoa(queue.Running),
 		})
 	}
 
@@ -88,12 +88,14 @@ func GetGearmanServerData(hostname string, port int) {
 		}
 		totalInt, _ := strconv.Atoi(parts[1])
 		runningInt, _ := strconv.Atoi(parts[2])
+		availWorkerInt, _ := strconv.Atoi(parts[3])
+
 		totalQueues = append(totalQueues, queue{
 			Name:        parts[0],
-			Total:       parts[1],
-			Running:     parts[2],
-			AvailWorker: parts[3],
-			Waiting:     fmt.Sprintf("%d", totalInt-runningInt),
+			Total:       totalInt,
+			Running:     runningInt,
+			AvailWorker: availWorkerInt,
+			Waiting:     totalInt - runningInt,
 		})
 	}
 
