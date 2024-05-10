@@ -22,15 +22,16 @@ require (
 	github.com/appscode/go v0.0.0-20201105063637-5613f3b8169f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/consol-monitoring/snclient v0.0.0-20240508113549-1e91b497e759 // indirect
 	github.com/consol-monitoring/snclient/pkg/convert v0.0.0-20240508113110-e70bd2f478ac // indirect
-	github.com/consol-monitoring/snclient/pkg/utils v0.0.0-20240508113549-1e91b497e759 // indirect
+	github.com/consol-monitoring/snclient/pkg/utils v0.0.0-20240508144415-28dfb198a66a // indirect
 	github.com/golang/glog v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect

@@ -65,7 +65,6 @@ func SendCmd2gearmandAdmin(cmd string, hostname string, port int) string {
 		return ""
 	} else {
 		result := string(buffer[:n])
-		fmt.Println(result)
 		return result
 	}
 }

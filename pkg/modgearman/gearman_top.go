@@ -3,9 +3,13 @@ package modgearman
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
+	time "time"
 
 	"github.com/consol-monitoring/snclient/pkg/utils"
+	"github.com/nsf/termbox-go"
 )
 
 type Args struct {
@@ -29,6 +33,9 @@ func GearmanTop(args *Args) {
 		printTopVersion()
 	}
 
+	// delete duplicate hosts like the localhost wich is filled in by default
+	hostList = unique(hostList)
+
 	// Print stats once when using batch mode
 	if args.B_batch {
 		for _, host := range hostList {
@@ -37,7 +44,35 @@ func GearmanTop(args *Args) {
 		return
 	}
 	// Print stats in a loop
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termbox.Close()
 
+	eventQueue := make(chan termbox.Event)
+	go func() {
+		for {
+			eventQueue <- termbox.PollEvent()
+		}
+	}()
+
+	tick := time.Tick(time.Duration(args.I_interval) * time.Second)
+
+	for {
+		select {
+		case ev := <-eventQueue:
+			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q') {
+				return // Exit if 'q' is pressed
+			}
+		case <-tick:
+			// Clear screen and print stats
+			clearScreen()
+			for _, host := range hostList {
+				PrintStats(host)
+			}
+		}
+	}
 }
 
 func PrintStats(hostname string) {
@@ -95,6 +130,9 @@ func PrintStats(hostname string) {
 		fmt.Println("Error: ", err)
 		return
 	}
+	// TODO: print hostname as IP-Address and version
+	currTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("%s  -  %s:%d\n\n", currTime, hostname, port)
 	fmt.Println(table)
 }
 
@@ -122,4 +160,29 @@ func printTopVersion() {
 func Add2HostList(host string) error {
 	hostList = append(hostList, host)
 	return nil
+}
+
+func clearScreen() {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = exec.Command("clear")
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+func unique[T comparable](input []T) []T {
+	seen := make(map[T]bool)
+	result := []T{}
+
+	for _, v := range input {
+		if _, exists := seen[v]; !exists {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
