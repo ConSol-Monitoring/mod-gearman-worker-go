@@ -34,7 +34,7 @@ func GetGearmanServerData(hostname string, port int, queueList *[]Queue) {
 		runningInt, _ := strconv.Atoi(parts[2])
 		availWorkerInt, _ := strconv.Atoi(parts[3])
 
-		totalQueues = append(totalQueues, Queue{
+		*queueList = append(*queueList, Queue{
 			Name:        parts[0],
 			Total:       totalInt,
 			Running:     runningInt,
