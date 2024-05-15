@@ -25,7 +25,6 @@ type Args struct {
 var hostList = []string{"localhost"}
 
 func GearmanTop(args *Args) {
-	// Process args
 	if args.H_usage {
 		printTopUsage()
 	}
@@ -33,13 +32,12 @@ func GearmanTop(args *Args) {
 		printTopVersion()
 	}
 
-	// delete duplicate hosts like the localhost wich is filled in by default
 	hostList = unique(hostList)
 
-	// Print stats once when using batch mode
+	// Print stats only once when using batch mode
 	if args.B_batch {
 		for _, host := range hostList {
-			PrintStats(host)
+			printStats(host)
 		}
 		return
 	}
@@ -66,23 +64,21 @@ func GearmanTop(args *Args) {
 				return // Exit if 'q' is pressed
 			}
 		case <-tick:
-			// Clear screen and print stats
 			clearScreen()
 			for _, host := range hostList {
-				PrintStats(host)
+				printStats(host)
 			}
 		}
 	}
 }
 
-func PrintStats(hostname string) {
-	var queueList []Queue
+func printStats(hostname string) {
+	var queueList []queue
 	const port int = 4730
 
 	// Retrieve data from gearman admin and save queue data to queueList
-	GetGearmanServerData(hostname, port, &queueList)
+	getGearmanServerData(hostname, port, &queueList)
 
-	// Create table headers
 	var tableHeaders = []utils.ASCIITableHeader{
 		{
 			Name:     "Queue Name",
@@ -106,18 +102,17 @@ func PrintStats(hostname string) {
 		},
 	}
 
-	// Create table rows
-	type DataRow struct {
+	type dataRow struct {
 		queueName       string
 		workerAvailable string
 		jobsWaiting     string
 		jobsRunning     string
 	}
 
-	var rows []DataRow
+	var rows []dataRow
 	for _, queue := range queueList {
 
-		rows = append(rows, DataRow{
+		rows = append(rows, dataRow{
 			queueName:       queue.Name,
 			workerAvailable: strconv.Itoa(queue.AvailWorker),
 			jobsWaiting:     strconv.Itoa(queue.Waiting),

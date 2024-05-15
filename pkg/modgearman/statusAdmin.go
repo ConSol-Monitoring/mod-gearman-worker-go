@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type Queue struct {
+type queue struct {
 	Name        string // queue names
 	Total       int    // total number of jobs
 	Running     int    // number of running jobs
@@ -15,8 +15,8 @@ type Queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-func GetGearmanServerData(hostname string, port int, queueList *[]Queue) {
-	var gearmanStatus string = SendCmd2gearmandAdmin("status\nversion\n", hostname, port)
+func getGearmanServerData(hostname string, port int, queueList *[]queue) {
+	var gearmanStatus string = sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
 
 	if gearmanStatus == "" {
 		return
@@ -34,7 +34,7 @@ func GetGearmanServerData(hostname string, port int, queueList *[]Queue) {
 		runningInt, _ := strconv.Atoi(parts[2])
 		availWorkerInt, _ := strconv.Atoi(parts[3])
 
-		*queueList = append(*queueList, Queue{
+		*queueList = append(*queueList, queue{
 			Name:        parts[0],
 			Total:       totalInt,
 			Running:     runningInt,
@@ -44,7 +44,7 @@ func GetGearmanServerData(hostname string, port int, queueList *[]Queue) {
 	}
 }
 
-func SendCmd2gearmandAdmin(cmd string, hostname string, port int) string {
+func sendCmd2gearmandAdmin(cmd string, hostname string, port int) string {
 	conn, connErr := gm_net_connect(hostname, port)
 	if connErr != nil {
 		fmt.Println(connErr)
@@ -76,6 +76,5 @@ func gm_net_connect(hostname string, port int) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Success
 	return conn, nil
 }
