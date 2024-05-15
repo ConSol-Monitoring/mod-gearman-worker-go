@@ -15,11 +15,12 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-func getGearmanServerData(hostname string, port int, queueList *[]queue) {
+func getGearmanServerData(hostname string, port int) []queue {
+	var queueList []queue
 	var gearmanStatus string = sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
 
 	if gearmanStatus == "" {
-		return
+		return queueList
 	}
 
 	// Organize queues into a list
@@ -27,14 +28,14 @@ func getGearmanServerData(hostname string, port int, queueList *[]queue) {
 	for _, line := range lines {
 		parts := strings.Fields(line)
 
-		if len(parts) < 4 || parts[0] == "dummy" {
+		if len(parts) < 4 || (parts[0] == "dummy" && parts[1] == "") {
 			continue
 		}
 		totalInt, _ := strconv.Atoi(parts[1])
 		runningInt, _ := strconv.Atoi(parts[2])
 		availWorkerInt, _ := strconv.Atoi(parts[3])
 
-		*queueList = append(*queueList, queue{
+		queueList = append(queueList, queue{
 			Name:        parts[0],
 			Total:       totalInt,
 			Running:     runningInt,
@@ -42,6 +43,8 @@ func getGearmanServerData(hostname string, port int, queueList *[]queue) {
 			Waiting:     totalInt - runningInt,
 		})
 	}
+
+	return queueList
 }
 
 func sendCmd2gearmandAdmin(cmd string, hostname string, port int) string {

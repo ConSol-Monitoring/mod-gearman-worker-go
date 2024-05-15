@@ -1,12 +1,12 @@
 package modgearman
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"runtime"
 	"strconv"
-	time "time"
+	"strings"
+	"time"
 
 	"github.com/consol-monitoring/snclient/pkg/utils"
 	"github.com/nsf/termbox-go"
@@ -18,11 +18,14 @@ type Args struct {
 	V_version  bool
 	H_host     string
 	Q_quiet    bool
-	I_interval int
+	I_interval float64
 	B_batch    bool
 }
 
-var hostList = []string{"localhost"}
+const GM_TOP_VERSION = "1.1.2"
+const GM_DEFAULT_PORT = 4730
+
+var hostList = []string{}
 
 func GearmanTop(args *Args) {
 	if args.H_usage {
@@ -32,6 +35,9 @@ func GearmanTop(args *Args) {
 		printTopVersion()
 	}
 
+	if len(hostList) == 0 {
+		hostList = append(hostList, "localhost")
+	}
 	hostList = unique(hostList)
 
 	// Print stats only once when using batch mode
@@ -55,7 +61,7 @@ func GearmanTop(args *Args) {
 		}
 	}()
 
-	tick := time.Tick(time.Duration(args.I_interval) * time.Second)
+	tick := time.Tick(time.Duration(args.I_interval * float64(time.Second)))
 
 	for {
 		select {
@@ -64,7 +70,8 @@ func GearmanTop(args *Args) {
 				return // Exit if 'q' is pressed
 			}
 		case <-tick:
-			clearScreen()
+			// Clear screen
+			fmt.Printf("\033[H\033[2J")
 			for _, host := range hostList {
 				printStats(host)
 			}
@@ -72,12 +79,30 @@ func GearmanTop(args *Args) {
 	}
 }
 
-func printStats(hostname string) {
-	var queueList []queue
-	const port int = 4730
+func printStats(ogHostname string) {
+	var port int
+
+	// Determine port of hostname
+	hostAddress := strings.Split(ogHostname, ":")
+	hostname := hostAddress[0]
+	if len(hostAddress) > 2 {
+		err := errors.New("too many colons in host address")
+		log.Errorf("ERROR: host addrress invalid: %s %s", err, hostname)
+		os.Exit(1)
+	} else if len(hostAddress) == 2 {
+		port, _ = strconv.Atoi(hostAddress[1])
+	} else {
+		// Get port from gearman config if program is started on the same environment
+		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
+		if envServer != "" {
+			port, _ = strconv.Atoi(strings.Split(envServer, ":")[1])
+		} else {
+			port = GM_DEFAULT_PORT
+		}
+	}
 
 	// Retrieve data from gearman admin and save queue data to queueList
-	getGearmanServerData(hostname, port, &queueList)
+	queueList := getGearmanServerData(hostname, port)
 
 	var tableHeaders = []utils.ASCIITableHeader{
 		{
@@ -127,7 +152,7 @@ func printStats(hostname string) {
 	}
 	// TODO: print hostname as IP-Address and version
 	currTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("%s  -  %s:%d\n\n", currTime, hostname, port)
+	fmt.Printf("%s  -  %s:%d  -  v%s\n\n", currTime, hostname, port, GM_TOP_VERSION)
 	fmt.Println(table)
 }
 
@@ -148,24 +173,13 @@ func printTopUsage() {
 }
 
 func printTopVersion() {
-	fmt.Println("gearman_top: version ", "5.1.3")
+	fmt.Printf("gearman_top: version %s", GM_TOP_VERSION)
 	os.Exit(0)
 }
 
 func Add2HostList(host string) error {
 	hostList = append(hostList, host)
 	return nil
-}
-
-func clearScreen() {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "cls")
-	} else {
-		cmd = exec.Command("clear")
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 }
 
 func unique[T comparable](input []T) []T {
