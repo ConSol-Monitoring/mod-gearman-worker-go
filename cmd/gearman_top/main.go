@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"pkg/modgearman"
 )
 
@@ -10,17 +12,25 @@ import (
 var Build string
 
 func main() {
-	// process flags
 	args := modgearman.Args{}
+	// Define a new FlagSet for avoiding collions with other flags
+	var fs = flag.NewFlagSet("gearman_top", flag.ExitOnError)
 
-	flag.BoolVar(&args.H_usage, "h", false, "Print usage")
-	flag.BoolVar(&args.V_version, "V", false, "Print version")
-	flag.BoolVar(&args.Q_quiet, "q", false, "Quiet mode")
-	flag.BoolVar(&args.B_batch, "b", false, "Batch mode")
-	flag.BoolVar(&args.V_verbose, "ver", false, "Verbose output")
-	flag.Float64Var(&args.I_interval, "i", 1.0, "Set interval")
-	flag.Func("H", "Add host", modgearman.Add2HostList)
-	flag.Parse()
+	fs.BoolVar(&args.Usage, "h", false, "Print usage")
+	fs.BoolVar(&args.Version, "V", false, "Print version")
+	fs.BoolVar(&args.Quiet, "q", false, "Quiet mode")
+	fs.BoolVar(&args.Batch, "b", false, "Batch mode")
+	fs.BoolVar(&args.Verbose, "v", false, "Verbose output")
+	fs.Float64Var(&args.Interval, "i", 1.0, "Set interval")
+	fs.Func("H", "Add host", modgearman.Add2HostList)
 
+	// Parse the flags in the custom FlagSet
+	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Println("Error parsing flags:", err)
+		os.Exit(1)
+	}
+
+	// Call the GearmanTop function with the parsed arguments
 	modgearman.GearmanTop(&args)
 }

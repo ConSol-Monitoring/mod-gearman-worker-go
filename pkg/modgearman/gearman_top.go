@@ -13,13 +13,13 @@ import (
 )
 
 type Args struct {
-	H_usage    bool
-	V_verbose  bool
-	V_version  bool
-	H_host     string
-	Q_quiet    bool
-	I_interval float64
-	B_batch    bool
+	Usage    bool
+	Verbose  bool
+	Version  bool
+	Host     string
+	Quiet    bool
+	Interval float64
+	Batch    bool
 }
 
 const GM_TOP_VERSION = "1.1.2"
@@ -28,10 +28,10 @@ const GM_DEFAULT_PORT = 4730
 var hostList = []string{}
 
 func GearmanTop(args *Args) {
-	if args.H_usage {
+	if args.Usage {
 		printTopUsage()
 	}
-	if args.V_version {
+	if args.Version {
 		printTopVersion()
 	}
 
@@ -41,7 +41,7 @@ func GearmanTop(args *Args) {
 	hostList = unique(hostList)
 
 	// Print stats only once when using batch mode
-	if args.B_batch {
+	if args.Batch {
 		for _, host := range hostList {
 			printStats(host)
 		}
@@ -61,7 +61,7 @@ func GearmanTop(args *Args) {
 		}
 	}()
 
-	tick := time.Tick(time.Duration(args.I_interval * float64(time.Second)))
+	tick := time.Tick(time.Duration(args.Interval * float64(time.Second)))
 
 	for {
 		select {
@@ -87,7 +87,7 @@ func printStats(ogHostname string) {
 	hostname := hostAddress[0]
 	if len(hostAddress) > 2 {
 		err := errors.New("too many colons in host address")
-		log.Errorf("ERROR: host addrress invalid: %s %s", err, hostname)
+		fmt.Printf("%s %s\n", err, ogHostname)
 		os.Exit(1)
 	} else if len(hostAddress) == 2 {
 		port, _ = strconv.Atoi(hostAddress[1])
@@ -150,7 +150,6 @@ func printStats(ogHostname string) {
 		fmt.Println("Error: ", err)
 		return
 	}
-	// TODO: print hostname as IP-Address and version
 	currTime := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("%s  -  %s:%d  -  v%s\n\n", currTime, hostname, port, GM_TOP_VERSION)
 	fmt.Println(table)
@@ -173,7 +172,7 @@ func printTopUsage() {
 }
 
 func printTopVersion() {
-	fmt.Printf("gearman_top: version %s", GM_TOP_VERSION)
+	fmt.Printf("gearman_top: version %s\n", GM_TOP_VERSION)
 	os.Exit(0)
 }
 
