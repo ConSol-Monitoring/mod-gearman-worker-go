@@ -28,6 +28,11 @@ const GM_DEFAULT_PORT = 4730
 var hostList = []string{}
 
 func GearmanTop(args *Args) {
+	// Create config for logger
+	config := config{}
+	config.setDefaultValues()
+	createLogger(&config)
+
 	if args.Usage {
 		printTopUsage()
 	}
@@ -102,7 +107,14 @@ func printStats(ogHostname string) {
 	}
 
 	// Retrieve data from gearman admin and save queue data to queueList
-	queueList := getGearmanServerData(hostname, port)
+	queueList, err := getGearmanServerData(hostname, port)
+	if err != nil {
+		return
+	}
+	if len(queueList) == 0 {
+		fmt.Printf("No queues have been found at host %s", hostname)
+		return
+	}
 
 	var tableHeaders = []utils.ASCIITableHeader{
 		{

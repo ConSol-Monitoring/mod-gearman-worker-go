@@ -1,7 +1,6 @@
 package modgearman
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -15,12 +14,17 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-func getGearmanServerData(hostname string, port int) []queue {
+func getGearmanServerData(hostname string, port int) ([]queue, error) {
 	var queueList []queue
-	var gearmanStatus string = sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
+	gearmanStatus, err := sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
+
+	if err != nil {
+		log.Errorf("%s", err)
+		return []queue{}, err
+	}
 
 	if gearmanStatus == "" {
-		return queueList
+		return queueList, nil
 	}
 
 	// Organize queues into a list
@@ -31,9 +35,21 @@ func getGearmanServerData(hostname string, port int) []queue {
 		if len(parts) < 4 || (parts[0] == "dummy" && parts[1] == "") {
 			continue
 		}
-		totalInt, _ := strconv.Atoi(parts[1])
-		runningInt, _ := strconv.Atoi(parts[2])
-		availWorkerInt, _ := strconv.Atoi(parts[3])
+		totalInt, err := strconv.Atoi(parts[1])
+		if err != nil {
+			log.Errorf("The recieved data is not in the right format: %s", err)
+			return []queue{}, err
+		}
+		runningInt, err := strconv.Atoi(parts[2])
+		if err != nil {
+			log.Errorf("The recieved data is not in the right format: %s", err)
+			return []queue{}, err
+		}
+		availWorkerInt, err := strconv.Atoi(parts[3])
+		if err != nil {
+			log.Errorf("The recieved data is not in the right format: %s", err)
+			return []queue{}, err
+		}
 
 		queueList = append(queueList, queue{
 			Name:        parts[0],
@@ -44,31 +60,28 @@ func getGearmanServerData(hostname string, port int) []queue {
 		})
 	}
 
-	return queueList
+	return queueList, nil
 }
 
-func sendCmd2gearmandAdmin(cmd string, hostname string, port int) string {
+func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
 	conn, connErr := gm_net_connect(hostname, port)
 	if connErr != nil {
-		fmt.Println(connErr)
-		return ""
+		return "", connErr
 	}
 
 	_, writeErr := conn.Write([]byte(cmd))
 	if writeErr != nil {
-		fmt.Println(writeErr)
-		return ""
+		return "", writeErr
 	}
 
 	// Read response
 	buffer := make([]byte, 512)
 	n, readErr := conn.Read(buffer)
 	if readErr != nil {
-		fmt.Println(readErr)
-		return ""
+		return "", readErr
 	} else {
 		result := string(buffer[:n])
-		return result
+		return result, nil
 	}
 }
 
