@@ -37,17 +37,17 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 		}
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s", err)
+			log.Errorf("The recieved data is not in the right format: %s\n", err)
 			return []queue{}, err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s", err)
+			log.Errorf("The recieved data is not in the right format: %s\n", err)
 			return []queue{}, err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s", err)
+			log.Errorf("The recieved data is not in the right format: %s\n", err)
 			return []queue{}, err
 		}
 

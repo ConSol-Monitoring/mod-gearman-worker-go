@@ -25,6 +25,8 @@ type Args struct {
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
 
+var connTimeout = 10
+
 var hostList = []string{}
 
 func GearmanTop(args *Args) {
@@ -106,13 +108,34 @@ func printStats(ogHostname string) {
 		}
 	}
 
-	// Retrieve data from gearman admin and save queue data to queueList
-	queueList, err := getGearmanServerData(hostname, port)
+	// Retrieve data from gearman admin and save queue data to queueList. Implement a timeout
+	queueChan := make(chan []queue, 1)
+	errChan := make(chan error, 1)
+	go func() {
+		queueList, err := getGearmanServerData(hostname, port)
+		if err != nil {
+			errChan <- err
+		} else {
+			queueChan <- queueList
+		}
+	}()
+
+	var queueList []queue
+	var err error
+	select {
+	case queueList = <-queueChan:
+	case err = <-errChan:
+	case <-time.After(time.Duration(connTimeout) * time.Second):
+		log.Errorf("Time out while fetching data from host %s\n", hostname)
+		return
+	}
+
+	// Proccess possible errors
 	if err != nil {
 		return
 	}
 	if len(queueList) == 0 {
-		fmt.Printf("No queues have been found at host %s", hostname)
+		fmt.Printf("No queues have been found at host %s\n", hostname)
 		return
 	}
 
