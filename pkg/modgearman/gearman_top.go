@@ -25,7 +25,7 @@ type Args struct {
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
 
-var connTimeout = 10
+var connTimeout = 3
 
 var hostList = []string{}
 

@@ -1,6 +1,8 @@
 package modgearman
 
 import (
+	"bytes"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -68,6 +70,7 @@ func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error
 	if connErr != nil {
 		return "", connErr
 	}
+	defer conn.Close()
 
 	_, writeErr := conn.Write([]byte(cmd))
 	if writeErr != nil {
@@ -75,14 +78,25 @@ func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error
 	}
 
 	// Read response
-	buffer := make([]byte, 512)
-	n, readErr := conn.Read(buffer)
-	if readErr != nil {
-		return "", readErr
-	} else {
-		result := string(buffer[:n])
-		return result, nil
+	var buffer bytes.Buffer
+	tmp := make([]byte, 4000)
+
+	for {
+		n, readErr := conn.Read(tmp)
+		if n > 0 {
+			buffer.Write(tmp[:n])
+		}
+		if readErr != nil {
+			if readErr == io.EOF {
+				break
+			}
+			return "", readErr
+		}
+		if tmp[n-1] == '\n' {
+			break
+		}
 	}
+	return buffer.String(), nil
 }
 
 func gm_net_connect(hostname string, port int) (net.Conn, error) {
