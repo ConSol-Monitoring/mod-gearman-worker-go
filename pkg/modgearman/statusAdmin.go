@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -21,7 +22,7 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 	gearmanStatus, err := sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
 
 	if err != nil {
-		log.Errorf("%s", err)
+		//log.Errorf("%s", err)
 		return []queue{}, err
 	}
 
@@ -39,17 +40,17 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 		}
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s\n", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
 			return []queue{}, err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s\n", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
 			return []queue{}, err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
-			log.Errorf("The recieved data is not in the right format: %s\n", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
 			return []queue{}, err
 		}
 
@@ -66,9 +67,11 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 }
 
 func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
-	conn, connErr := gm_net_connect(hostname, port)
-	if connErr != nil {
-		return "", connErr
+	addr := hostname + ":" + strconv.Itoa(port)
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return "", err
 	}
 	defer conn.Close()
 
@@ -92,19 +95,9 @@ func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error
 			}
 			return "", readErr
 		}
-		if tmp[n-1] == '\n' {
+		if n > 0 && tmp[n-1] == '\n' {
 			break
 		}
 	}
 	return buffer.String(), nil
-}
-
-func gm_net_connect(hostname string, port int) (net.Conn, error) {
-	addr := hostname + ":" + strconv.Itoa(port)
-
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
 }

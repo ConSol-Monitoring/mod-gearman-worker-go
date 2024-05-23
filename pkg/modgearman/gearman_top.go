@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/consol-monitoring/snclient/pkg/utils"
@@ -25,21 +26,22 @@ type Args struct {
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
 
-var connTimeout = 3
+var connTimeout = 10
 
 var hostList = []string{}
 
 func GearmanTop(args *Args) {
-	// Create config for logger
-	config := config{}
+	config := &config{}
 	config.setDefaultValues()
-	createLogger(&config)
+	createLogger(config)
 
 	if args.Usage {
 		printTopUsage()
+		return
 	}
 	if args.Version {
 		printTopVersion()
+		return
 	}
 
 	if len(hostList) == 0 {
@@ -47,14 +49,15 @@ func GearmanTop(args *Args) {
 	}
 	hostList = unique(hostList)
 
-	// Print stats only once when using batch mode
 	if args.Batch {
 		for _, host := range hostList {
-			printStats(host)
+			currTime := time.Now().Format("2006-01-02 15:04:05")
+			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+			fmt.Println(printStats(host))
 		}
 		return
 	}
-	// Print stats in a loop
+
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
@@ -70,23 +73,52 @@ func GearmanTop(args *Args) {
 
 	tick := time.Tick(time.Duration(args.Interval * float64(time.Second)))
 
+	statsChan := make(chan map[string]string)
+	printMap := make(map[string]string)
+	var mu sync.Mutex
+
+	for _, host := range hostList {
+		go func(host string) {
+			for {
+				stats := printStats(host)
+				statsChan <- map[string]string{host: stats}
+				time.Sleep(time.Duration(args.Interval) * time.Second)
+			}
+		}(host)
+	}
+
 	for {
 		select {
 		case ev := <-eventQueue:
 			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q') {
-				return // Exit if 'q' is pressed
+				return
 			}
 		case <-tick:
-			// Clear screen
+			mu.Lock()
 			fmt.Printf("\033[H\033[2J")
+			currTime := time.Now().Format("2006-01-02 15:04:05")
+			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+
 			for _, host := range hostList {
-				printStats(host)
+				if stat, ok := printMap[host]; ok {
+					fmt.Println(stat)
+				} else {
+					fmt.Println(host)
+					fmt.Printf("No data yet...\n\n\n")
+				}
 			}
+			mu.Unlock()
+		case stats := <-statsChan:
+			mu.Lock()
+			for host, stat := range stats {
+				printMap[host] = stat
+			}
+			mu.Unlock()
 		}
 	}
 }
 
-func printStats(ogHostname string) {
+func printStats(ogHostname string) string {
 	var port int
 
 	// Determine port of hostname
@@ -126,17 +158,17 @@ func printStats(ogHostname string) {
 	case queueList = <-queueChan:
 	case err = <-errChan:
 	case <-time.After(time.Duration(connTimeout) * time.Second):
-		log.Errorf("Time out while fetching data from host %s\n", hostname)
-		return
+		//log.Errorf("Time out while fetching data from host %s\n", hostname)
+		return fmt.Sprintf("%s:%d\nTimeout while fetching data from host %s\n\n", hostname, port, hostname)
 	}
 
 	// Proccess possible errors
 	if err != nil {
-		return
+		return fmt.Sprintf("%s:%d\n%s\n\n", hostname, port, err)
 	}
 	if len(queueList) == 0 {
-		fmt.Printf("No queues have been found at host %s\n", hostname)
-		return
+		//fmt.Printf("No queues have been found at host %s\n", hostname)
+		return fmt.Sprintf("%s:%d\nNo queues have been found at host %s\n\n", hostname, port, hostname)
 	}
 
 	var tableHeaders = []utils.ASCIITableHeader{
@@ -182,12 +214,10 @@ func printStats(ogHostname string) {
 
 	table, err := utils.ASCIITable(tableHeaders, rows, true)
 	if err != nil {
-		fmt.Println("Error: ", err)
-		return
+		//fmt.Println("Error: ", err)
+		return fmt.Sprintf("%s:%d\nError: %s\n\n", hostname, port, err)
 	}
-	currTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("%s  -  %s:%d  -  v%s\n\n", currTime, hostname, port, GM_TOP_VERSION)
-	fmt.Println(table)
+	return fmt.Sprintf("%s:%d\n%s", hostname, port, table)
 }
 
 func printTopUsage() {
