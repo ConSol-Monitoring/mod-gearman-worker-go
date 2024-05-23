@@ -140,28 +140,6 @@ func printStats(ogHostname string) string {
 		}
 	}
 
-	// Retrieve data from gearman admin and save queue data to queueList. Implement a timeout
-	// queueChan := make(chan []queue, 1)
-	// errChan := make(chan error, 1)
-	// go func() {
-	// 	queueList, err := getGearmanServerData(hostname, port)
-	// 	if err != nil {
-	// 		errChan <- err
-	// 	} else {
-	// 		queueChan <- queueList
-	// 	}
-	// }()
-
-	// var queueList []queue
-	// var err error
-	// select {
-	// case queueList = <-queueChan:
-	// case err = <-errChan:
-	// case <-time.After(time.Duration(CONNTIMEOUT) * time.Second):
-	// 	//log.Errorf("Time out while fetching data from host %s\n", hostname)
-	// 	return fmt.Sprintf("%s:%d\nTimeout while fetching data from host %s\n\n", hostname, port, hostname)
-	// }
-
 	queueList, err := getGearmanServerData(hostname, port)
 
 	// Proccess possible errors
@@ -215,7 +193,6 @@ func printStats(ogHostname string) string {
 
 	table, err := utils.ASCIITable(tableHeaders, rows, true)
 	if err != nil {
-		//fmt.Println("Error: ", err)
 		return fmt.Sprintf("%s:%d\nError: %s\n\n", hostname, port, err)
 	}
 	return fmt.Sprintf("%s:%d\n%s", hostname, port, table)

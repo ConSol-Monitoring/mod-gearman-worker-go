@@ -23,7 +23,6 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 	gearmanStatus, err := sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
 
 	if err != nil {
-		//log.Errorf("%s", err)
 		return nil, err
 	}
 
