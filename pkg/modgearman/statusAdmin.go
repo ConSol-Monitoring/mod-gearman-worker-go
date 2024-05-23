@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type queue struct {
@@ -23,7 +24,7 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 
 	if err != nil {
 		//log.Errorf("%s", err)
-		return []queue{}, err
+		return nil, err
 	}
 
 	if gearmanStatus == "" {
@@ -41,17 +42,17 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
-			return []queue{}, err
+			return nil, err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
-			return []queue{}, err
+			return nil, err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
-			return []queue{}, err
+			return nil, err
 		}
 
 		queueList = append(queueList, queue{
@@ -69,11 +70,14 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
 	addr := hostname + ":" + strconv.Itoa(port)
 
-	conn, err := net.Dial("tcp", addr)
+	conn, err := net.DialTimeout("tcp", addr, CONNTIMEOUT*time.Second)
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
+
+	// Set timeout for established connection
+	conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
 
 	_, writeErr := conn.Write([]byte(cmd))
 	if writeErr != nil {

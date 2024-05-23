@@ -26,7 +26,7 @@ type Args struct {
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
 
-var connTimeout = 10
+const CONNTIMEOUT = 10
 
 var hostList = []string{}
 
@@ -141,33 +141,34 @@ func printStats(ogHostname string) string {
 	}
 
 	// Retrieve data from gearman admin and save queue data to queueList. Implement a timeout
-	queueChan := make(chan []queue, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		queueList, err := getGearmanServerData(hostname, port)
-		if err != nil {
-			errChan <- err
-		} else {
-			queueChan <- queueList
-		}
-	}()
+	// queueChan := make(chan []queue, 1)
+	// errChan := make(chan error, 1)
+	// go func() {
+	// 	queueList, err := getGearmanServerData(hostname, port)
+	// 	if err != nil {
+	// 		errChan <- err
+	// 	} else {
+	// 		queueChan <- queueList
+	// 	}
+	// }()
 
-	var queueList []queue
-	var err error
-	select {
-	case queueList = <-queueChan:
-	case err = <-errChan:
-	case <-time.After(time.Duration(connTimeout) * time.Second):
-		//log.Errorf("Time out while fetching data from host %s\n", hostname)
-		return fmt.Sprintf("%s:%d\nTimeout while fetching data from host %s\n\n", hostname, port, hostname)
-	}
+	// var queueList []queue
+	// var err error
+	// select {
+	// case queueList = <-queueChan:
+	// case err = <-errChan:
+	// case <-time.After(time.Duration(CONNTIMEOUT) * time.Second):
+	// 	//log.Errorf("Time out while fetching data from host %s\n", hostname)
+	// 	return fmt.Sprintf("%s:%d\nTimeout while fetching data from host %s\n\n", hostname, port, hostname)
+	// }
+
+	queueList, err := getGearmanServerData(hostname, port)
 
 	// Proccess possible errors
 	if err != nil {
 		return fmt.Sprintf("%s:%d\n%s\n\n", hostname, port, err)
 	}
-	if len(queueList) == 0 {
-		//fmt.Printf("No queues have been found at host %s\n", hostname)
+	if queueList == nil {
 		return fmt.Sprintf("%s:%d\nNo queues have been found at host %s\n\n", hostname, port, hostname)
 	}
 
