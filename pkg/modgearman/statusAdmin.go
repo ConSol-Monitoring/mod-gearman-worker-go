@@ -69,17 +69,23 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
 	addr := hostname + ":" + strconv.Itoa(port)
 
-	conn, err := net.DialTimeout("tcp", addr, CONNTIMEOUT*time.Second)
-	if err != nil {
-		return "", err
+	conn := connMap[addr]
+	// If no connection is found, likely filled for the first time, create a new one
+	if conn == nil {
+		var err error
+		conn, err = net.DialTimeout("tcp", addr, CONNTIMEOUT*time.Second)
+		if err != nil {
+			return "", err
+		}
+		connMap[addr] = conn
 	}
-	defer conn.Close()
 
 	// Set timeout for established connection
 	conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
 
 	_, writeErr := conn.Write([]byte(cmd))
 	if writeErr != nil {
+		connMap[addr] = nil
 		return "", writeErr
 	}
 
@@ -96,6 +102,7 @@ func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error
 			if readErr == io.EOF {
 				break
 			}
+			connMap[addr] = nil
 			return "", readErr
 		}
 		if n > 0 && tmp[n-1] == '\n' {

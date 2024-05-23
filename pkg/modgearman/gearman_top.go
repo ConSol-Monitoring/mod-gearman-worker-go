@@ -3,6 +3,7 @@ package modgearman
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ const GM_DEFAULT_PORT = 4730
 const CONNTIMEOUT = 10
 
 var hostList = []string{}
+var connMap = map[string]net.Conn{}
 
 func GearmanTop(args *Args) {
 	config := &config{}
@@ -48,6 +50,11 @@ func GearmanTop(args *Args) {
 		hostList = append(hostList, "localhost")
 	}
 	hostList = unique(hostList)
+
+	// Prefill connMapp with all hosts to save and maintain connections
+	for _, host := range hostList {
+		connMap[host] = nil
+	}
 
 	if args.Batch {
 		for _, host := range hostList {
@@ -91,6 +98,12 @@ func GearmanTop(args *Args) {
 		select {
 		case ev := <-eventQueue:
 			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q') {
+				// Close all active connections
+				for key := range connMap {
+					if connMap[key] != nil {
+						connMap[key].Close()
+					}
+				}
 				return
 			}
 		case <-tick:
