@@ -131,7 +131,7 @@ func printStats(ogHostname string) string {
 	} else if len(hostAddress) == 2 {
 		port, _ = strconv.Atoi(hostAddress[1])
 	} else {
-		// Get port from gearman config if program is started on the same environment
+		// If port is not set, get port from gearman config if program is started on the same environment
 		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
 		if envServer != "" {
 			port, _ = strconv.Atoi(strings.Split(envServer, ":")[1])
