@@ -171,10 +171,10 @@ func printStats(ogHostname string) string {
 
 	// Proccess possible errors
 	if err != nil {
-		return fmt.Sprintf("%s:%d\n%s\n\n", hostname, port, err)
+		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostname, port, err)
 	}
 	if queueList == nil {
-		return fmt.Sprintf("%s:%d\nNo queues have been found at host %s\n\n", hostname, port, hostname)
+		return fmt.Sprintf("---- %s:%d ----\nNo queues have been found at host %s\n\n", hostname, port, hostname)
 	}
 
 	var tableHeaders = []utils.ASCIITableHeader{
@@ -214,9 +214,9 @@ func printStats(ogHostname string) string {
 
 	table, err := utils.ASCIITable(tableHeaders, rows, true)
 	if err != nil {
-		return fmt.Sprintf("%s:%d\nError: %s\n\n", hostname, port, err)
+		return fmt.Sprintf("---- %s:%d ----\nError: %s\n\n", hostname, port, err)
 	}
-	return fmt.Sprintf("%s:%d\n%s", hostname, port, table)
+	return fmt.Sprintf("---- %s:%d -----\n%s", hostname, port, table)
 }
 
 func printTopUsage() {
