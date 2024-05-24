@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +24,19 @@ type Args struct {
 	Interval float64
 	Batch    bool
 }
+
+type dataRow struct {
+	queueName       string
+	workerAvailable string
+	jobsWaiting     string
+	jobsRunning     string
+}
+
+type byQueueName []dataRow
+
+func (a byQueueName) Len() int           { return len(a) }
+func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
+func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
@@ -186,13 +200,6 @@ func printStats(ogHostname string) string {
 		},
 	}
 
-	type dataRow struct {
-		queueName       string
-		workerAvailable string
-		jobsWaiting     string
-		jobsRunning     string
-	}
-
 	var rows []dataRow
 	for _, queue := range queueList {
 
@@ -203,6 +210,7 @@ func printStats(ogHostname string) string {
 			jobsRunning:     strconv.Itoa(queue.Running),
 		})
 	}
+	sort.Sort(byQueueName(rows))
 
 	table, err := utils.ASCIITable(tableHeaders, rows, true)
 	if err != nil {
