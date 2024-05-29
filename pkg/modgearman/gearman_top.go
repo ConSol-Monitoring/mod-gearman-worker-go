@@ -32,6 +32,7 @@ type dataRow struct {
 	jobsRunning     string
 }
 
+// Logic for sorting queue names
 type byQueueName []dataRow
 
 func (a byQueueName) Len() int           { return len(a) }
@@ -75,7 +76,7 @@ func GearmanTop(args *Args) {
 		for _, host := range hostList {
 			currTime := time.Now().Format("2006-01-02 15:04:05")
 			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
-			fmt.Println(printStats(host))
+			fmt.Println(getStats(host))
 		}
 		return
 	}
@@ -93,23 +94,33 @@ func GearmanTop(args *Args) {
 		}
 	}()
 
-	ticker := time.Tick(time.Duration(args.Interval * float64(time.Second)))
+	ticker := time.NewTicker(time.Duration(args.Interval * float64(time.Second)))
+	defer ticker.Stop()
 
 	statsChan := make(chan map[string]string)
 	printMap := make(map[string]string)
 	var mu sync.Mutex
 
-	// Execute printStats() for all hosts in parallel in order to prevent a program block
+	// Execute getStats() for all hosts in parallel in order to prevent a program block
 	// when a connection to a host runs into a timeout
 	for _, host := range hostList {
 		go func(host string) {
 			for {
-				stats := printStats(host)
+				stats := getStats(host)
 				statsChan <- map[string]string{host: stats}
 				time.Sleep(time.Duration(args.Interval) * time.Second)
 			}
 		}(host)
 	}
+
+	// Print once before the ticker ticks for the first time
+	mu.Lock()
+	stats := <-statsChan
+	for host, stat := range stats {
+		printMap[host] = stat
+	}
+	mu.Unlock()
+	printHosts(&mu, printMap)
 
 	for {
 		select {
@@ -123,22 +134,8 @@ func GearmanTop(args *Args) {
 				}
 				return
 			}
-		case <-ticker:
-			mu.Lock()
-			// Clear screen
-			fmt.Printf("\033[H\033[2J")
-			currTime := time.Now().Format("2006-01-02 15:04:05")
-			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
-
-			for _, host := range hostList {
-				if stat, ok := printMap[host]; ok {
-					fmt.Println(stat)
-				} else {
-					fmt.Println(host)
-					fmt.Printf("No data yet...\n\n\n")
-				}
-			}
-			mu.Unlock()
+		case <-ticker.C:
+			printHosts(&mu, printMap)
 		// If a new stat is available all stats are transferred into the printMap
 		// The printMap maintains the order right order of the called hosts and assigns the
 		// correct string (table) that should be printed
@@ -152,7 +149,25 @@ func GearmanTop(args *Args) {
 	}
 }
 
-func printStats(ogHostname string) string {
+func printHosts(mu *sync.Mutex, printMap map[string]string) {
+	mu.Lock()
+	// Clear screen
+	fmt.Printf("\033[H\033[2J")
+	currTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+
+	for _, host := range hostList {
+		if stat, ok := printMap[host]; ok {
+			fmt.Println(stat)
+		} else {
+			fmt.Println(host)
+			fmt.Printf("No data yet...\n\n\n")
+		}
+	}
+	mu.Unlock()
+}
+
+func getStats(ogHostname string) string {
 	var port int
 
 	// Determine port of hostname
