@@ -30,7 +30,7 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 		return queueList, nil
 	}
 
-	// Organize queues into a list
+	// Split recieved answer-string and set the data in relation
 	lines := strings.Split(gearmanStatus, "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)
@@ -69,8 +69,9 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
 	addr := hostname + ":" + strconv.Itoa(port)
 
+	// Look for existing connection in connMap
+	// If no connection is found establish a new one with the host and save it to connMap for future use
 	conn := connMap[addr]
-	// If no connection is found, likely filled for the first time, create a new one
 	if conn == nil {
 		var err error
 		conn, err = net.DialTimeout("tcp", addr, CONNTIMEOUT*time.Second)
@@ -80,7 +81,7 @@ func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error
 		connMap[addr] = conn
 	}
 
-	// Set timeout for established connection
+	// Set and reset timeout for established connection
 	conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
 
 	_, writeErr := conn.Write([]byte(cmd))

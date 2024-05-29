@@ -65,7 +65,8 @@ func GearmanTop(args *Args) {
 	}
 	hostList = unique(hostList)
 
-	// Prefill connMapp with all hosts to save and maintain connections
+	// Map with active connections to the hosts in order to maintain an connection
+	// instead of creating a new one
 	for _, host := range hostList {
 		connMap[host] = nil
 	}
@@ -92,12 +93,14 @@ func GearmanTop(args *Args) {
 		}
 	}()
 
-	tick := time.Tick(time.Duration(args.Interval * float64(time.Second)))
+	ticker := time.Tick(time.Duration(args.Interval * float64(time.Second)))
 
 	statsChan := make(chan map[string]string)
 	printMap := make(map[string]string)
 	var mu sync.Mutex
 
+	// Execute printStats() for all hosts in parallel in order to prevent a program block
+	// when a connection to a host runs into a timeout
 	for _, host := range hostList {
 		go func(host string) {
 			for {
@@ -120,8 +123,9 @@ func GearmanTop(args *Args) {
 				}
 				return
 			}
-		case <-tick:
+		case <-ticker:
 			mu.Lock()
+			// Clear screen
 			fmt.Printf("\033[H\033[2J")
 			currTime := time.Now().Format("2006-01-02 15:04:05")
 			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
@@ -135,6 +139,9 @@ func GearmanTop(args *Args) {
 				}
 			}
 			mu.Unlock()
+		// If a new stat is available all stats are transferred into the printMap
+		// The printMap maintains the order right order of the called hosts and assigns the
+		// correct string (table) that should be printed
 		case stats := <-statsChan:
 			mu.Lock()
 			for host, stat := range stats {
@@ -157,14 +164,16 @@ func printStats(ogHostname string) string {
 		os.Exit(1)
 	} else if len(hostAddress) == 2 {
 		port, _ = strconv.Atoi(hostAddress[1])
-	} else {
-		// If port is not set, get port from gearman config if program is started on the same environment
+	} else if hostname == "localhost" || hostname == "127.0.0.1" {
+		// If port is not set, get port from gearman config, if gearman_top program is started in the same environment.
 		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
 		if envServer != "" {
 			port, _ = strconv.Atoi(strings.Split(envServer, ":")[1])
-		} else {
-			port = GM_DEFAULT_PORT
 		}
+	}
+	// If no port is found, use the default gearman_port
+	if port == 0 {
+		port = GM_DEFAULT_PORT
 	}
 
 	queueList, err := getGearmanServerData(hostname, port)
