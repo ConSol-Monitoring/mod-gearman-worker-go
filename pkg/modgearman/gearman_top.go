@@ -23,6 +23,7 @@ type Args struct {
 	Quiet    bool
 	Interval float64
 	Batch    bool
+	Hosts    []string
 }
 
 type dataRow struct {
@@ -32,25 +33,19 @@ type dataRow struct {
 	jobsRunning     string
 }
 
-// Logic for sorting queue names
 type byQueueName []dataRow
 
+// Logic for sorting queue names
 func (a byQueueName) Len() int           { return len(a) }
 func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
 func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 const GM_TOP_VERSION = "1.1.2"
 const GM_DEFAULT_PORT = 4730
-
 const CONNTIMEOUT = 10
 
-var hostList = []string{}
-var connMap = map[string]net.Conn{}
-
 func GearmanTop(args *Args) {
-	config := &config{}
-	config.setDefaultValues()
-	createLogger(config)
+	implementLogger()
 
 	if args.Usage {
 		printTopUsage()
@@ -61,32 +56,41 @@ func GearmanTop(args *Args) {
 		return
 	}
 
-	if len(hostList) == 0 {
-		hostList = append(hostList, "localhost")
-	}
-	hostList = unique(hostList)
+	hostList := createHostList(args.Hosts)
 
-	// Map with active connections to the hosts in order to maintain an connection
-	// instead of creating a new one
-	for _, host := range hostList {
-		connMap[host] = nil
-	}
+	// Map with active connections to the hosts in order to maintain a connection
+	// instead of creating a new connection on every iteration
+	connectionMap := createConnectionMap(hostList)
 
 	if args.Batch {
-		for _, host := range hostList {
-			currTime := time.Now().Format("2006-01-02 15:04:05")
-			fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
-			fmt.Println(getStats(host))
-		}
-		return
+		printInBatchMode(hostList, connectionMap)
 	}
 
-	err := termbox.Init()
-	if err != nil {
-		panic(err)
-	}
+	initializeTermbox()
 	defer termbox.Close()
 
+	// Print stats for host in a loop
+	runInteractiveMode(args, hostList, connectionMap)
+}
+
+func createConnectionMap(hostList []string) map[string]net.Conn {
+	connectionMap := make(map[string]net.Conn)
+	for _, host := range hostList {
+		connectionMap[host] = nil
+	}
+	return connectionMap
+}
+
+func createHostList(hostList []string) []string {
+	if len(hostList) == 0 {
+		hostList = append(hostList, "localhost")
+	} else {
+		hostList = unique(hostList)
+	}
+	return hostList
+}
+
+func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]net.Conn) {
 	eventQueue := make(chan termbox.Event)
 	go func() {
 		for {
@@ -97,111 +101,171 @@ func GearmanTop(args *Args) {
 	ticker := time.NewTicker(time.Duration(args.Interval * float64(time.Second)))
 	defer ticker.Stop()
 
-	statsChan := make(chan map[string]string)
+	tableChan := make(chan map[string]string)
 	printMap := make(map[string]string)
 	var mu sync.Mutex
+
+	// Initialize printMap with placeholders
+	for _, host := range hostList {
+		printMap[host] = fmt.Sprintf("---- %s ----\nNot data yet...\n\n\n", host)
+	}
 
 	// Execute getStats() for all hosts in parallel in order to prevent a program block
 	// when a connection to a host runs into a timeout
 	for _, host := range hostList {
 		go func(host string) {
 			for {
-				stats := getStats(host)
-				statsChan <- map[string]string{host: stats}
+				table := generateQueueTable(host, connectionMap)
+				tableChan <- map[string]string{host: table}
 				time.Sleep(time.Duration(args.Interval) * time.Second)
 			}
 		}(host)
 	}
 
 	// Print once before the ticker ticks for the first time
-	mu.Lock()
-	stats := <-statsChan
-	for host, stat := range stats {
-		printMap[host] = stat
-	}
-	mu.Unlock()
-	printHosts(&mu, printMap)
+	initPrint(&mu, printMap, hostList, tableChan)
 
 	for {
 		select {
 		case ev := <-eventQueue:
 			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q') {
 				// Close all active connections
-				for key := range connMap {
-					if connMap[key] != nil {
-						connMap[key].Close()
+				for key := range connectionMap {
+					if connectionMap[key] != nil {
+						connectionMap[key].Close()
 					}
 				}
 				return
 			}
 		case <-ticker.C:
-			printHosts(&mu, printMap)
+			printHosts(&mu, hostList, printMap)
 		// If a new stat is available all stats are transferred into the printMap
-		// The printMap maintains the order right order of the called hosts and assigns the
+		// printMap maintains the order right order of the called hosts and assigns the
 		// correct string (table) that should be printed
-		case stats := <-statsChan:
+		case tables := <-tableChan:
 			mu.Lock()
-			for host, stat := range stats {
-				printMap[host] = stat
+			for host, table := range tables {
+				printMap[host] = table
 			}
 			mu.Unlock()
 		}
 	}
 }
 
-func printHosts(mu *sync.Mutex, printMap map[string]string) {
+func initializeTermbox() {
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func implementLogger() {
+	cfg := &config{}
+	cfg.setDefaultValues()
+	createLogger(cfg)
+}
+
+func printInBatchMode(hostList []string, connectionMap map[string]net.Conn) {
+	for _, host := range hostList {
+		currTime := time.Now().Format("2006-01-02 15:04:05")
+		fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+		fmt.Println(generateQueueTable(host, connectionMap))
+	}
+}
+
+func initPrint(mu *sync.Mutex, printMap map[string]string, hostList []string, tableChan chan map[string]string) {
+	printHosts(mu, hostList, printMap)
+	tables := <-tableChan
 	mu.Lock()
+	for host, table := range tables {
+		printMap[host] = table
+	}
+	mu.Unlock()
+	printHosts(mu, hostList, printMap)
+}
+
+func printHosts(mu *sync.Mutex, hostList []string, printMap map[string]string) {
+	mu.Lock()
+	defer mu.Unlock()
 	// Clear screen
 	fmt.Printf("\033[H\033[2J")
 	currTime := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
 
 	for _, host := range hostList {
-		if stat, ok := printMap[host]; ok {
-			fmt.Println(stat)
+		if table, ok := printMap[host]; ok {
+			fmt.Println(table)
 		} else {
-			fmt.Println(host)
+			fmt.Printf("---- %s ----", host)
 			fmt.Printf("No data yet...\n\n\n")
 		}
 	}
-	mu.Unlock()
 }
 
-func getStats(ogHostname string) string {
-	var port int
-
-	// Determine port of hostname
-	hostAddress := strings.Split(ogHostname, ":")
-	hostname := hostAddress[0]
-	if len(hostAddress) > 2 {
-		err := errors.New("too many colons in host address")
+func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) string {
+	hostName := extractHostName(ogHostname)
+	port, err := determinePort(ogHostname)
+	if err != nil {
 		fmt.Printf("%s %s\n", err, ogHostname)
 		os.Exit(1)
-	} else if len(hostAddress) == 2 {
-		port, _ = strconv.Atoi(hostAddress[1])
-	} else if hostname == "localhost" || hostname == "127.0.0.1" {
-		// If port is not set, get port from gearman config, if gearman_top program is started in the same environment.
-		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
-		if envServer != "" {
-			port, _ = strconv.Atoi(strings.Split(envServer, ":")[1])
-		}
 	}
-	// If no port is found, use the default gearman_port
-	if port == 0 {
-		port = GM_DEFAULT_PORT
-	}
+	newAddress := fmt.Sprintf("%s:%d", hostName, port)
 
-	queueList, err := getGearmanServerData(hostname, port)
-
-	// Proccess possible errors
+	queueList, err := processGearmanQueues(newAddress, connectionMap)
 	if err != nil {
-		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostname, port, err)
+		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostName, port, err)
 	}
 	if queueList == nil {
-		return fmt.Sprintf("---- %s:%d ----\nNo queues have been found at host %s\n\n", hostname, port, hostname)
+		return fmt.Sprintf("---- %s:%d ----\nNo queues have been found at host %s\n\n", hostName, port, hostName)
 	}
 
-	var tableHeaders = []utils.ASCIITableHeader{
+	table, err := createTable(queueList)
+	if err != nil {
+		return fmt.Sprintf("---- %s:%d ----\nError: %s\n\n", hostName, port, err)
+	}
+	return fmt.Sprintf("---- %s:%d -----\n%s", hostName, port, table)
+}
+
+func determinePort(address string) (int, error) {
+	addressParts := strings.Split(address, ":")
+	hostName := addressParts[0]
+
+	switch len(addressParts) {
+	case 1:
+		return getDefaultPort(hostName)
+	case 2:
+		return strconv.Atoi(addressParts[1])
+	default:
+		return -1, errors.New("too many colons in address")
+	}
+}
+
+func getDefaultPort(hostname string) (int, error) {
+	if hostname == "localhost" || hostname == "127.0.0.1" {
+		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
+		if envServer != "" {
+			return strconv.Atoi(strings.Split(envServer, ":")[1])
+		}
+	}
+	return GM_DEFAULT_PORT, nil
+}
+
+func extractHostName(address string) string {
+	return strings.Split(address, ":")[0]
+}
+
+func createTable(queueList []queue) (string, error) {
+	tableHeaders := createTableHeaders()
+	rows := createTableRows(queueList)
+	table, err := utils.ASCIITable(tableHeaders, rows, true)
+	if err != nil {
+		return "", err
+	}
+	return table, nil
+}
+
+func createTableHeaders() []utils.ASCIITableHeader {
+	tableHeaders := []utils.ASCIITableHeader{
 		{
 			Name:     "Queue Name",
 			Field:    "queueName",
@@ -223,7 +287,10 @@ func getStats(ogHostname string) string {
 			Centered: false,
 		},
 	}
+	return tableHeaders
+}
 
+func createTableRows(queueList []queue) []dataRow {
 	var rows []dataRow
 	for _, queue := range queueList {
 
@@ -235,12 +302,7 @@ func getStats(ogHostname string) string {
 		})
 	}
 	sort.Sort(byQueueName(rows))
-
-	table, err := utils.ASCIITable(tableHeaders, rows, true)
-	if err != nil {
-		return fmt.Sprintf("---- %s:%d ----\nError: %s\n\n", hostname, port, err)
-	}
-	return fmt.Sprintf("---- %s:%d -----\n%s", hostname, port, table)
+	return rows
 }
 
 func printTopUsage() {
@@ -264,8 +326,8 @@ func printTopVersion() {
 	os.Exit(0)
 }
 
-func Add2HostList(host string) error {
-	hostList = append(hostList, host)
+func Add2HostList(host string, hostList *[]string) error {
+	*hostList = append(*hostList, host)
 	return nil
 }
 

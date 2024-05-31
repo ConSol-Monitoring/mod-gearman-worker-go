@@ -18,20 +18,14 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-func getGearmanServerData(hostname string, port int) ([]queue, error) {
-	var queueList []queue
-	gearmanStatus, err := sendCmd2gearmandAdmin("status\nversion\n", hostname, port)
-
+func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, error) {
+	payload, err := queryGermanInstance(address, connectionMap)
 	if err != nil {
 		return nil, err
 	}
-
-	if gearmanStatus == "" {
-		return queueList, nil
-	}
-
-	// Split recieved answer-string and set the data in relation
-	lines := strings.Split(gearmanStatus, "\n")
+	// Split recieved payload and extract and store data
+	var queueList []queue
+	lines := strings.Split(payload, "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)
 
@@ -66,49 +60,68 @@ func getGearmanServerData(hostname string, port int) ([]queue, error) {
 	return queueList, nil
 }
 
-func sendCmd2gearmandAdmin(cmd string, hostname string, port int) (string, error) {
-	addr := hostname + ":" + strconv.Itoa(port)
-
+func queryGermanInstance(address string, connectionMap map[string]net.Conn) (string, error) {
 	// Look for existing connection in connMap
 	// If no connection is found establish a new one with the host and save it to connMap for future use
-	conn := connMap[addr]
+	conn := connectionMap[address]
 	if conn == nil {
-		var err error
-		conn, err = net.DialTimeout("tcp", addr, CONNTIMEOUT*time.Second)
-		if err != nil {
-			return "", err
+		var connErr error
+		conn, connErr = makeConnection(address)
+		if connErr != nil {
+			return "", connErr
 		}
-		connMap[addr] = conn
+		connectionMap[address] = conn
 	}
-
-	// Set and reset timeout for established connection
-	conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
-
-	_, writeErr := conn.Write([]byte(cmd))
+	writeErr := writeConnection(conn, "status\nversion\n")
 	if writeErr != nil {
-		connMap[addr] = nil
+		connectionMap[address] = nil
 		return "", writeErr
 	}
+	payload, readErr := readConnection(conn)
+	if readErr != nil {
+		return "", readErr
+	}
+	return payload, nil
+}
 
-	// Read response
+func makeConnection(address string) (net.Conn, error) {
+	conn, err := net.DialTimeout("tcp", address, CONNTIMEOUT*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	//conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	return conn, nil
+}
+
+func writeConnection(conn net.Conn, cmd string) error {
+	conn.SetWriteDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	_, err := conn.Write([]byte(cmd))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readConnection(conn net.Conn) (string, error) {
+	conn.SetReadDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
 	var buffer bytes.Buffer
 	tmp := make([]byte, 4000)
 
 	for {
-		n, readErr := conn.Read(tmp)
+		n, err := conn.Read(tmp)
 		if n > 0 {
 			buffer.Write(tmp[:n])
 		}
-		if readErr != nil {
-			if readErr == io.EOF {
+		if err != nil {
+			if err == io.EOF {
 				break
 			}
-			connMap[addr] = nil
-			return "", readErr
+			return "", err
 		}
 		if n > 0 && tmp[n-1] == '\n' {
 			break
 		}
 	}
+
 	return buffer.String(), nil
 }

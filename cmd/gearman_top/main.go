@@ -22,7 +22,9 @@ func main() {
 	fs.BoolVar(&args.Batch, "b", false, "Batch mode")
 	fs.BoolVar(&args.Verbose, "v", false, "Verbose output")
 	fs.Float64Var(&args.Interval, "i", 1.0, "Set interval")
-	fs.Func("H", "Add host", modgearman.Add2HostList)
+	fs.Func("H", "Add host", func(host string) error {
+		return modgearman.Add2HostList(host, &args.Hosts)
+	})
 
 	// Parse the flags in the custom FlagSet
 	err := fs.Parse(os.Args[1:])
