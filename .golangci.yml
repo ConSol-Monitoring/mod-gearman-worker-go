@@ -49,6 +49,7 @@ linters:
     - tagliatelle
     - testpackage
     - wsl
+    - err113
     # deprecated
     - deadcode
     - structcheck
@@ -83,7 +84,6 @@ issues:
     - 'Magic number: 100000\D '
     - 'Magic number: 65536\D '
     - 'Expect WriteFile permissions to be 0600 or less'
-    - 'err113:'
     - 'G204: Subprocess launched'
     - 'G114: Use of net/http serve function that has no support for setting timeouts'
     - 'RLIMIT_NOFILE contains underscore'
