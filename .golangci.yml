@@ -52,11 +52,13 @@ linters:
     - err113
     # deprecated
     - deadcode
+    - execinquery
+    - golint
+    - gomnd
+    - nosnakecase
+    - scopelint
     - structcheck
     - varcheck
-    - scopelint
-    - nosnakecase
-    - golint
 issues:
   max-same-issues: 0
   exclude-use-default: true
@@ -108,7 +110,7 @@ issues:
     - path: _test.*\.go
       linters:
         - errcheck
-        - gomnd
+        - mnd
         - dupword
         - funlen
         - lll
