@@ -11,3 +11,11 @@ tools/
 go.work
 go.work.sum
 test*.pl
+/.idea/.gitignore
+/cmd/.idea/cmd.iml
+/.idea/mod-gearman-worker-go.iml
+/.idea/modules.xml
+/cmd/.idea/modules.xml
+/.idea/vcs.xml
+/cmd/.idea/vcs.xml
+/cmd/.idea/workspace.xml
