@@ -34,17 +34,17 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 		}
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
 			return nil, err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
 			return nil, err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %s", err)
+			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
 			return nil, err
 		}
 
@@ -63,23 +63,23 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 func queryGermanInstance(address string, connectionMap map[string]net.Conn) (string, error) {
 	// Look for existing connection in connMap
 	// If no connection is found establish a new one with the host and save it to connMap for future use
-	conn := connectionMap[address]
-	if conn == nil {
-		var connErr error
-		conn, connErr = makeConnection(address)
-		if connErr != nil {
-			return "", connErr
+	conn, exists := connectionMap[address]
+	if !exists {
+		var err error
+		conn, err = makeConnection(address)
+		if err != nil {
+			return "", fmt.Errorf("error with tcp connection -> %w", err)
 		}
 		connectionMap[address] = conn
 	}
-	writeErr := writeConnection(conn, "status\nversion\n")
-	if writeErr != nil {
-		connectionMap[address] = nil
-		return "", writeErr
+	if err := writeConnection(conn, "status\nversion\n"); err != nil {
+		delete(connectionMap, address)
+		return "", fmt.Errorf("error with tcp connection -> %w", err)
 	}
-	payload, readErr := readConnection(conn)
-	if readErr != nil {
-		return "", readErr
+
+	payload, err := readConnection(conn)
+	if err != nil {
+		return "", fmt.Errorf("error with tcp connection -> %w", err)
 	}
 	return payload, nil
 }
@@ -89,13 +89,15 @@ func makeConnection(address string) (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	//conn.SetDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
 	return conn, nil
 }
 
 func writeConnection(conn net.Conn, cmd string) error {
-	conn.SetWriteDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
-	_, err := conn.Write([]byte(cmd))
+	err := conn.SetWriteDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write([]byte(cmd))
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,10 @@ func writeConnection(conn net.Conn, cmd string) error {
 }
 
 func readConnection(conn net.Conn) (string, error) {
-	conn.SetReadDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	err := conn.SetReadDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	if err != nil {
+		return "", err
+	}
 	var buffer bytes.Buffer
 	tmp := make([]byte, 4000)
 

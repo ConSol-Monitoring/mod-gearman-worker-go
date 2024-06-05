@@ -60,7 +60,7 @@ func GearmanTop(args *Args) {
 
 	// Map with active connections to the hosts in order to maintain a connection
 	// instead of creating a new connection on every iteration
-	connectionMap := createConnectionMap(hostList)
+	connectionMap := make(map[string]net.Conn)
 
 	if args.Batch {
 		printInBatchMode(hostList, connectionMap)
@@ -71,14 +71,6 @@ func GearmanTop(args *Args) {
 
 	// Print stats for host in a loop
 	runInteractiveMode(args, hostList, connectionMap)
-}
-
-func createConnectionMap(hostList []string) map[string]net.Conn {
-	connectionMap := make(map[string]net.Conn)
-	for _, host := range hostList {
-		connectionMap[host] = nil
-	}
-	return connectionMap
 }
 
 func createHostList(hostList []string) []string {
