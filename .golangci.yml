@@ -34,28 +34,21 @@ linters:
   disable:
     - cyclop
     - depguard
-    - exhaustivestruct
     - exhaustruct
     - gochecknoglobals
     - gochecknoinits
     - godot
     - gofumpt
-    - ifshort
-    - interfacer
-    - maligned
     - nonamedreturns
     - paralleltest
     - perfsprint
     - tagliatelle
     - testpackage
     - wsl
+    - err113
     # deprecated
-    - deadcode
-    - structcheck
-    - varcheck
-    - scopelint
-    - nosnakecase
-    - golint
+    - execinquery
+    - gomnd
 issues:
   max-same-issues: 0
   exclude-use-default: true
@@ -83,7 +76,6 @@ issues:
     - 'Magic number: 100000\D '
     - 'Magic number: 65536\D '
     - 'Expect WriteFile permissions to be 0600 or less'
-    - 'err113:'
     - 'G204: Subprocess launched'
     - 'G114: Use of net/http serve function that has no support for setting timeouts'
     - 'RLIMIT_NOFILE contains underscore'
@@ -108,7 +100,7 @@ issues:
     - path: _test.*\.go
       linters:
         - errcheck
-        - gomnd
+        - mnd
         - dupword
         - funlen
         - lll

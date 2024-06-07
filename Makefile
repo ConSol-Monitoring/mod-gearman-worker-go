@@ -39,11 +39,7 @@ updatedeps: versioncheck
 	$(MAKE) clean
 	$(MAKE) tools
 	$(GO) mod download
-	set -e; for dir in $(shell ls -d1 pkg/*); do \
-		( cd ./$$dir && $(GO) mod download ); \
-		( cd ./$$dir && GOPROXY=direct $(GO) get -u ); \
-		( cd ./$$dir && GOPROXY=direct $(GO) get -t -u ); \
-	done
+	GOPROXY=direct $(GO) get -t -u ./pkg/* ./cmd/*
 	$(GO) mod download
 	$(MAKE) cleandeps
 
@@ -55,13 +51,13 @@ cleandeps:
 	( cd buildtools && $(GO) mod tidy )
 
 vendor: go.work
-	$(GO) mod download
-	$(GO) mod tidy
 	GOWORK=off $(GO) mod vendor
 
-go.work: pkg/*
-	echo "go $(MINGOVERSIONSTR)" > go.work
-	$(GO) work use . pkg/* cmd/* buildtools/.
+go.work:
+	echo "go $(MINGOVERSIONSTR).0" > go.work
+	$(GO) work use \
+		. \
+		buildtools/. \
 
 dump:
 	if [ $(shell grep -r Dump ./cmd/*/*.go ./pkg/*/*.go | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go | wc -l) -ne 0 ]; then \
@@ -102,16 +98,16 @@ send_gearman.exe: pkg/*/*.go cmd/send_gearman/*.go
 	( cd ./cmd/send_gearman && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 $(GO) build $(BUILD_FLAGS) -o ../../send_gearman.exe )
 
 test: dump vendor
-	$(GO) test -short -v $(TEST_FLAGS) pkg/*
+	$(GO) test -short -v $(TEST_FLAGS) ./pkg/* ./cmd/*
 	if grep -Irn TODO: ./cmd/ ./pkg/;  then exit 1; fi
 	if grep -Irn Dump ./cmd/ ./pkg/ | grep -v 'Data::Dumper' | grep -v 'httputil.Dump' | grep -v logThreadDump | grep -v dump.go; then exit 1; fi
 
 # test with filter
 testf: vendor
-	$(GO) test -short -v $(TEST_FLAGS) pkg/* pkg/*/cmd -run "$(filter-out $@,$(MAKECMDGOALS))" 2>&1 | grep -v "no test files" | grep -v "no tests to run" | grep -v "^PASS"
+	$(GO) test -short -v $(TEST_FLAGS) ./pkg/* ./cmd/* -run "$(filter-out $@,$(MAKECMDGOALS))" 2>&1 | grep -v "no test files" | grep -v "no tests to run" | grep -v "^PASS"
 
 longtest: vendor
-	$(GO) test -v $(TEST_FLAGS) pkg/*
+	$(GO) test -v $(TEST_FLAGS) ./pkg/* ./cmd/*
 
 citest: tools vendor
 	#
@@ -216,13 +212,10 @@ golangci: tools
 	# golangci combines a few static code analyzer
 	# See https://github.com/golangci/golangci-lint
 	#
-	@set -e; for dir in $$(ls -1d pkg/* cmd); do \
-		echo $$dir; \
-		echo "  - GOOS=linux"; \
-		( cd $$dir && GOOS=linux golangci-lint run --timeout=5m ./... ); \
-		echo "  - GOOS=windows"; \
-		( cd $$dir && GOOS=windows golangci-lint run --timeout=5m ./... ); \
-	done
+	@echo "  - GOOS=linux"; \
+	GOOS=linux CGO_ENABLED=0 golangci-lint run --timeout=5m pkg/... cmd/...
+	@echo "  - GOOS=windows"; \
+	GOOS=windows CGO_ENABLED=0 golangci-lint run --timeout=5m pkg/... cmd/...
 
 govulncheck: tools
 	govulncheck ./...

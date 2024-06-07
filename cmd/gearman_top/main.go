@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"pkg/modgearman"
+	"github.com/consol-monitoring/mod-gearman-worker-go/pkg/modgearman"
 )
 
 // Build contains the current git commit id

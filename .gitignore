@@ -1,5 +1,6 @@
 mod_gearman_worker
 send_gearman
+gearman_top
 *.exe
 *.linux.amd64
 *.swp

@@ -98,7 +98,10 @@ func BenchmarkJobs(b *testing.B) {
 		resultsTotal++
 	}
 	b.StopTimer()
+	cmd.Process.Kill()
 	if sendError != nil {
+		b.Log(stdout.String())
+		b.Log(stderr.String())
 		b.Fatalf(sendError.Error())
 	}
 }
