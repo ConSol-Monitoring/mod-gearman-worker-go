@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/consol-monitoring/snclient/pkg/utils"
+	"github.com/consol-monitoring/mod-gearman-worker-go/pkg/utils"
 	"github.com/nsf/termbox-go"
 )
 
@@ -102,7 +102,7 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 		printMap[host] = fmt.Sprintf("---- %s ----\nNot data yet...\n\n\n", host)
 	}
 
-	// Execute getStats() for all hosts in parallel in order to prevent a program block
+	// Get and print stats for all hosts in parallel in order to prevent a program block
 	// when a connection to a host runs into a timeout
 	for _, host := range hostList {
 		go func(host string) {
@@ -253,7 +253,20 @@ func createTable(queueList []queue) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	tableSize := calcTableSize(tableHeaders)
+	tableHorizontalBorder := strings.Repeat("-", tableSize+1) // Add one for an additional pipe symbol at the end of each row
+	table = fmt.Sprintf("%s\n%s%s\n\n", tableHorizontalBorder, table, tableHorizontalBorder)
 	return table, nil
+}
+
+func calcTableSize(tableHeaders []utils.ASCIITableHeader) int {
+	tableSize := 0
+	for _, header := range tableHeaders {
+		tableSize += header.Size
+		tableSize += 3
+	}
+	return tableSize
 }
 
 func createTableHeaders() []utils.ASCIITableHeader {
@@ -263,19 +276,19 @@ func createTableHeaders() []utils.ASCIITableHeader {
 			Field: "queueName",
 		},
 		{
-			Name:         "Worker Available",
-			Field:        "workerAvailable",
-			RightAligned: true,
+			Name:      "Worker Available",
+			Field:     "workerAvailable",
+			Alignment: "right",
 		},
 		{
-			Name:         "Jobs Waiting",
-			Field:        "jobsWaiting",
-			RightAligned: true,
+			Name:      "Jobs Waiting",
+			Field:     "jobsWaiting",
+			Alignment: "right",
 		},
 		{
-			Name:         "Jobs running",
-			Field:        "jobsRunning",
-			RightAligned: true,
+			Name:      "Jobs running",
+			Field:     "jobsRunning",
+			Alignment: "right",
 		},
 	}
 	return tableHeaders

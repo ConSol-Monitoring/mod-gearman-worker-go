@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"github.com/consol-monitoring/mod-gearman-worker-go/pkg/modgearman"
+	"os"
 )
 
 // Build contains the current git commit id
@@ -13,7 +13,7 @@ var Build string
 
 func main() {
 	args := modgearman.Args{}
-	// Define a new FlagSet for avoiding collions with other flags
+	// Define a new FlagSet for avoiding collisions with other flags
 	var fs = flag.NewFlagSet("gearman_top", flag.ExitOnError)
 
 	fs.BoolVar(&args.Usage, "h", false, "Print usage")
