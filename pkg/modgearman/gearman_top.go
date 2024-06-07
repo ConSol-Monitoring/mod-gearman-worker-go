@@ -259,24 +259,23 @@ func createTable(queueList []queue) (string, error) {
 func createTableHeaders() []utils.ASCIITableHeader {
 	tableHeaders := []utils.ASCIITableHeader{
 		{
-			Name:     "Queue Name",
-			Field:    "queueName",
-			Centered: false,
+			Name:  "Queue Name",
+			Field: "queueName",
 		},
 		{
-			Name:     "Worker Available",
-			Field:    "workerAvailable",
-			Centered: false,
+			Name:         "Worker Available",
+			Field:        "workerAvailable",
+			RightAligned: true,
 		},
 		{
-			Name:     "Jobs Waiting",
-			Field:    "jobsWaiting",
-			Centered: false,
+			Name:         "Jobs Waiting",
+			Field:        "jobsWaiting",
+			RightAligned: true,
 		},
 		{
-			Name:     "Jobs running",
-			Field:    "jobsRunning",
-			Centered: false,
+			Name:         "Jobs running",
+			Field:        "jobsRunning",
+			RightAligned: true,
 		},
 	}
 	return tableHeaders
