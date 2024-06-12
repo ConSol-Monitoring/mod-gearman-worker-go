@@ -120,11 +120,14 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 	for {
 		select {
 		case ev := <-eventQueue:
-			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q') {
+			if ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Ch == 'q' || ev.Ch == 'Q' || ev.Key == termbox.KeyCtrlC) {
 				// Close all active connections
 				for key := range connectionMap {
 					if connectionMap[key] != nil {
-						connectionMap[key].Close()
+						err := connectionMap[key].Close()
+						if err != nil {
+							fmt.Printf("Error closing connection %v\n", err)
+						}
 					}
 				}
 				return
