@@ -29,7 +29,7 @@ func main() {
 	// Parse the flags in the custom FlagSet
 	err := flagSet.Parse(os.Args[1:])
 	if err != nil {
-		fmt.Println("Error parsing flags:", err)
+		fmt.Fprintf(os.Stderr, "Error parsing flags:", err)
 		os.Exit(1)
 	}
 

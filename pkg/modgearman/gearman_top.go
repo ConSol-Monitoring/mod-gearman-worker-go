@@ -173,20 +173,20 @@ func printInBatchMode(hostList []string, connectionMap map[string]net.Conn) {
 	}
 }
 
-func initPrint(mu *sync.Mutex, printMap map[string]string, hostList []string, tableChan chan map[string]string) {
-	printHosts(mu, hostList, printMap)
+func initPrint(mutex *sync.Mutex, printMap map[string]string, hostList []string, tableChan chan map[string]string) {
+	printHosts(mutex, hostList, printMap)
 	tables := <-tableChan
-	mu.Lock()
+	mutex.Lock()
 	for host, table := range tables {
 		printMap[host] = table
 	}
-	mu.Unlock()
-	printHosts(mu, hostList, printMap)
+	mutex.Unlock()
+	printHosts(mutex, hostList, printMap)
 }
 
-func printHosts(mu *sync.Mutex, hostList []string, printMap map[string]string) {
-	mu.Lock()
-	defer mu.Unlock()
+func printHosts(mutex *sync.Mutex, hostList []string, printMap map[string]string) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	// Clear screen
 	fmt.Fprintf(os.Stdout, "\033[H\033[2J")
 	currTime := time.Now().Format("2006-01-02 15:04:05")
@@ -237,9 +237,9 @@ func determinePort(address string) (int, error) {
 	case 2:
 		port, err := strconv.Atoi(addressParts[1])
 		if err != nil {
-			fmt.Errorf("Error converting port %s to int", address)
-			return -1, err
+			return -1, fmt.Errorf("Error converting port %s to int -> %w: %w", address, err, err.Error())
 		}
+
 		return port, nil
 	default:
 		return -1, errors.New("too many colons in address")
@@ -252,7 +252,7 @@ func getDefaultPort(hostname string) (int, error) {
 		if envServer != "" {
 			port, err := strconv.Atoi(strings.Split(envServer, ":")[1])
 			if err != nil {
-				fmt.Errorf("Error converting port %s to int", envServer)
+				return -1, fmt.Errorf("Error converting port %s to int -> %w: %s", envServer, err, err.Error())
 			}
 
 			return port, nil
@@ -320,7 +320,6 @@ func createTableHeaders() []utils.ASCIITableHeader {
 func createTableRows(queueList []queue) []dataRow {
 	rows := make([]dataRow, len(queueList))
 	for i, queue := range queueList {
-
 		rows[i] = dataRow{
 			queueName:       queue.Name,
 			workerAvailable: strconv.Itoa(queue.AvailWorker),
