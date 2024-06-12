@@ -40,19 +40,21 @@ func (a byQueueName) Len() int           { return len(a) }
 func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
 func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-const GM_TOP_VERSION = "5.1.3"
-const GM_DEFAULT_PORT = 4730
-const CONNTIMEOUT = 10
+const gmTopVersion = "5.1.3"
+const gmDefaultPort = 4730
+const connTimeout = 10
 
 func GearmanTop(args *Args) {
 	implementLogger()
 
 	if args.Usage {
 		printTopUsage()
+
 		return
 	}
 	if args.Version {
 		printTopVersion()
+
 		return
 	}
 
@@ -64,6 +66,7 @@ func GearmanTop(args *Args) {
 
 	if args.Batch {
 		printInBatchMode(hostList, connectionMap)
+		return
 	}
 
 	initializeTermbox()
@@ -79,6 +82,7 @@ func createHostList(hostList []string) []string {
 	} else {
 		hostList = unique(hostList)
 	}
+
 	return hostList
 }
 
@@ -95,7 +99,7 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 
 	tableChan := make(chan map[string]string)
 	printMap := make(map[string]string)
-	var mu sync.Mutex
+	var mutex sync.Mutex
 
 	// Initialize printMap with placeholders
 	for _, host := range hostList {
@@ -115,7 +119,7 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 	}
 
 	// Print once before the ticker ticks for the first time
-	initPrint(&mu, printMap, hostList, tableChan)
+	initPrint(&mutex, printMap, hostList, tableChan)
 
 	for {
 		select {
@@ -130,19 +134,20 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 						}
 					}
 				}
+
 				return
 			}
 		case <-ticker.C:
-			printHosts(&mu, hostList, printMap)
-		// If a new stat is available all stats are transferred into the printMap
-		// printMap maintains the order right order of the called hosts and assigns the
-		// correct string (table) that should be printed
+			printHosts(&mutex, hostList, printMap)
+		/* If a new stat is available all stats are transferred into the printMap
+		which maintains the order right order of the called hosts and assigns the
+		correct string (table) that should be printed */
 		case tables := <-tableChan:
-			mu.Lock()
+			mutex.Lock()
 			for host, table := range tables {
 				printMap[host] = table
 			}
-			mu.Unlock()
+			mutex.Unlock()
 		}
 	}
 }
@@ -161,10 +166,10 @@ func implementLogger() {
 }
 
 func printInBatchMode(hostList []string, connectionMap map[string]net.Conn) {
+	currTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Fprintf(os.Stdout, "%s\n\n", currTime)
 	for _, host := range hostList {
-		currTime := time.Now().Format("2006-01-02 15:04:05")
-		fmt.Fprintf(os.Stdout, "%s\n\n", currTime)
-		fmt.Println(generateQueueTable(host, connectionMap))
+		fmt.Fprintln(os.Stdout, generateQueueTable(host, connectionMap))
 	}
 }
 
@@ -189,7 +194,7 @@ func printHosts(mu *sync.Mutex, hostList []string, printMap map[string]string) {
 
 	for _, host := range hostList {
 		if table, ok := printMap[host]; ok {
-			fmt.Println(table)
+			fmt.Fprintln(os.Stdout, table)
 		} else {
 			fmt.Fprintf(os.Stdout, "---- %s ----", host)
 			fmt.Fprintf(os.Stdout, "No data yet...\n\n\n")
@@ -218,6 +223,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	if err != nil {
 		return fmt.Sprintf("---- %s:%d ----\nError: %s\n\n", hostName, port, err)
 	}
+
 	return fmt.Sprintf("---- %s:%d ----- %s\n%s", hostName, port, version, table)
 }
 
@@ -229,7 +235,12 @@ func determinePort(address string) (int, error) {
 	case 1:
 		return getDefaultPort(hostName)
 	case 2:
-		return strconv.Atoi(addressParts[1])
+		port, err := strconv.Atoi(addressParts[1])
+		if err != nil {
+			fmt.Errorf("Error converting port %s to int", address)
+			return -1, err
+		}
+		return port, nil
 	default:
 		return -1, errors.New("too many colons in address")
 	}
@@ -239,10 +250,16 @@ func getDefaultPort(hostname string) (int, error) {
 	if hostname == "localhost" || hostname == "127.0.0.1" {
 		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
 		if envServer != "" {
-			return strconv.Atoi(strings.Split(envServer, ":")[1])
+			port, err := strconv.Atoi(strings.Split(envServer, ":")[1])
+			if err != nil {
+				fmt.Errorf("Error converting port %s to int", envServer)
+			}
+
+			return port, nil
 		}
 	}
-	return GM_DEFAULT_PORT, nil
+
+	return gmDefaultPort, nil
 }
 
 func extractHostName(address string) string {
@@ -260,6 +277,7 @@ func createTable(queueList []queue) (string, error) {
 	tableSize := calcTableSize(tableHeaders)
 	tableHorizontalBorder := strings.Repeat("-", tableSize+1) // Add one for an additional pipe symbol at the end of each row
 	table = fmt.Sprintf("%s\n%s%s\n\n", tableHorizontalBorder, table, tableHorizontalBorder)
+
 	return table, nil
 }
 
@@ -269,6 +287,7 @@ func calcTableSize(tableHeaders []utils.ASCIITableHeader) int {
 		tableSize += header.Size
 		tableSize += 3
 	}
+
 	return tableSize
 }
 
@@ -294,47 +313,50 @@ func createTableHeaders() []utils.ASCIITableHeader {
 			Alignment: "right",
 		},
 	}
+
 	return tableHeaders
 }
 
 func createTableRows(queueList []queue) []dataRow {
-	var rows []dataRow
-	for _, queue := range queueList {
+	rows := make([]dataRow, len(queueList))
+	for i, queue := range queueList {
 
-		rows = append(rows, dataRow{
+		rows[i] = dataRow{
 			queueName:       queue.Name,
 			workerAvailable: strconv.Itoa(queue.AvailWorker),
 			jobsWaiting:     strconv.Itoa(queue.Waiting),
 			jobsRunning:     strconv.Itoa(queue.Running),
-		})
+		}
 	}
 	sort.Sort(byQueueName(rows))
+
 	return rows
 }
 
 func printTopUsage() {
-	fmt.Println("usage:")
-	fmt.Println()
-	fmt.Println("gearman_top   [ -H <hostname>[:port]           ]")
-	fmt.Println("              [ -i <sec>       seconds         ]")
-	fmt.Println("              [ -q             quiet mode      ]")
-	fmt.Println("              [ -b             batch mode      ]")
-	fmt.Println()
-	fmt.Println("              [ -h             print help      ]")
-	fmt.Println("              [ -v             verbose output  ]")
-	fmt.Println("              [ -V             print version   ]")
-	fmt.Println()
+	fmt.Fprintln(os.Stdout, "usage:")
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, "gearman_top   [ -H <hostname>[:port]           ]")
+	fmt.Fprintln(os.Stdout, "              [ -i <sec>       seconds         ]")
+	fmt.Fprintln(os.Stdout, "              [ -q             quiet mode      ]")
+	fmt.Fprintln(os.Stdout, "              [ -b             batch mode      ]")
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, "              [ -h             print help      ]")
+	fmt.Fprintln(os.Stdout, "              [ -v             verbose output  ]")
+	fmt.Fprintln(os.Stdout, "              [ -V             print version   ]")
+	fmt.Fprintln(os.Stdout)
 
 	os.Exit(0)
 }
 
 func printTopVersion() {
-	fmt.Fprintf(os.Stdout, "gearman_top: version %s\n", GM_TOP_VERSION)
+	fmt.Fprintf(os.Stdout, "gearman_top: version %s\n", gmTopVersion)
 	os.Exit(0)
 }
 
 func Add2HostList(host string, hostList *[]string) error {
 	*hostList = append(*hostList, host)
+
 	return nil
 }
 

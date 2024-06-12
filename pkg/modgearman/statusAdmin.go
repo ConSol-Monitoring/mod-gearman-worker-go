@@ -2,6 +2,7 @@ package modgearman
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,6 +19,8 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
+const readBufferSize = 4000
+
 func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, string, error) {
 	payload, err := queryGermanInstance(address, connectionMap)
 	if err != nil {
@@ -25,13 +28,19 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 	}
 	// Split retrieved payload and extract and store data
 	version := ""
-	var queueList []queue
 	lines := strings.Split(payload, "\n")
-	for _, line := range lines {
+
+	if len(lines) == 0 {
+		return nil, "", nil
+	}
+
+	queueList := make([]queue, len(lines)-3)
+	for i, line := range lines {
 		parts := strings.Fields(line)
 
-		if len(parts) == 2 {
+		if len(parts) == 2 && parts[0] == "OK" {
 			version = parts[1]
+
 			continue
 		}
 
@@ -40,27 +49,35 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 		}
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
+			err := fmt.Errorf("the received data is not in the right format: %w", err)
 			return nil, "", err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
+			err := fmt.Errorf("the received data is not in the right format: %w", err)
 			return nil, "", err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
-			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
+			err := fmt.Errorf("the received data is not in the right format: %w", err)
 			return nil, "", err
 		}
 
-		queueList = append(queueList, queue{
+		queueList[i] = queue{
 			Name:        parts[0],
 			Total:       totalInt,
 			Running:     runningInt,
 			AvailWorker: availWorkerInt,
 			Waiting:     totalInt - runningInt,
-		})
+		}
+
+		//queueList = append(queueList, queue{
+		//	Name:        parts[0],
+		//	Total:       totalInt,
+		//	Running:     runningInt,
+		//	AvailWorker: availWorkerInt,
+		//	Waiting:     totalInt - runningInt,
+		//})
 	}
 
 	version = fmt.Sprintf("v%s", version)
@@ -75,49 +92,49 @@ func queryGermanInstance(address string, connectionMap map[string]net.Conn) (str
 		var err error
 		conn, err = makeConnection(address)
 		if err != nil {
-			return "", fmt.Errorf("error with tcp connection -> %w", err)
+			return "", err
 		}
 		connectionMap[address] = conn
 	}
 	if err := writeConnection(conn, "status\nversion\n"); err != nil {
 		delete(connectionMap, address)
-		return "", fmt.Errorf("error with tcp connection -> %w", err)
+		return "", err
 	}
 
 	payload, err := readConnection(conn)
 	if err != nil {
-		return "", fmt.Errorf("error with tcp connection -> %w", err)
+		return "", err
 	}
 	return payload, nil
 }
 
 func makeConnection(address string) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", address, CONNTIMEOUT*time.Second)
+	conn, err := net.DialTimeout("tcp", address, connTimeout*time.Second)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("timeout or error with tcp connection -> %s", err)
 	}
 	return conn, nil
 }
 
 func writeConnection(conn net.Conn, cmd string) error {
-	err := conn.SetWriteDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	err := conn.SetWriteDeadline(time.Now().Add(connTimeout * time.Second))
 	if err != nil {
-		return err
+		return fmt.Errorf("error while setting write deadline -> %s", err)
 	}
 	_, err = conn.Write([]byte(cmd))
 	if err != nil {
-		return err
+		return fmt.Errorf("error while writing to tcp connection -> %s", err)
 	}
 	return nil
 }
 
 func readConnection(conn net.Conn) (string, error) {
-	err := conn.SetReadDeadline(time.Now().Add(CONNTIMEOUT * time.Second))
+	err := conn.SetReadDeadline(time.Now().Add(connTimeout * time.Second))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error while setting read deadline -> %s", err)
 	}
 	var buffer bytes.Buffer
-	tmp := make([]byte, 4000)
+	tmp := make([]byte, readBufferSize)
 
 	for {
 		n, err := conn.Read(tmp)
@@ -125,10 +142,10 @@ func readConnection(conn net.Conn) (string, error) {
 			buffer.Write(tmp[:n])
 		}
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			return "", err
+			return "", fmt.Errorf("error while reading from tcp connection -> %s", err)
 		}
 		if n > 0 && tmp[n-1] == '\n' {
 			break

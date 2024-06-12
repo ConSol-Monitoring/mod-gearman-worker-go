@@ -47,15 +47,18 @@ func ASCIITable(header []ASCIITableHeader, rows interface{}, escapePipes bool) (
 		rowVal := dataRows.Index(i)
 		for _, head := range header {
 			value, _ := asciiTableRowValue(escapePipes, rowVal, head)
-			if head.Alignment == "right" {
+
+			switch head.Alignment {
+			case "right":
 				out += fmt.Sprintf(fmt.Sprintf("| %%%ds ", head.Size), value)
-			} else if head.Alignment == "left" || head.Alignment == "" {
+			case "left", "":
 				out += fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), value)
-			} else if head.Alignment == "centered" {
+			case "centered":
 				padding := (head.Size - len(value)) / 2
 				out += fmt.Sprintf("| %*s%-*s ", padding, "", head.Size-padding, value)
-			} else {
+			default:
 				err := fmt.Errorf("unsupported alignment '%s' in table", head.Alignment)
+
 				return "", err
 			}
 		}
