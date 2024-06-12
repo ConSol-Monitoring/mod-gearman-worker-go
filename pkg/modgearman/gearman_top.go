@@ -66,6 +66,7 @@ func GearmanTop(args *Args) {
 
 	if args.Batch {
 		printInBatchMode(hostList, connectionMap)
+
 		return
 	}
 
@@ -108,15 +109,7 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 
 	// Get and print stats for all hosts in parallel in order to prevent a program block
 	// when a connection to a host runs into a timeout
-	for _, host := range hostList {
-		go func(host string) {
-			for {
-				table := generateQueueTable(host, connectionMap)
-				tableChan <- map[string]string{host: table}
-				time.Sleep(time.Duration(args.Interval) * time.Second)
-			}
-		}(host)
-	}
+	printHostsInParallel(hostList, connectionMap, tableChan, args.Interval)
 
 	// Print once before the ticker ticks for the first time
 	initPrint(&mutex, printMap, hostList, tableChan)
@@ -184,6 +177,18 @@ func initPrint(mutex *sync.Mutex, printMap map[string]string, hostList []string,
 	printHosts(mutex, hostList, printMap)
 }
 
+func printHostsInParallel(hostList []string, connectionMap map[string]net.Conn, tableChan chan map[string]string, interval float64) {
+	for _, host := range hostList {
+		go func(host string) {
+			for {
+				table := generateQueueTable(host, connectionMap)
+				tableChan <- map[string]string{host: table}
+				time.Sleep(time.Duration(interval) * time.Second)
+			}
+		}(host)
+	}
+}
+
 func printHosts(mutex *sync.Mutex, hostList []string, printMap map[string]string) {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -197,7 +202,7 @@ func printHosts(mutex *sync.Mutex, hostList []string, printMap map[string]string
 			fmt.Fprintln(os.Stdout, table)
 		} else {
 			fmt.Fprintf(os.Stdout, "---- %s ----", host)
-			fmt.Fprintf(os.Stdout, "No data yet...\n\n\n")
+			fmt.Fprintf(os.Stdout, "No data yet...\n\n")
 		}
 	}
 }
@@ -215,7 +220,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	if err != nil {
 		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostName, port, err)
 	}
-	if queueList == nil {
+	if queueList == nil || len(queueList) == 0 {
 		return fmt.Sprintf("---- %s:%d ----\nNo queues have been found at host %s\n\n", hostName, port, hostName)
 	}
 
@@ -237,7 +242,7 @@ func determinePort(address string) (int, error) {
 	case 2:
 		port, err := strconv.Atoi(addressParts[1])
 		if err != nil {
-			return -1, fmt.Errorf("Error converting port %s to int -> %w: %w", address, err, err.Error())
+			return -1, fmt.Errorf("Error converting port %s to int -> %w", address, err)
 		}
 
 		return port, nil
@@ -252,7 +257,7 @@ func getDefaultPort(hostname string) (int, error) {
 		if envServer != "" {
 			port, err := strconv.Atoi(strings.Split(envServer, ":")[1])
 			if err != nil {
-				return -1, fmt.Errorf("Error converting port %s to int -> %w: %s", envServer, err, err.Error())
+				return -1, fmt.Errorf("error converting port %s to int -> %w", envServer, err)
 			}
 
 			return port, nil
@@ -271,7 +276,7 @@ func createTable(queueList []queue) (string, error) {
 	rows := createTableRows(queueList)
 	table, err := utils.ASCIITable(tableHeaders, rows, true)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating table -> %w", err)
 	}
 
 	tableSize := calcTableSize(tableHeaders)
