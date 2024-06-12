@@ -40,6 +40,7 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 
 		if len(parts) == 2 && parts[0] == "OK" {
 			version = parts[1]
+
 			continue
 		}
 

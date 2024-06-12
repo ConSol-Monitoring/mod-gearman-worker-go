@@ -220,7 +220,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	if err != nil {
 		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostName, port, err)
 	}
-	if queueList == nil || len(queueList) == 0 {
+	if len(queueList) == 0 {
 		return fmt.Sprintf("---- %s:%d ----\nNo queues have been found at host %s\n\n", hostName, port, hostName)
 	}
 
@@ -242,7 +242,7 @@ func determinePort(address string) (int, error) {
 	case 2:
 		port, err := strconv.Atoi(addressParts[1])
 		if err != nil {
-			return -1, fmt.Errorf("Error converting port %s to int -> %w", address, err)
+			return -1, fmt.Errorf("error converting port %s to int -> %w", address, err)
 		}
 
 		return port, nil
