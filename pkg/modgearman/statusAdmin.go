@@ -18,16 +18,22 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, error) {
+func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, string, error) {
 	payload, err := queryGermanInstance(address, connectionMap)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	// Split recieved payload and extract and store data
+	// Split retrieved payload and extract and store data
+	version := ""
 	var queueList []queue
 	lines := strings.Split(payload, "\n")
 	for _, line := range lines {
 		parts := strings.Fields(line)
+
+		if len(parts) == 2 {
+			version = parts[1]
+			continue
+		}
 
 		if len(parts) < 4 || (parts[0] == "dummy" && parts[1] == "") {
 			continue
@@ -35,17 +41,17 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 		totalInt, err := strconv.Atoi(parts[1])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
-			return nil, err
+			return nil, "", err
 		}
 		runningInt, err := strconv.Atoi(parts[2])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
-			return nil, err
+			return nil, "", err
 		}
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
 			err := fmt.Errorf("the recieved data is not in the right format: %w", err)
-			return nil, err
+			return nil, "", err
 		}
 
 		queueList = append(queueList, queue{
@@ -57,7 +63,8 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 		})
 	}
 
-	return queueList, nil
+	version = fmt.Sprintf("v%s", version)
+	return queueList, version, nil
 }
 
 func queryGermanInstance(address string, connectionMap map[string]net.Conn) (string, error) {

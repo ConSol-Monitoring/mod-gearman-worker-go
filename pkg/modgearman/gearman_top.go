@@ -40,7 +40,7 @@ func (a byQueueName) Len() int           { return len(a) }
 func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
 func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-const GM_TOP_VERSION = "1.1.2"
+const GM_TOP_VERSION = "5.1.3"
 const GM_DEFAULT_PORT = 4730
 const CONNTIMEOUT = 10
 
@@ -163,7 +163,7 @@ func implementLogger() {
 func printInBatchMode(hostList []string, connectionMap map[string]net.Conn) {
 	for _, host := range hostList {
 		currTime := time.Now().Format("2006-01-02 15:04:05")
-		fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+		fmt.Printf("%s\n\n", currTime)
 		fmt.Println(generateQueueTable(host, connectionMap))
 	}
 }
@@ -185,7 +185,7 @@ func printHosts(mu *sync.Mutex, hostList []string, printMap map[string]string) {
 	// Clear screen
 	fmt.Printf("\033[H\033[2J")
 	currTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("%s  -  v%s\n\n", currTime, GM_TOP_VERSION)
+	fmt.Printf("%s\n\n", currTime)
 
 	for _, host := range hostList {
 		if table, ok := printMap[host]; ok {
@@ -206,7 +206,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	}
 	newAddress := fmt.Sprintf("%s:%d", hostName, port)
 
-	queueList, err := processGearmanQueues(newAddress, connectionMap)
+	queueList, version, err := processGearmanQueues(newAddress, connectionMap)
 	if err != nil {
 		return fmt.Sprintf("---- %s:%d ----\n%s\n\n", hostName, port, err)
 	}
@@ -218,7 +218,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	if err != nil {
 		return fmt.Sprintf("---- %s:%d ----\nError: %s\n\n", hostName, port, err)
 	}
-	return fmt.Sprintf("---- %s:%d -----\n%s", hostName, port, table)
+	return fmt.Sprintf("---- %s:%d ----- %s\n%s", hostName, port, version, table)
 }
 
 func determinePort(address string) (int, error) {
