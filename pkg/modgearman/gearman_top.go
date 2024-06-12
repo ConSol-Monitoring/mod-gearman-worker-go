@@ -126,7 +126,7 @@ func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]
 					if connectionMap[key] != nil {
 						err := connectionMap[key].Close()
 						if err != nil {
-							fmt.Printf("Error closing connection %v\n", err)
+							fmt.Fprintf(os.Stdout, "Error closing connection %v\n", err)
 						}
 					}
 				}
@@ -163,7 +163,7 @@ func implementLogger() {
 func printInBatchMode(hostList []string, connectionMap map[string]net.Conn) {
 	for _, host := range hostList {
 		currTime := time.Now().Format("2006-01-02 15:04:05")
-		fmt.Printf("%s\n\n", currTime)
+		fmt.Fprintf(os.Stdout, "%s\n\n", currTime)
 		fmt.Println(generateQueueTable(host, connectionMap))
 	}
 }
@@ -183,16 +183,16 @@ func printHosts(mu *sync.Mutex, hostList []string, printMap map[string]string) {
 	mu.Lock()
 	defer mu.Unlock()
 	// Clear screen
-	fmt.Printf("\033[H\033[2J")
+	fmt.Fprintf(os.Stdout, "\033[H\033[2J")
 	currTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("%s\n\n", currTime)
+	fmt.Fprintf(os.Stdout, "%s\n\n", currTime)
 
 	for _, host := range hostList {
 		if table, ok := printMap[host]; ok {
 			fmt.Println(table)
 		} else {
-			fmt.Printf("---- %s ----", host)
-			fmt.Printf("No data yet...\n\n\n")
+			fmt.Fprintf(os.Stdout, "---- %s ----", host)
+			fmt.Fprintf(os.Stdout, "No data yet...\n\n\n")
 		}
 	}
 }
@@ -201,7 +201,7 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	hostName := extractHostName(ogHostname)
 	port, err := determinePort(ogHostname)
 	if err != nil {
-		fmt.Printf("%s %s\n", err, ogHostname)
+		fmt.Fprintf(os.Stderr, "%s %s\n", err, ogHostname)
 		os.Exit(1)
 	}
 	newAddress := fmt.Sprintf("%s:%d", hostName, port)
@@ -329,7 +329,7 @@ func printTopUsage() {
 }
 
 func printTopVersion() {
-	fmt.Printf("gearman_top: version %s\n", GM_TOP_VERSION)
+	fmt.Fprintf(os.Stdout, "gearman_top: version %s\n", GM_TOP_VERSION)
 	os.Exit(0)
 }
 
