@@ -13,7 +13,6 @@ type ASCIITableHeader struct {
 	Field     string // attribute name in data row
 	Alignment string // flag whether column is aligned to the right
 	Size      int    // calculated max Size of column
-
 }
 
 // ASCIITable creates an ascii table from columns and data rows

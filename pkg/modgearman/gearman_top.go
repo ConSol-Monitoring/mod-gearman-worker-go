@@ -40,9 +40,11 @@ func (a byQueueName) Len() int           { return len(a) }
 func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
 func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-const gmTopVersion = "5.1.3"
-const gmDefaultPort = 4730
-const connTimeout = 10
+const (
+	gmTopVersion  = "5.1.3"
+	gmDefaultPort = 4730
+	connTimeout   = 10
+)
 
 func GearmanTop(args *Args) {
 	implementLogger()
