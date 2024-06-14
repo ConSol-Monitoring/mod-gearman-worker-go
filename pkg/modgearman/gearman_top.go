@@ -47,7 +47,7 @@ const (
 	connTimeout   = 10
 )
 
-func GearmanTop(args *Args, Build string) {
+func GearmanTop(args *Args, build string) {
 	implementLogger()
 
 	if args.Usage {
@@ -56,7 +56,7 @@ func GearmanTop(args *Args, Build string) {
 		return
 	}
 	if args.Version {
-		printTopVersion(Build)
+		printTopVersion(build)
 
 		return
 	}
@@ -356,8 +356,8 @@ func printTopUsage() {
 	os.Exit(0)
 }
 
-func printTopVersion(Build string) {
-	fmt.Fprintf(os.Stdout, "gearman_top: version %s (Build: %s, %s)\n", gmTopVersion, Build, runtime.Version())
+func printTopVersion(build string) {
+	fmt.Fprintf(os.Stdout, "gearman_top: version %s (Build: %s, %s)\n", gmTopVersion, build, runtime.Version())
 	os.Exit(0)
 }
 
