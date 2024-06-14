@@ -35,5 +35,5 @@ func main() {
 	}
 
 	// Call the GearmanTop function with the parsed arguments
-	modgearman.GearmanTop(&args)
+	modgearman.GearmanTop(&args, Build)
 }
