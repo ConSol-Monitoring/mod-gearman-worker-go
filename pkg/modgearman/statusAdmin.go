@@ -19,7 +19,10 @@ type queue struct {
 	AvailWorker int    // total number of available worker
 }
 
-const readBufferSize = 4000
+const (
+	readBufferSize = 4000
+	columnLength   = 4
+)
 
 func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, string, error) {
 	payload, err := queryGermanInstance(address, connectionMap)
@@ -35,39 +38,39 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 	}
 
 	queueList := []queue{}
-	for _, line := range lines {
-		parts := strings.Fields(line)
+	for _, row := range lines {
+		columns := strings.Fields(row)
 
-		if len(parts) == 2 && parts[0] == "OK" {
-			version = parts[1]
+		if len(columns) == 2 && columns[0] == "OK" {
+			version = columns[1]
 
 			continue
 		}
 
-		if len(parts) < 4 {
+		if len(columns) < columnLength {
 			continue
 		}
 
-		totalInt, err := strconv.Atoi(parts[1])
+		totalInt, err := strconv.Atoi(columns[1])
 		if err != nil {
 			return nil, "", fmt.Errorf("the received data is not in the right format -> %w", err)
 		}
-		runningInt, err := strconv.Atoi(parts[2])
+		runningInt, err := strconv.Atoi(columns[2])
 		if err != nil {
 			return nil, "", fmt.Errorf("the received data is not in the right format -> %w", err)
 		}
-		availWorkerInt, err := strconv.Atoi(parts[3])
+		availWorkerInt, err := strconv.Atoi(columns[3])
 		if err != nil {
 			return nil, "", fmt.Errorf("the received data is not in the right format -> %w", err)
 		}
 
 		// Skip dummy queue if empty
-		if parts[0] == "dummy" && totalInt == 0 {
+		if columns[0] == "dummy" && totalInt == 0 {
 			continue
 		}
 
 		queueList = append(queueList, queue{
-			Name:        parts[0],
+			Name:        columns[0],
 			Total:       totalInt,
 			Running:     runningInt,
 			AvailWorker: availWorkerInt,
