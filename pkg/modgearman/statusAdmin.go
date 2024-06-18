@@ -44,7 +44,7 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 			continue
 		}
 
-		if len(parts) < 4 || (parts[0] == "dummy" && parts[1] == "") {
+		if len(parts) < 4 {
 			continue
 		}
 
@@ -59,6 +59,11 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 		availWorkerInt, err := strconv.Atoi(parts[3])
 		if err != nil {
 			return nil, "", fmt.Errorf("the received data is not in the right format -> %w", err)
+		}
+
+		// Skip dummy queue if empty
+		if parts[0] == "dummy" && totalInt == 0 {
+			continue
 		}
 
 		queueList = append(queueList, queue{
