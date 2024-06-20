@@ -13,7 +13,7 @@ import (
 var Build string
 
 func main() {
-	args := modgearman.Args{}
+	args := modgearman.GmTopArgs{}
 	// Define a new FlagSet for avoiding collisions with other flags
 	flagSet := flag.NewFlagSet("gearman_top", flag.ExitOnError)
 

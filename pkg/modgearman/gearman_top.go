@@ -16,7 +16,7 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-type Args struct {
+type GmTopArgs struct {
 	Usage    bool
 	Verbose  bool
 	Version  bool
@@ -47,7 +47,7 @@ const (
 	connTimeout   = 10
 )
 
-func GearmanTop(args *Args, build string) {
+func GearmanTop(args *GmTopArgs, build string) {
 	implementLogger()
 
 	if args.Usage {
@@ -90,7 +90,7 @@ func createHostList(hostList []string) []string {
 	return hostList
 }
 
-func runInteractiveMode(args *Args, hostList []string, connectionMap map[string]net.Conn) {
+func runInteractiveMode(args *GmTopArgs, hostList []string, connectionMap map[string]net.Conn) {
 	eventQueue := make(chan termbox.Event)
 	go func() {
 		for {
