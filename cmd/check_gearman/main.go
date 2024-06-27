@@ -38,6 +38,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error parsing flags -> %s", err.Error())
 		os.Exit(1)
 	}
+
+	modgearman.Check_gearman(args)
 }
 
 func printUsage(args modgearman.CheckGmArgs) {
