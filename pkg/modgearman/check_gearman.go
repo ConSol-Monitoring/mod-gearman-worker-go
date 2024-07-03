@@ -178,7 +178,7 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 			if args.Queue != "" && args.Queue != element.Name {
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "'%s_waiting'=%d;%d;%d;0 '%s_running'=%d '%s_worker'=%d;%d;%d;0 ", // ToDo Sven fragen wie mit den vier Semikolons bei running umgehen. Eventuell leere Semikolons hierschrieben?
+			fmt.Fprintf(os.Stdout, "'%s_waiting'=%d;%d;%d;0 '%s_running'=%d '%s_worker'=%d;%d;%d;0 ",
 				element.Name,
 				element.Waiting,
 				args.JobWarning,
