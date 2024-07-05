@@ -2,9 +2,9 @@ package modgearman
 
 import (
 	"fmt"
-
 	"github.com/appscode/g2/client"
 	"github.com/appscode/g2/pkg/runtime"
+	"os"
 )
 
 /**
@@ -29,4 +29,48 @@ func sendAnswer(currentClient *client.Client, answer *answer, server string, enc
 	}
 
 	return currentClient, nil
+}
+
+func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
+	cl, err := client.New("tcp", args.Host)
+	if err != nil {
+		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", PluginName)
+
+		return "", err
+	}
+	defer cl.Close()
+
+	ret, taskErr := cl.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
+	if taskErr != nil {
+		return "", fmt.Errorf("workerjob task err: %w", taskErr)
+	}
+
+	return ret, nil
+}
+
+func sendWorkerJob(args *CheckGmArgs) (string, error) {
+	cl, err := client.New("tcp", args.Host)
+	if err != nil {
+		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", PluginName)
+	}
+
+	ansChan := make(chan string)
+
+	jobHandler := func(resp *client.Response) {
+		data, err := resp.Result()
+		ansChan <- string(data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error, %s\n", err)
+
+			return
+		}
+	}
+
+	_, taskErr := cl.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
+	if taskErr != nil {
+		return "", fmt.Errorf("workerjob task err: %w", taskErr)
+	}
+	response := <-ansChan
+
+	return response, nil
 }
