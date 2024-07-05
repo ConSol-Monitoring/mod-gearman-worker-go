@@ -53,6 +53,7 @@ func sendWorkerJob(args *CheckGmArgs) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", PluginName)
 	}
+	defer cl.Close()
 
 	ansChan := make(chan string)
 
@@ -71,6 +72,5 @@ func sendWorkerJob(args *CheckGmArgs) (string, error) {
 		return "", fmt.Errorf("workerjob task err: %w", taskErr)
 	}
 	response := <-ansChan
-
 	return response, nil
 }

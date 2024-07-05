@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -62,12 +63,23 @@ func CheckGearman(args *CheckGmArgs) {
 		return
 	}
 
-	var statusCode int
+	statusChan := make(chan int)
 
-	if args.TextToSend != "" {
-		statusCode = checkWorker(args)
-	} else {
-		statusCode = checkServer(args)
+	go func() {
+		if args.TextToSend != "" {
+			// Using default global timeout instad on relying on library implementation of timeout
+			statusChan <- checkWorker(args)
+		} else {
+			statusChan <- checkServer(args)
+		}
+	}()
+
+	var statusCode int
+	select {
+	case statusCode = <-statusChan:
+	case <-time.After(time.Duration(args.Timeout) * time.Second):
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - timed out\n", PluginName)
+		statusCode = StateCritical
 	}
 
 	os.Exit(statusCode)
@@ -81,7 +93,7 @@ func checkWorker(args *CheckGmArgs) (statusCode int) {
 
 	statusCode, response, err = createWorkerJob(args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n\n", PluginName) // Todo: Get client error
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", PluginName) // Todo: Get client error
 		statusCode = StateCritical
 
 		return statusCode
@@ -130,6 +142,7 @@ func checkWorker(args *CheckGmArgs) (statusCode int) {
 func createWorkerJob(args *CheckGmArgs) (statusCode int, response string, err error) {
 	statusCode = StateOk
 
+	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in neamon
 	client.IdGen = &checkGearmanIdGen{}
 
 	if args.SendAsync {
