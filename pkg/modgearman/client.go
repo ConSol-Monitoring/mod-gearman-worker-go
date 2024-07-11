@@ -34,14 +34,16 @@ func sendAnswer(currentClient *client.Client, answer *answer, server string, enc
 func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 	cl, err := client.New("tcp", args.Host)
 	if err != nil {
-		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", pluginName)
+		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
 
 		return "", err
 	}
 	defer cl.Close()
 
-	ret, taskErr := cl.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
+	ret, taskErr := cl.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh)
 	if taskErr != nil {
+		taskErr = fmt.Errorf("%w", taskErr)
+
 		return "", taskErr
 	}
 
@@ -51,7 +53,7 @@ func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 func sendWorkerJob(args *CheckGmArgs) (string, error) {
 	cl, err := client.New("tcp", args.Host)
 	if err != nil {
-		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", pluginName)
+		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
 	}
 	defer cl.Close()
 
@@ -67,10 +69,13 @@ func sendWorkerJob(args *CheckGmArgs) (string, error) {
 		}
 	}
 
-	_, taskErr := cl.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
+	_, taskErr := cl.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler)
 	if taskErr != nil {
+		taskErr = fmt.Errorf("%w", taskErr)
+
 		return "", taskErr
 	}
 	response := <-ansChan
+
 	return response, nil
 }

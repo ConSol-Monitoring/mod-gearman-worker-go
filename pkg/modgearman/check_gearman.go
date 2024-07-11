@@ -107,13 +107,12 @@ func checkWorker(args *CheckGmArgs) int {
 
 	err := createWorkerJob(args, &res)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", pluginName)
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: %s\n", pluginName, err)
 
 		return res.statusCode
 	}
 
 	if args.Verbose {
-		// ToDo: Give back client code
 		fmt.Fprintf(os.Stdout, "%s\n", res.response)
 	}
 
@@ -133,6 +132,7 @@ func checkWorker(args *CheckGmArgs) int {
 			)
 
 			res.statusCode = stateCritical
+
 			return res.statusCode
 		}
 
