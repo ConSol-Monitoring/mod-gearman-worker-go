@@ -1,7 +1,6 @@
 package modgearman
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -42,9 +41,7 @@ func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueNam
 func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 const (
-	gmTopVersion  = "5.1.3"
-	gmDefaultPort = 4730
-	connTimeout   = 10
+	connTimeout = 10
 )
 
 func GearmanTop(args *GmTopArgs, build string) {
@@ -235,45 +232,6 @@ func generateQueueTable(ogHostname string, connectionMap map[string]net.Conn) st
 	return fmt.Sprintf("---- %s:%d ----- %s\n%s", hostName, port, version, table)
 }
 
-func determinePort(address string) (int, error) {
-	addressParts := strings.Split(address, ":")
-	hostName := addressParts[0]
-
-	switch len(addressParts) {
-	case 1:
-		return getDefaultPort(hostName)
-	case 2:
-		port, err := strconv.Atoi(addressParts[1])
-		if err != nil {
-			return -1, fmt.Errorf("error converting port %s to int -> %w", address, err)
-		}
-
-		return port, nil
-	default:
-		return -1, errors.New("too many colons in address")
-	}
-}
-
-func getDefaultPort(hostname string) (int, error) {
-	if hostname == "localhost" || hostname == "127.0.0.1" {
-		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
-		if envServer != "" {
-			port, err := strconv.Atoi(strings.Split(envServer, ":")[1])
-			if err != nil {
-				return -1, fmt.Errorf("error converting port %s to int -> %w", envServer, err)
-			}
-
-			return port, nil
-		}
-	}
-
-	return gmDefaultPort, nil
-}
-
-func extractHostName(address string) string {
-	return strings.Split(address, ":")[0]
-}
-
 func createTable(queueList []queue) (string, error) {
 	tableHeaders := createTableHeaders()
 	rows := createTableRows(queueList)
@@ -357,7 +315,7 @@ func printTopUsage() {
 }
 
 func printTopVersion(build string) {
-	fmt.Fprintf(os.Stdout, "gearman_top: version %s (Build: %s, %s)\n", gmTopVersion, build, runtime.Version())
+	fmt.Fprintf(os.Stdout, "gearman_top: version %s (Build: %s, %s)\n", gmVersion, build, runtime.Version())
 	os.Exit(0)
 }
 

@@ -206,8 +206,15 @@ func checkServer(args *CheckGmArgs) (statusCode int) {
 }
 
 func getServerQueues(server string) ([]queue, string, error) {
+	hostName := extractHostName(server)
+	port, err := determinePort(server)
+	if err != nil {
+		return nil, "", err
+	}
+	serverAddress := fmt.Sprintf("%s:%d", hostName, port)
+
 	connectionMap := map[string]net.Conn{}
-	queueList, version, err := processGearmanQueues(server, connectionMap)
+	queueList, version, err := processGearmanQueues(serverAddress, connectionMap)
 	if err != nil || len(queueList) == 0 {
 		return queueList, "", err
 	}
