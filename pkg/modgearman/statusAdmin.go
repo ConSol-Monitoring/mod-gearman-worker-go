@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -20,9 +21,50 @@ type queue struct {
 }
 
 const (
+	gmDefaultPort = 4730
+
 	readBufferSize = 4000
 	columnLength   = 4
 )
+
+func determinePort(address string) (int, error) {
+	addressParts := strings.Split(address, ":")
+	hostName := addressParts[0]
+
+	switch len(addressParts) {
+	case 1:
+		return getDefaultPort(hostName)
+	case 2:
+		port, err := strconv.Atoi(addressParts[1])
+		if err != nil {
+			return -1, fmt.Errorf("error converting port %s to int -> %w", address, err)
+		}
+
+		return port, nil
+	default:
+		return -1, errors.New("too many colons in address")
+	}
+}
+
+func getDefaultPort(hostname string) (int, error) {
+	if hostname == "localhost" || hostname == "127.0.0.1" {
+		envServer := os.Getenv("CONFIG_GEARMAND_PORT")
+		if envServer != "" {
+			port, err := strconv.Atoi(strings.Split(envServer, ":")[1])
+			if err != nil {
+				return -1, fmt.Errorf("error converting port %s to int -> %w", envServer, err)
+			}
+
+			return port, nil
+		}
+	}
+
+	return gmDefaultPort, nil
+}
+
+func extractHostName(address string) string {
+	return strings.Split(address, ":")[0]
+}
 
 func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]queue, string, error) {
 	payload, err := queryGermanInstance(address, connectionMap)
