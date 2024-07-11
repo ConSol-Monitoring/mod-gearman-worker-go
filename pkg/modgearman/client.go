@@ -34,7 +34,7 @@ func sendAnswer(currentClient *client.Client, answer *answer, server string, enc
 func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 	cl, err := client.New("tcp", args.Host)
 	if err != nil {
-		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", PluginName)
+		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", pluginName)
 
 		return "", err
 	}
@@ -51,7 +51,7 @@ func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 func sendWorkerJob(args *CheckGmArgs) (string, error) {
 	cl, err := client.New("tcp", args.Host)
 	if err != nil {
-		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", PluginName)
+		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client\n", pluginName)
 	}
 	defer cl.Close()
 

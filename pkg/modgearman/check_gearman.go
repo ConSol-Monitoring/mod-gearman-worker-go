@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	StateOk       = 0
-	StateWarning  = 1
-	StateCritical = 2
-	StateUnknown  = 3
+	stateOk       = 0
+	stateWarning  = 1
+	stateCritical = 2
+	stateUnknown  = 3
 
-	PluginName = "check_gearman"
+	pluginName = "check_gearman"
+	gmVersion  = "5.1.3"
 )
 
 type CheckGmArgs struct {
@@ -54,6 +55,12 @@ type checkGearmanIdGen struct {
 }
 
 func CheckGearman(args *CheckGmArgs) {
+	if args.Version {
+		PrintVersionCheckGearman()
+
+		os.Exit(stateUnknown)
+	}
+
 	if args.Host == "" {
 		fmt.Fprintf(os.Stderr, "Error - no hostname given\n\n")
 		PrintUsageCheckGearman(args)
@@ -83,8 +90,8 @@ func CheckGearman(args *CheckGmArgs) {
 	select {
 	case statusCode = <-statusChan:
 	case <-time.After(time.Duration(args.Timeout) * time.Second):
-		fmt.Fprintf(os.Stderr, "%s CRITICAL - timed out\n", PluginName)
-		statusCode = StateCritical
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - timed out\n", pluginName)
+		statusCode = stateCritical
 	}
 
 	os.Exit(statusCode)
@@ -94,13 +101,13 @@ func checkWorker(args *CheckGmArgs) int {
 	args.UniqueID = ternary(args.UniqueID == "", args.UniqueID, "check")
 
 	res := responseData{
-		statusCode: StateOk,
+		statusCode: stateOk,
 		response:   "",
 	}
 
 	err := createWorkerJob(args, &res)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", PluginName)
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", pluginName)
 
 		return res.statusCode
 	}
@@ -113,19 +120,19 @@ func checkWorker(args *CheckGmArgs) int {
 	if !args.SendAsync && args.TextToExpect != "" && res.response != "" {
 		if strings.Contains(res.response, args.TextToExpect) {
 			fmt.Fprintf(os.Stdout, "%s OK - send worker: '%s' response: '%s'\n",
-				PluginName,
+				pluginName,
 				args.TextToSend,
 				res.response,
 			)
 		} else {
 			fmt.Fprintf(os.Stdout, "%s CRITICAL - send worker: '%s' response: '%s', expected '%s'\n",
-				PluginName,
+				pluginName,
 				args.TextToSend,
 				res.response,
 				args.TextToExpect,
 			)
 
-			res.statusCode = StateCritical
+			res.statusCode = stateCritical
 			return res.statusCode
 		}
 
@@ -141,7 +148,7 @@ func checkWorker(args *CheckGmArgs) int {
 		return res.statusCode
 	}
 
-	fmt.Fprintf(os.Stdout, "%s OK - %s\n", PluginName, res.response)
+	fmt.Fprintf(os.Stdout, "%s OK - %s\n", pluginName, res.response)
 
 	return res.statusCode
 }
@@ -154,14 +161,14 @@ func createWorkerJob(args *CheckGmArgs, res *responseData) (err error) {
 		res.response = "sending background job succeeded"
 		_, err = sendWorkerJobBg(args)
 		if err != nil {
-			res.statusCode = StateCritical
+			res.statusCode = stateCritical
 
 			return
 		}
 	} else {
 		res.response, err = sendWorkerJob(args)
 		if err != nil {
-			res.statusCode = StateCritical
+			res.statusCode = stateCritical
 
 			return
 		}
@@ -177,14 +184,14 @@ func (*checkGearmanIdGen) Id() string {
 func checkServer(args *CheckGmArgs) (statusCode int) {
 	queueList, version, err := getServerQueues(args.Host)
 	if err != nil {
-		statusCode = StateCritical
+		statusCode = stateCritical
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 
 		return
 	}
 
 	serverData := serverCheckData{
-		RC:           StateOk,
+		RC:           stateOk,
 		Message:      "",
 		Checked:      0,
 		TotalRunning: 0,
@@ -209,7 +216,7 @@ func getServerQueues(server string) ([]queue, string, error) {
 }
 
 func processServerData(queueList []queue, data *serverCheckData, args *CheckGmArgs) int {
-	data.RC = StateOk
+	data.RC = stateOk
 
 	for _, element := range queueList {
 		if args.Queue != "" && args.Queue != element.Name {
@@ -220,43 +227,43 @@ func processServerData(queueList []queue, data *serverCheckData, args *CheckGmAr
 		data.TotalWaiting += element.Waiting
 
 		if element.Waiting > 0 && element.AvailWorker == 0 {
-			data.RC = StateCritical
+			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d job%s without any worker. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
 		} else if args.JobCritical > 0 && element.Waiting >= args.JobCritical {
-			data.RC = StateCritical
+			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
 		} else if args.WorkerCritical > 0 && element.AvailWorker >= args.WorkerCritical {
-			data.RC = StateCritical
+			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d worker. ",
 				element.Name,
 				element.AvailWorker,
 			)
 		} else if args.CritZeroWorker == 1 && element.AvailWorker == 0 {
-			data.RC = StateCritical
+			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has no worker. ", element.Name)
 		} else if args.JobWarning > 0 && element.Waiting >= args.JobWarning {
-			data.RC = StateWarning
+			data.RC = stateWarning
 			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
 		} else if args.WorkerWarning > 0 && element.AvailWorker >= args.WorkerWarning {
-			data.RC = StateWarning
+			data.RC = stateWarning
 			data.Message = fmt.Sprintf("Queue %s has %d worker. ", element.Name, element.AvailWorker)
 		}
 	}
 
 	if args.Queue == "" && data.Checked == 0 {
-		data.RC = StateWarning
+		data.RC = stateWarning
 		data.Message = fmt.Sprintf("Queue %s not found", args.Queue)
 	}
 
@@ -264,9 +271,9 @@ func processServerData(queueList []queue, data *serverCheckData, args *CheckGmAr
 }
 
 func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
-	fmt.Fprintf(os.Stdout, "%s ", PluginName)
+	fmt.Fprintf(os.Stdout, "%s ", pluginName)
 	switch data.RC {
-	case StateOk:
+	case stateOk:
 		fmt.Fprintf(os.Stdout, "OK - %d job%s running and %d job%s waiting. Version: %s",
 			data.TotalRunning,
 			ternary(data.TotalRunning == 1, "", "s"),
@@ -274,11 +281,11 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 			ternary(data.TotalWaiting == 1, "", "s"),
 			data.Version,
 		)
-	case StateWarning:
+	case stateWarning:
 		fmt.Fprintf(os.Stdout, "WARNING - ")
-	case StateCritical:
+	case stateCritical:
 		fmt.Fprintf(os.Stdout, "CRITICAL - ")
-	case StateUnknown:
+	case stateUnknown:
 		fmt.Fprintf(os.Stdout, "UNKNOWN - ")
 	}
 	fmt.Fprintf(os.Stdout, "%s", data.Message)
@@ -305,6 +312,10 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 	}
 
 	fmt.Fprintf(os.Stdout, "\n")
+}
+
+func PrintVersionCheckGearman() {
+	fmt.Fprintf(os.Stdout, "check_german: gearman version %s\n", gmVersion)
 }
 
 func PrintUsageCheckGearman(args *CheckGmArgs) {
