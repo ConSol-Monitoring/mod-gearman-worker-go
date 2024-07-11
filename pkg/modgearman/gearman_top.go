@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,13 +31,6 @@ type dataRow struct {
 	jobsWaiting     string
 	jobsRunning     string
 }
-
-type byQueueName []dataRow
-
-// Logic for sorting queue names
-func (a byQueueName) Len() int           { return len(a) }
-func (a byQueueName) Less(i, j int) bool { return a[i].queueName < a[j].queueName }
-func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 const (
 	connTimeout = 10
@@ -293,7 +285,6 @@ func createTableRows(queueList []queue) []dataRow {
 			jobsRunning:     strconv.Itoa(queue.Running),
 		}
 	}
-	sort.Sort(byQueueName(rows))
 
 	return rows
 }

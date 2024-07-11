@@ -299,6 +299,7 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 
 	// Print performance data
 	if len(queueList) > 0 {
+		fmt.Fprintf(os.Stdout, "|")
 		for _, element := range queueList {
 			if args.Queue != "" && args.Queue != element.Name {
 				continue

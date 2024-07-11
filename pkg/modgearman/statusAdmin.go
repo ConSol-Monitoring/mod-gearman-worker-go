@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +27,13 @@ const (
 	readBufferSize = 4000
 	columnLength   = 4
 )
+
+// Logic for sorting queues alphabetically
+type byQueueName []queue
+
+func (a byQueueName) Len() int           { return len(a) }
+func (a byQueueName) Less(i, j int) bool { return a[i].Name < a[j].Name }
+func (a byQueueName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func determinePort(address string) (int, error) {
 	addressParts := strings.Split(address, ":")
@@ -119,6 +127,8 @@ func processGearmanQueues(address string, connectionMap map[string]net.Conn) ([]
 			Waiting:     totalInt - runningInt,
 		})
 	}
+
+	sort.Sort(byQueueName(queueList))
 
 	// Add v before version number for better formatting
 	if version != "" {
