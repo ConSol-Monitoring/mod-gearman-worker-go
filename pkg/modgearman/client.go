@@ -42,7 +42,7 @@ func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 
 	ret, taskErr := cl.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
 	if taskErr != nil {
-		return "", fmt.Errorf("workerjob task err: %w", taskErr)
+		return "", taskErr
 	}
 
 	return ret, nil
@@ -69,7 +69,7 @@ func sendWorkerJob(args *CheckGmArgs) (string, error) {
 
 	_, taskErr := cl.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler) //ToDo: Gebe hier Rückgabewert zurück wenn Verbose als option
 	if taskErr != nil {
-		return "", fmt.Errorf("workerjob task err: %w", taskErr)
+		return "", taskErr
 	}
 	response := <-ansChan
 	return response, nil

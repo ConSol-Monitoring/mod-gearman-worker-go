@@ -45,6 +45,11 @@ type serverCheckData struct {
 	Version      string
 }
 
+type responseData struct {
+	statusCode int
+	response   string
+}
+
 type checkGearmanIdGen struct {
 }
 
@@ -67,7 +72,7 @@ func CheckGearman(args *CheckGmArgs) {
 
 	go func() {
 		if args.TextToSend != "" {
-			// Using default global timeout instad on relying on library implementation of timeout
+			// Using default global timeout instead on relying on library implementation of timeout
 			statusChan <- checkWorker(args)
 		} else {
 			statusChan <- checkServer(args)
@@ -85,80 +90,78 @@ func CheckGearman(args *CheckGmArgs) {
 	os.Exit(statusCode)
 }
 
-func checkWorker(args *CheckGmArgs) (statusCode int) {
+func checkWorker(args *CheckGmArgs) int {
 	args.UniqueID = ternary(args.UniqueID == "", args.UniqueID, "check")
 
-	var response string
-	var err error
+	res := responseData{
+		statusCode: StateOk,
+		response:   "",
+	}
 
-	statusCode, response, err = createWorkerJob(args)
+	err := createWorkerJob(args, &res)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", PluginName) // Todo: Get client error
-		statusCode = StateCritical
+		fmt.Fprintf(os.Stderr, "%s CRITICAL - job failed: \n", PluginName)
 
-		return statusCode
+		return res.statusCode
 	}
 
 	if args.Verbose {
 		// ToDo: Give back client code
-		fmt.Fprintf(os.Stdout, "%s\n", response)
+		fmt.Fprintf(os.Stdout, "%s\n", res.response)
 	}
 
-	if !args.SendAsync && args.TextToExpect != "" && response != "" {
-		if strings.Contains(response, args.TextToExpect) {
+	if !args.SendAsync && args.TextToExpect != "" && res.response != "" {
+		if strings.Contains(res.response, args.TextToExpect) {
 			fmt.Fprintf(os.Stdout, "%s OK - send worker: '%s' response: '%s'\n",
 				PluginName,
 				args.TextToSend,
-				response,
+				res.response,
 			)
 		} else {
 			fmt.Fprintf(os.Stdout, "%s CRITICAL - send worker: '%s' response: '%s', expected '%s'\n",
 				PluginName,
 				args.TextToSend,
-				response,
+				res.response,
 				args.TextToExpect,
 			)
 
-			statusCode = StateCritical
+			res.statusCode = StateCritical
+			return res.statusCode
 		}
 
-		return statusCode
+		return res.statusCode
 	}
 
 	// If result starts with a number followed by a colon, use this as exit code
-	if response != "" && len(response) > 1 && response[1] == ':' {
-		statusCode = int(response[0] - '0')
-		response = response[2:]
-		fmt.Fprintf(os.Stdout, "%s\n", response)
+	if res.response != "" && len(res.response) > 1 && res.response[1] == ':' {
+		res.statusCode = int(res.response[0] - '0')
+		res.response = res.response[2:]
+		fmt.Fprintf(os.Stdout, "%s\n", res.response)
 
-		return statusCode
+		return res.statusCode
 	}
 
-	fmt.Fprintf(os.Stdout, "%s OK - %s\n", PluginName, response)
+	fmt.Fprintf(os.Stdout, "%s OK - %s\n", PluginName, res.response)
 
-	return statusCode
+	return res.statusCode
 }
 
-func createWorkerJob(args *CheckGmArgs) (statusCode int, response string, err error) {
-	statusCode = StateOk
-
+func createWorkerJob(args *CheckGmArgs, res *responseData) (err error) {
 	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in neamon
 	client.IdGen = &checkGearmanIdGen{}
 
 	if args.SendAsync {
-		response = "sending background job succeeded"
+		res.response = "sending background job succeeded"
 		_, err = sendWorkerJobBg(args)
 		if err != nil {
-			statusCode = StateCritical
-			err = fmt.Errorf("error - sending background job failed: %w", err)
+			res.statusCode = StateCritical
 
 			return
 		}
 	} else {
-		response, err = sendWorkerJob(args)
+		res.response, err = sendWorkerJob(args)
 		if err != nil {
-			statusCode = StateCritical
-			err = fmt.Errorf("error - %s\n", err)
+			res.statusCode = StateCritical
 
 			return
 		}
@@ -175,7 +178,7 @@ func checkServer(args *CheckGmArgs) (statusCode int) {
 	queueList, version, err := getServerQueues(args.Host)
 	if err != nil {
 		statusCode = StateCritical
-		fmt.Fprintf(os.Stderr, "%s", err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 
 		return
 	}
@@ -199,8 +202,6 @@ func getServerQueues(server string) ([]queue, string, error) {
 	connectionMap := map[string]net.Conn{}
 	queueList, version, err := processGearmanQueues(server, connectionMap)
 	if err != nil || len(queueList) == 0 {
-		err = fmt.Errorf("error with server connction - %w", err)
-
 		return queueList, "", err
 	}
 
