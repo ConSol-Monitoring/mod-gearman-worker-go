@@ -95,6 +95,7 @@ issues:
     - "Metric: modgearmanworker_workers_total Error: non-counter metrics"
     - 'local replacement are not allowed: pkg/'
     - "fieldalignment: struct"
+    - "Function 'PrintUsageCheckGearman' has too many statements"
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test.*\.go

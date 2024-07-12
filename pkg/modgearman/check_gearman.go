@@ -2,11 +2,12 @@ package modgearman
 
 import (
 	"fmt"
-	"github.com/appscode/g2/client"
 	"net"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/appscode/g2/client"
 )
 
 const (
@@ -51,8 +52,7 @@ type responseData struct {
 	response   string
 }
 
-type checkGearmanIdGen struct {
-}
+type checkGearmanIDGen struct{}
 
 func CheckGearman(args *CheckGmArgs) {
 	if args.Version {
@@ -155,7 +155,7 @@ func checkWorker(args *CheckGmArgs) int {
 
 func createWorkerJob(args *CheckGmArgs, res *responseData) (err error) {
 	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in neamon
-	client.IdGen = &checkGearmanIdGen{}
+	client.IdGen = &checkGearmanIDGen{}
 
 	if args.SendAsync {
 		res.response = "sending background job succeeded"
@@ -177,7 +177,7 @@ func createWorkerJob(args *CheckGmArgs, res *responseData) (err error) {
 	return
 }
 
-func (*checkGearmanIdGen) Id() string {
+func (*checkGearmanIDGen) Id() string { //nolint // Function name needed for satisfying interface in g2 lib
 	return "check"
 }
 
@@ -233,37 +233,38 @@ func processServerData(queueList []queue, data *serverCheckData, args *CheckGmAr
 		data.TotalRunning += element.Running
 		data.TotalWaiting += element.Waiting
 
-		if element.Waiting > 0 && element.AvailWorker == 0 {
+		switch {
+		case element.Waiting > 0 && element.AvailWorker == 0:
 			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d job%s without any worker. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
-		} else if args.JobCritical > 0 && element.Waiting >= args.JobCritical {
+		case args.JobCritical > 0 && element.Waiting >= args.JobCritical:
 			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
-		} else if args.WorkerCritical > 0 && element.AvailWorker >= args.WorkerCritical {
+		case args.WorkerCritical > 0 && element.AvailWorker >= args.WorkerCritical:
 			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has %d worker. ",
 				element.Name,
 				element.AvailWorker,
 			)
-		} else if args.CritZeroWorker == 1 && element.AvailWorker == 0 {
+		case args.CritZeroWorker == 1 && element.AvailWorker == 0:
 			data.RC = stateCritical
 			data.Message = fmt.Sprintf("Queue %s has no worker. ", element.Name)
-		} else if args.JobWarning > 0 && element.Waiting >= args.JobWarning {
+		case args.JobWarning > 0 && element.Waiting >= args.JobWarning:
 			data.RC = stateWarning
 			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
-		} else if args.WorkerWarning > 0 && element.AvailWorker >= args.WorkerWarning {
+		case args.WorkerWarning > 0 && element.AvailWorker >= args.WorkerWarning:
 			data.RC = stateWarning
 			data.Message = fmt.Sprintf("Queue %s has %d worker. ", element.Name, element.AvailWorker)
 		}
@@ -354,7 +355,8 @@ func PrintUsageCheckGearman(args *CheckGmArgs) {
 	fmt.Fprintf(os.Stdout, " - Thresholds are only for server checks, worker checks are availability only\n")
 	fmt.Fprintf(os.Stdout, "\n")
 	fmt.Fprintf(os.Stdout, "perfdata format when checking job server:\n")
-	fmt.Fprintf(os.Stdout, " 'queue waiting'=current waiting jobs;warn;crit;0 'queue running'=current running jobs 'queue worker'=current num worker;warn;crit;0\n")
+	fmt.Fprintf(os.Stdout, " 'queue waiting'=current waiting jobs;warn;crit;0 'queue running'=current running jobs "+
+		"'queue worker'=current num worker;warn;crit;0\n")
 	fmt.Fprintf(os.Stdout, "\n")
 	fmt.Fprintf(os.Stdout, "Note: set your pnp RRD_STORAGE_TYPE to MULTIPLE to support changeing numbers of queues.\n")
 	fmt.Fprintf(os.Stdout, "      see http://docs.pnp4nagios.org/de/pnp-0.6/tpl_custom for detailed information\n")
@@ -376,15 +378,18 @@ func PrintUsageCheckGearman(args *CheckGmArgs) {
 	fmt.Fprintf(os.Stdout, "%%> ./check_gearman -H <job server hostname> -q worker_<worker hostname> -t 10 -s check\n")
 	fmt.Fprintf(os.Stdout, "check_gearman OK - host has 5 worker and is working on 0 jobs\n")
 	fmt.Fprintf(os.Stdout, "%%> ./check_gearman -H <job server hostname> -q perfdata -t 10 -x\n")
-	fmt.Fprintf(os.Stdout, "check_gearman CRITICAL - Queue perfdata has 155 jobs without any worker. |'perfdata_waiting'=155;10;100;0 'perfdata_running'=0 'perfdata_worker'=0;25;50;0\n")
+	fmt.Fprintf(os.Stdout, "check_gearman CRITICAL - Queue perfdata has 155 jobs without any worker. "+
+		"|'perfdata_waiting'=155;10;100;0 'perfdata_running'=0 'perfdata_worker'=0;25;50;0\n")
 	fmt.Fprintf(os.Stdout, "\n")
 	fmt.Fprintf(os.Stdout, "Check result worker:\n")
 	fmt.Fprintf(os.Stdout, "%%> ./check_gearman -H <job server hostname> -q check_results -t 10 -s check\n")
-	fmt.Fprintf(os.Stdout, "OK - result worker running on host. Sending 14.9 jobs/s (avg duration:0.040ms). Version: 4.0.3|worker=3;;;0;3 avg_submit_duration=0.000040s;;;0;0.000429 jobs=2388c errors=0c\n")
+	fmt.Fprintf(os.Stdout, "OK - result worker running on host. Sending 14.9 jobs/s (avg duration:0.040ms). "+
+		"Version: 4.0.3|worker=3;;;0;3 avg_submit_duration=0.000040s;;;0;0.000429 jobs=2388c errors=0c\n")
 	fmt.Fprintf(os.Stdout, "\n")
 }
 
 /* Helper function */
+//nolint:ireturn // Syntactic sugar
 func ternary[T any](condition bool, trueVal, falseVal T) T {
 	if condition {
 		return trueVal

@@ -2,9 +2,10 @@ package modgearman
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/appscode/g2/client"
 	"github.com/appscode/g2/pkg/runtime"
-	"os"
 )
 
 /**
@@ -13,11 +14,11 @@ import (
  */
 func sendAnswer(currentClient *client.Client, answer *answer, server string, encrypted bool) (*client.Client, error) {
 	if currentClient == nil {
-		cl, err := client.New("tcp", server)
+		cl1, err := client.New("tcp", server)
 		if err != nil {
 			return nil, fmt.Errorf("client: %w", err)
 		}
-		currentClient = cl
+		currentClient = cl1
 	}
 
 	byteAnswer := createAnswer(answer, encrypted)
@@ -32,15 +33,15 @@ func sendAnswer(currentClient *client.Client, answer *answer, server string, enc
 }
 
 func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
-	cl, err := client.New("tcp", args.Host)
+	cl1, err := client.New("tcp", args.Host)
 	if err != nil {
 		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
 
 		return "", err
 	}
-	defer cl.Close()
+	defer cl1.Close()
 
-	ret, taskErr := cl.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh)
+	ret, taskErr := cl1.DoBg(args.Queue, []byte(args.TextToSend), runtime.JobHigh)
 	if taskErr != nil {
 		taskErr = fmt.Errorf("%w", taskErr)
 
@@ -51,11 +52,11 @@ func sendWorkerJobBg(args *CheckGmArgs) (string, error) {
 }
 
 func sendWorkerJob(args *CheckGmArgs) (string, error) {
-	cl, err := client.New("tcp", args.Host)
+	cl1, err := client.New("tcp", args.Host)
 	if err != nil {
 		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
 	}
-	defer cl.Close()
+	defer cl1.Close()
 
 	ansChan := make(chan string)
 
@@ -69,7 +70,7 @@ func sendWorkerJob(args *CheckGmArgs) (string, error) {
 		}
 	}
 
-	_, taskErr := cl.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler)
+	_, taskErr := cl1.Do(args.Queue, []byte(args.TextToSend), runtime.JobHigh, jobHandler)
 	if taskErr != nil {
 		taskErr = fmt.Errorf("%w", taskErr)
 
