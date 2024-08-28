@@ -75,7 +75,8 @@ type config struct {
 	flagCPUProfile string
 	flagMemProfile string
 	// append worker hostname to result output
-	workerNameInResult bool
+	workerNameInResult         bool
+	workerNameInResultPosition string
 }
 
 // setDefaultValues sets reasonable defaults
@@ -105,6 +106,7 @@ func (config *config) setDefaultValues() {
 	config.internalCheckDummy = true
 	config.internalCheckNscWeb = true
 	config.workerNameInResult = false
+	config.workerNameInResultPosition = "pre_output"
 	filename, err := os.Executable()
 	if err == nil {
 		config.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
@@ -173,6 +175,7 @@ func (config *config) dump() {
 	log.Debugf("internal_check_dummy          %v\n", config.internalCheckDummy)
 	log.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
 	log.Debugf("worker_name_in_result         %v\n", config.workerNameInResult)
+	log.Debugf("worker_name_in_result_position %v\n", config.workerNameInResultPosition)
 	if config.binary == "send_gearman" {
 		log.Debugf("returncode                    %d\n", config.returnCode)
 		log.Debugf("message                       %s\n", config.message)
@@ -336,6 +339,8 @@ func (config *config) parseConfigItem(raw string) error {
 		config.internalCheckNscWeb = getBool(value)
 	case "worker_name_in_result":
 		config.workerNameInResult = getBool(value)
+	case "worker_name_in_result_position":
+		config.workerNameInResultPosition = value
 	case "fork_on_exec":
 		// skip legacy option
 	case "workaround_rc_25":

@@ -293,13 +293,21 @@ func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
 		if config.workerNameInResult {
 			outputparts := strings.SplitN(result.output, "|", 2)
-			if len(outputparts) > 1 {
-				result.output = fmt.Sprintf("%s (worker: %s) |%s", outputparts[0], config.identifier, outputparts[1])
-			} else {
-				result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
+
+			switch config.workerNameInResultPosition {
+			case "pre_output":
+				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
+			case "pre_perfdata":
+				if len(outputparts) > 1 {
+					result.output = fmt.Sprintf("%s (worker: %s) |%s", outputparts[0], config.identifier, outputparts[1])
+				} else {
+					result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
+				}
+			default:
+				log.Warnf("unknown worker_name_in_result_position value: %s. Defaulting to 'pre_output'", config.workerNameInResultPosition)
+				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
 			}
 		}
-
 		return
 	}
 	if result.returnCode == exitCodeNotExecutable {
