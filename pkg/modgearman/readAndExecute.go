@@ -308,6 +308,7 @@ func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
 			}
 		}
+
 		return
 	}
 	if result.returnCode == exitCodeNotExecutable {
