@@ -291,8 +291,21 @@ func execEPN(result *answer, cmd *command, received *request) {
 
 func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
-		if config.workerNameInResult {
-			result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
+		if config.workerNameInResult != "off" {
+
+			switch config.workerNameInResult {
+			case "on":
+				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
+			case "pre_perfdata":
+				outputparts := strings.SplitN(result.output, "|", 2)
+				if len(outputparts) > 1 {
+					result.output = fmt.Sprintf("%s (worker: %s) |%s", outputparts[0], config.identifier, outputparts[1])
+				} else {
+					result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
+				}
+			default:
+				log.Warnf("unknown worker_name_in_result value: %s. Defaulting to 'off'", config.workerNameInResult)
+			}
 		}
 
 		return
