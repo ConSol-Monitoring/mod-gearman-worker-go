@@ -89,7 +89,7 @@ var (
 var aIsRunning int64
 
 func isRunning() bool {
-	return uint8(atomic.LoadInt64(&aIsRunning)) != 0
+	return atomic.LoadInt64(&aIsRunning) != 0
 }
 
 // Worker starts the mod_gearman_worker program

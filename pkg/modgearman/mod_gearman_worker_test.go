@@ -102,7 +102,7 @@ func BenchmarkJobs(b *testing.B) {
 	if sendError != nil {
 		b.Log(stdout.String())
 		b.Log(stderr.String())
-		b.Fatalf(sendError.Error())
+		b.Fatalf("%s", sendError.Error())
 	}
 }
 

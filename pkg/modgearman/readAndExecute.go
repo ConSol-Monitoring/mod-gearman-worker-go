@@ -292,7 +292,6 @@ func execEPN(result *answer, cmd *command, received *request) {
 func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
 		if config.workerNameInResult != "off" {
-
 			switch config.workerNameInResult {
 			case "on":
 				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
