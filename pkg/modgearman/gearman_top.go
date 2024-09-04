@@ -196,7 +196,7 @@ func printHostsInParallel(hostList []string, connectionMap map[string]net.Conn, 
 			for {
 				table := generateQueueTable(host, connectionMap)
 				tableChan <- map[string]string{host: table}
-				time.Sleep(time.Duration(interval) * time.Second)
+				time.Sleep(time.Duration(interval * float64(time.Second)))
 			}
 		}(host)
 	}
