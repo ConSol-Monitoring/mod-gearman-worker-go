@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.5.2    Wed Sep  4 11:03:28 CEST 2024
           - add worker_name_in_result option
           - add check_gearman tool
           - add gearman_top tool
