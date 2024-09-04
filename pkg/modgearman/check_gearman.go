@@ -17,7 +17,6 @@ const (
 	stateUnknown  = 3
 
 	pluginName = "check_gearman"
-	gmVersion  = "5.1.3"
 )
 
 type CheckGmArgs struct {
@@ -54,9 +53,9 @@ type responseData struct {
 
 type checkGearmanIDGen struct{}
 
-func CheckGearman(args *CheckGmArgs) {
+func CheckGearman(args *CheckGmArgs, build string) {
 	if args.Version {
-		PrintVersionCheckGearman()
+		PrintVersionCheckGearman(build)
 
 		os.Exit(stateUnknown)
 	}
@@ -323,8 +322,9 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 	fmt.Fprintf(os.Stdout, "\n")
 }
 
-func PrintVersionCheckGearman() {
-	fmt.Fprintf(os.Stdout, "check_german: gearman version %s\n", gmVersion)
+func PrintVersionCheckGearman(build string) {
+	config := &config{binary: "check_gearman", build: build}
+	printVersion(config)
 }
 
 func PrintUsageCheckGearman(args *CheckGmArgs) {
@@ -389,7 +389,7 @@ func PrintUsageCheckGearman(args *CheckGmArgs) {
 }
 
 /* Helper function */
-//nolint:ireturn // Syntactic sugar
+//nolint:ireturn,nolintlint // Syntactic sugar
 func ternary[T any](condition bool, trueVal, falseVal T) T {
 	if condition {
 		return trueVal

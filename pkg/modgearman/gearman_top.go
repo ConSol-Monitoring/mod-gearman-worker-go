@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -306,8 +305,9 @@ func printTopUsage() {
 }
 
 func printTopVersion(build string) {
-	fmt.Fprintf(os.Stdout, "gearman_top: version %s (Build: %s, %s)\n", gmVersion, build, runtime.Version())
-	os.Exit(0)
+	config := &config{binary: "check_gearman", build: build}
+	printVersion(config)
+	os.Exit(3)
 }
 
 func Add2HostList(host string, hostList *[]string) error {

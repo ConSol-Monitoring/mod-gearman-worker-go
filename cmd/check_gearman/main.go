@@ -49,5 +49,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	modgearman.CheckGearman(&args)
+	modgearman.CheckGearman(&args, Build)
 }
