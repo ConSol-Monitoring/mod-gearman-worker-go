@@ -48,9 +48,6 @@ jobs:
           go mod vendor
           $Env:GOWORK = ""
 
-          # build check_nsc_web
-          go build -o ./mod_gearman_worker.exe cmd/mod_gearman_worker/main.go
-
           # install nscp
           Invoke-WebRequest -UseBasicParsing -Uri https://github.com/mickem/nscp/releases/download/0.5.2.35/NSCP-0.5.2.35-x64.msi -OutFile NSCP-0.5.2.35-x64.msi
           Start-Process msiexec -Wait -ArgumentList '/i NSCP-0.5.2.35-x64.msi /qn CONF_WEB=1 NSCLIENT_PWD=test'
@@ -61,6 +58,9 @@ jobs:
           # make sure it is started
           net stop nscp
           net start nscp
+
+          # build check_nsc_web
+          go build -o ./mod_gearman_worker.exe cmd/mod_gearman_worker/main.go
 
           # check if connection works
           .\mod_gearman_worker.exe testcmd ../check_nsc_web -k -p test -u https://127.0.0.1:8443                    ; if ($LASTEXITCODE -ne 0) { exit 1 }

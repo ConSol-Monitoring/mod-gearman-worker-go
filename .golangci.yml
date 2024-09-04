@@ -48,6 +48,7 @@ linters:
     - err113
     # deprecated
     - execinquery
+    - exportloopref
     - gomnd
 issues:
   max-same-issues: 0
