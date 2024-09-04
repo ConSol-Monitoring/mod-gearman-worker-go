@@ -1,6 +1,7 @@
 package modgearman
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -19,7 +20,7 @@ const (
 	pluginName = "check_gearman"
 )
 
-type CheckGmArgs struct {
+type checkGmArgs struct {
 	Usage          bool
 	Verbose        bool
 	Version        bool
@@ -53,23 +54,59 @@ type responseData struct {
 
 type checkGearmanIDGen struct{}
 
-func CheckGearman(args *CheckGmArgs, build string) {
+const (
+	defaultTimeout = 10
+	defaultJobWarning
+	defaultJobCritical    = 100
+	defaultWorkerWarning  = 25
+	defaultWorkerCritical = 50
+	defaultCritZeroWorker = 1
+)
+
+func CheckGearman(build string) {
+	args := &checkGmArgs{}
+	// Define a new FlagSet for avoiding collisions with other flags
+	flagSet := flag.NewFlagSet("check_gearman", flag.ExitOnError)
+	flagSet.Usage = func() { printUsageCheckGearman(args) }
+
+	flagSet.StringVar(&args.Host, "H", "", "hostname")
+	flagSet.IntVar(&args.Timeout, "t", defaultTimeout, "timeout in seconds")
+	flagSet.IntVar(&args.JobWarning, "w", defaultJobWarning, "job warning level")
+	flagSet.IntVar(&args.JobCritical, "c", defaultJobCritical, "job critical level")
+	flagSet.BoolVar(&args.Verbose, "v", false, "verbose output")
+	flagSet.BoolVar(&args.Version, "V", false, "print version")
+	flagSet.IntVar(&args.WorkerWarning, "W", defaultWorkerWarning, "worker warning level")
+	flagSet.IntVar(&args.WorkerCritical, "C", defaultWorkerCritical, "worker warning level")
+	flagSet.StringVar(&args.TextToSend, "s", "", "text to send")
+	flagSet.StringVar(&args.TextToExpect, "e", "", "text to expect")
+	flagSet.BoolVar(&args.SendAsync, "a", false, "send async - will ignore")
+	flagSet.StringVar(&args.Queue, "q", "", "queue")
+	flagSet.StringVar(&args.UniqueID, "u", "", "unique job id")
+	flagSet.IntVar(&args.CritZeroWorker, "x", defaultCritZeroWorker, "text to expect")
+
+	// Parse the flags in the custom FlagSet
+	err := flagSet.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags -> %s", err.Error())
+		os.Exit(1)
+	}
+
 	if args.Version {
-		PrintVersionCheckGearman(build)
+		printVersionCheckGearman(build)
 
 		os.Exit(stateUnknown)
 	}
 
 	if args.Host == "" {
 		fmt.Fprintf(os.Stderr, "Error - no hostname given\n\n")
-		PrintUsageCheckGearman(args)
+		printUsageCheckGearman(args)
 
 		return
 	}
 
 	if args.TextToSend != "" && args.Queue == "" {
 		fmt.Fprintf(os.Stderr, "Error - need queue (-q) when sending job\n\n")
-		PrintUsageCheckGearman(args)
+		printUsageCheckGearman(args)
 
 		return
 	}
@@ -96,7 +133,7 @@ func CheckGearman(args *CheckGmArgs, build string) {
 	os.Exit(statusCode)
 }
 
-func checkWorker(args *CheckGmArgs) int {
+func checkWorker(args *checkGmArgs) int {
 	args.UniqueID = ternary(args.UniqueID == "", args.UniqueID, "check")
 
 	res := responseData{
@@ -152,7 +189,7 @@ func checkWorker(args *CheckGmArgs) int {
 	return res.statusCode
 }
 
-func createWorkerJob(args *CheckGmArgs, res *responseData) (err error) {
+func createWorkerJob(args *checkGmArgs, res *responseData) (err error) {
 	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in neamon
 	client.IdGen = &checkGearmanIDGen{}
 
@@ -180,7 +217,7 @@ func (*checkGearmanIDGen) Id() string { //nolint // Function name needed for sat
 	return "check"
 }
 
-func checkServer(args *CheckGmArgs) (statusCode int) {
+func checkServer(args *checkGmArgs) (statusCode int) {
 	queueList, version, err := getServerQueues(args.Host)
 	if err != nil {
 		statusCode = stateCritical
@@ -221,7 +258,7 @@ func getServerQueues(server string) ([]queue, string, error) {
 	return queueList, version, nil
 }
 
-func processServerData(queueList []queue, data *serverCheckData, args *CheckGmArgs) int {
+func processServerData(queueList []queue, data *serverCheckData, args *checkGmArgs) int {
 	data.RC = stateOk
 
 	for _, element := range queueList {
@@ -277,7 +314,7 @@ func processServerData(queueList []queue, data *serverCheckData, args *CheckGmAr
 	return data.RC
 }
 
-func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
+func printData(data *serverCheckData, queueList []queue, args *checkGmArgs) {
 	fmt.Fprintf(os.Stdout, "%s ", pluginName)
 	switch data.RC {
 	case stateOk:
@@ -322,12 +359,12 @@ func printData(data *serverCheckData, queueList []queue, args *CheckGmArgs) {
 	fmt.Fprintf(os.Stdout, "\n")
 }
 
-func PrintVersionCheckGearman(build string) {
+func printVersionCheckGearman(build string) {
 	config := &config{binary: "check_gearman", build: build}
 	printVersion(config)
 }
 
-func PrintUsageCheckGearman(args *CheckGmArgs) {
+func printUsageCheckGearman(args *checkGmArgs) {
 	fmt.Fprintf(os.Stdout, "usage:\n")
 	fmt.Fprintf(os.Stdout, "\n")
 	fmt.Fprintf(os.Stdout, "check_gearman [ -H=<hostname>[:port]         ]\n")
