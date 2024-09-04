@@ -2,6 +2,8 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 
 next:
           - add worker_name_in_result option
+          - add check_gearman tool
+          - add gearman_top tool
 
 1.5.1    Thu Mar 21 17:43:21 CET 2024
           - update internal check_nsc_web to v0.7.2
