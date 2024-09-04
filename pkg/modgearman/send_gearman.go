@@ -210,6 +210,9 @@ func parseLine2Answer(config *config, result *answer, input string) error {
 	if result.hostName == "" {
 		return fmt.Errorf("invalid data, no hostname parsed")
 	}
+	if result.hostName == "" {
+		return fmt.Errorf("invalid data, no hostname parsed")
+	}
 
 	return nil
 }
