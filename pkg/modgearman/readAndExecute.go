@@ -349,8 +349,12 @@ func setTimeoutResult(result *answer, config *config, received *request, negate 
 		log.Infof("host check: %s run into timeout after %d seconds", received.hostName, received.timeout)
 		result.output = fmt.Sprintf("(Host Check Timed Out On Worker: %s)", config.identifier)
 	default:
-		log.Infof("%s with command %s run into timeout after %d seconds",
+		// eventhandler and notifications should not run into timeouts usually
+		log.Warnf("%s with command %s run into timeout after %d seconds",
 			received.typ, received.commandLine, received.timeout)
+		if originalOutput != "" {
+			log.Warnf("%s", originalOutput)
+		}
 		result.output = fmt.Sprintf("(Check Timed Out On Worker: %s)", config.identifier)
 	}
 	if originalOutput != "" {
