@@ -550,7 +550,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 	}
 
 	// do not wait on shutdown via sigint
-	wait := 10 * time.Second
+	wait := 5 * time.Second
 	if state == Shutdown {
 		wait = 1 * time.Second
 	}

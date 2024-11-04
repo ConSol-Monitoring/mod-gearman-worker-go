@@ -15,6 +15,7 @@ var myCipher cipher.Block
 type request struct {
 	typ                string
 	resultQueue        string
+	targetQueue        string
 	hostName           string
 	serviceDescription string
 	startTime          float64
@@ -25,12 +26,14 @@ type request struct {
 	ballooning         bool   // flag wether this job has been put into background
 	Cancel             func() // cancel current job
 	Canceled           bool
+	rawRequest         []byte
 }
 
 func (r *request) String() string {
 	return fmt.Sprintf(
 		"\n\t type: %s\n"+
 			"\t result_queue: %s\n"+
+			"\t target_queue: %s\n"+
 			"\t host_name: %s\n"+
 			"\t service_description: %s\n"+
 			"\t start_time: %f\n"+
@@ -40,6 +43,7 @@ func (r *request) String() string {
 			"\t command_line: %s\n\n",
 		r.typ,
 		r.resultQueue,
+		r.targetQueue,
 		r.hostName,
 		r.serviceDescription,
 		r.startTime,
@@ -109,6 +113,7 @@ func createReceived(input []byte) (*request, error) {
 	// then extract them and store them
 	result.typ = stringMap["type"]
 	result.resultQueue = stringMap["result_queue"]
+	result.targetQueue = stringMap["target_queue"]
 	result.hostName = stringMap["host_name"]
 	result.serviceDescription = stringMap["service_description"]
 	result.commandLine = stringMap["command_line"]

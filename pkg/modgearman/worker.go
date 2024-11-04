@@ -121,13 +121,15 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 
 	worker.activeJobs++
 
-	received, err := decrypt((decodeBase64(string(job.Data()))), worker.config.encryption)
+	rawRequest := job.Data()
+	received, err := decrypt(decodeBase64(string(rawRequest)), worker.config.encryption)
 	if err != nil {
 		log.Errorf("decrypt failed: %w", err)
 		worker.activeJobs--
 
 		return nil, err
 	}
+	received.rawRequest = rawRequest
 	worker.mainWorker.tasks++
 
 	logJob(job, received, "incoming", nil)
@@ -291,9 +293,13 @@ func (worker *worker) Cancel() {
 	log.Debugf("worker %s cancling current jobs", worker.id)
 	worker.lock.Lock()
 	for _, j := range worker.jobs {
-		if j.Cancel != nil {
-			j.Cancel()
+		if j.Cancel == nil {
+			continue
 		}
+		j.Cancel()
+	}
+	if worker.worker != nil {
+		worker.worker.Close()
 	}
 	worker.lock.Unlock()
 }
