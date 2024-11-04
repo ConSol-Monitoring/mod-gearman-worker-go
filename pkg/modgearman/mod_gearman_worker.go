@@ -484,6 +484,10 @@ Worker Development:
 Miscellaneous:
        --workaround_rc_25
 
+Testing Commands:
+
+	mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>
+
 see README for a detailed explanation of all options.
 `
 	fmt.Fprintln(os.Stdout, usage)
