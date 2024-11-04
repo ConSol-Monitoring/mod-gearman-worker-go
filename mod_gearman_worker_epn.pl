@@ -510,6 +510,7 @@ sub run_package {
     untie *STDOUT;
     my $errors = <STDERR>;
     if($errors) {
+        chomp($errors);
         $plugin_output .= sprintf("\n[%s]", $errors);
     }
     undef $stderr;
