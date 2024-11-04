@@ -534,6 +534,11 @@ package OutputTrap;
 #
 # =cut
 #
+
+use warnings;
+use strict;
+use Carp;
+
 sub TIEHANDLE {
     my($class) = @_;
     my $me = '';
@@ -542,11 +547,25 @@ sub TIEHANDLE {
 
 sub PRINT {
     my($self, @args) = @_;
+    local $SIG{__WARN__} = sub {
+        my($err) = @_;
+        chomp($err);
+        $err =~ s%\ at\ .*/mod_gearman_worker_epn.pl\ line\ \d+.$%%mx;
+        # warn with caller perspective
+        Carp::carp($err);
+    };
     $$self .= join('', @args);
 }
 
 sub PRINTF {
     my($self, $fmt, @args) = @_;
+    local $SIG{__WARN__} = sub {
+        my($err) = @_;
+        chomp($err);
+        $err =~ s%\ at\ .*/mod_gearman_worker_epn.pl\ line\ \d+.$%%mx;
+        # warn with caller perspective
+        Carp::carp($err);
+    };
     $$self .= sprintf($fmt, @args);
 }
 
