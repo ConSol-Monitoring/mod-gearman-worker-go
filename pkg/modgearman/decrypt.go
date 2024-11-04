@@ -140,7 +140,7 @@ func createMap(input []byte) map[string]string {
 
 	resultMap := make(map[string]string)
 
-	for i := range len(splitted) {
+	for i := range splitted {
 		// split at = and store in map
 		access := strings.SplitN(splitted[i], "=", 2)
 
