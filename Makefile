@@ -74,7 +74,7 @@ build: vendor
 
 # run build watch, ex. with tracing: make build-watch -- -debug=3 --logfile=stderr
 build-watch: vendor tools
-	set -x ; ls pkg/*/*.go cmd/*/*.go lmd.inifg | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
+	set -x ; ls pkg/*/*.go cmd/*/*.go | entr -sr "$(MAKE) build && ./mod_gearman_worker $(filter-out $@,$(MAKECMDGOALS)) $(shell echo $(filter-out --,$(MAKEFLAGS)) | tac -s " ")"
 
 build-linux-amd64: vendor
 	set -e; for CMD in $(CMDS); do \
