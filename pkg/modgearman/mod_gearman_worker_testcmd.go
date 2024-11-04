@@ -6,15 +6,15 @@ import (
 )
 
 func runTestCmd(conf *config, args []string) (rc int, output string) {
+	if len(args) == 0 {
+		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
+	}
 	conf.enableEmbeddedPerl = true
 	check := &request{
 		typ:                "service",
 		hostName:           "test check from commandline",
 		serviceDescription: "test",
 		commandLine:        buildCommandLine(args),
-	}
-	if len(args) == 0 {
-		return 3, "usage: mod_gearman_worker [--job_timeout=seconds] testcmd <cmd> <args>"
 	}
 	log.Debugf("test cmd: %s\n", check.commandLine)
 
