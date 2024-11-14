@@ -40,8 +40,8 @@ type mainWorker struct {
 	min1                float64
 	min5                float64
 	min15               float64
-	memTotal            int
-	memFree             int
+	memTotal            uint64
+	memFree             uint64
 	maxOpenFiles        uint64
 	maxPossibleWorker   int
 	curBallooningWorker int
@@ -383,17 +383,17 @@ func (w *mainWorker) updateMemInfo() {
 		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemFree:`)):
 			values := strings.Fields(scanner.Text())
 			if len(values) >= 1 && w.memFree == 0 {
-				w.memFree = getInt(values[1])
+				w.memFree = uint64(getFloat(values[1]))
 			}
 		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemAvailable:`)):
 			values := strings.Fields(scanner.Text())
 			if len(values) >= 1 {
-				w.memFree = getInt(values[1])
+				w.memFree = uint64(getFloat(values[1]))
 			}
 		case bytes.HasPrefix(scanner.Bytes(), []byte(`MemTotal:`)):
 			values := strings.Fields(scanner.Text())
 			if len(values) >= 1 {
-				w.memTotal = getInt(values[1])
+				w.memTotal = uint64(getFloat(values[1]))
 			}
 		default:
 			continue
@@ -414,8 +414,12 @@ func (w *mainWorker) checkMemory() (ok bool, reason string) {
 	}
 
 	usedPercent := 100 - (w.memFree*100)/w.memTotal
-	if w.cfg.memLimit > 0 && usedPercent >= w.cfg.memLimit {
-		reason := fmt.Sprintf("cannot start any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.cfg.memLimit)
+	if w.cfg.memLimit > 0 && usedPercent >= uint64(w.cfg.memLimit) {
+		reason := fmt.Sprintf("cannot start any more worker, memory usage is too high: %d%% > %d%% (free: %s)",
+			usedPercent,
+			w.cfg.memLimit,
+			bytes2Human(w.memFree*1024),
+		)
 		log.Debug(reason)
 
 		return false, reason
@@ -604,4 +608,18 @@ func (w *mainWorker) StopStatusWorker() {
 	log.Debugf("statusworker removed...")
 	w.statusWorker.Shutdown()
 	w.statusWorker = nil
+}
+
+// convert bytes into a human readable string
+func bytes2Human(num uint64) string {
+	const unit = 1024
+	if num < unit {
+		return fmt.Sprintf("%d B", num)
+	}
+	div, exp := unit, 0
+	for n := num / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(num)/float64(div), "KMGTPE"[exp])
 }
