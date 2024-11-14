@@ -61,6 +61,7 @@ var (
 		", Perl interpreter: ",
 		"**ePN: invalid request:",
 		"/mod_gearman_worker_epn.pl line ",
+		"Fatal glibc error:",
 	}
 )
 
