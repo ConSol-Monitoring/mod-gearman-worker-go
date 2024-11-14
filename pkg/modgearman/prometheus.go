@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
 )
 
 var (
@@ -184,4 +185,33 @@ func updatePrometheusExecMetrics(config *config, result *answer, received *reque
 			exemplarAdd.AddWithExemplar(1, exemplarLabels)
 		}
 	}
+}
+
+func promCounterVecSum(counterVec *prometheus.CounterVec) (totalSum float64) {
+	metrics := make(chan prometheus.Metric)
+
+	// Run collection in a separate goroutine
+	go func() {
+		counterVec.Collect(metrics)
+		close(metrics)
+	}()
+
+	for metric := range metrics {
+		// Use a protobuf to store metric data
+		metricProto := &dto.Metric{}
+		err := metric.Write(metricProto)
+		if err != nil {
+			log.Warnf("Error writing metric: %s", err.Error())
+
+			return
+		}
+
+		// Sum the counter value from each metric
+		counter := metricProto.GetCounter()
+		if counter != nil {
+			totalSum += counter.GetValue()
+		}
+	}
+
+	return totalSum
 }

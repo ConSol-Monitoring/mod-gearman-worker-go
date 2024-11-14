@@ -209,19 +209,37 @@ func mainLoop(cfg *config, osSignalChan chan os.Signal, workerMap map[string]*wo
 
 	// just wait till someone hits ctrl+c or we have to reload
 	mainworker.manageWorkers(initStart)
-	ticker := time.NewTicker(1 * time.Second)
-	reasonLastLogged := time.Now().Add(-1 * time.Minute)
+	adjustWorkerTicker := time.NewTicker(1 * time.Second)
+	printStatsTicker := time.NewTicker(1 * time.Minute)
+	statsTime := time.Now()
+	lastJobs := float64(0)
+	lastReasonPrinted := false
 	for {
 		select {
-		case <-ticker.C:
+		case <-adjustWorkerTicker.C:
 			reason := mainworker.manageWorkers(0)
 			checkRestartEPNServer(cfg)
 
 			// log reason for not starting workers once every minute
-			if reason != "" && time.Now().Add(-1*time.Minute).After(reasonLastLogged) {
+			if reason != "" && !lastReasonPrinted {
 				log.Info(reason)
-				reasonLastLogged = time.Now()
+				lastReasonPrinted = true
 			}
+		case <-printStatsTicker.C:
+			lastReasonPrinted = false
+			jobs := promCounterVecSum(taskCounter)
+			delta := jobs - lastJobs
+			seconds := time.Since(statsTime).Seconds()
+			if seconds > 0 {
+				log.Infof("stats: workers: %d/%d busy: %d | current job rate: %.2f/s",
+					len(mainworker.workerMap),
+					cfg.maxWorker,
+					mainworker.activeWorkers,
+					delta/seconds,
+				)
+			}
+			lastJobs = jobs
+			statsTime = time.Now()
 		case sig := <-osSignalChan:
 			exit = mainSignalHandler(sig, cfg)
 			switch exit {
@@ -240,7 +258,8 @@ func mainLoop(cfg *config, osSignalChan chan os.Signal, workerMap map[string]*wo
 			case Shutdown, ShutdownGraceFully:
 				atomic.StoreInt64(&aIsRunning, 0)
 				numWorker = len(workerMap)
-				ticker.Stop()
+				adjustWorkerTicker.Stop()
+				printStatsTicker.Stop()
 				// stop worker in background, so we can continue listening to signals
 				go func() {
 					defer logPanicExit()
