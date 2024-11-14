@@ -40,7 +40,7 @@ type config struct {
 	loadLimit5                float64
 	loadLimit15               float64
 	loadCPUMulti              float64
-	memLimit                  int
+	memLimit                  uint64
 	backgroundingThreshold    int
 	showErrorOutput           bool
 	dupResultsArePassive      bool
@@ -277,7 +277,7 @@ func (config *config) parseConfigItem(raw string) error {
 	case "load_cpu_multi":
 		config.loadCPUMulti = getFloat(value)
 	case "mem_limit":
-		config.memLimit = getInt(value)
+		config.memLimit = uint64(getFloat(value))
 	case "backgrounding-threshold":
 		config.backgroundingThreshold = getInt(value)
 	case "show_error_output":
