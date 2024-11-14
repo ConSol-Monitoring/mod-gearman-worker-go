@@ -47,9 +47,7 @@ linters:
     - wsl
     - err113
     # deprecated
-    - execinquery
     - exportloopref
-    - gomnd
 issues:
   max-same-issues: 0
   exclude-use-default: true
