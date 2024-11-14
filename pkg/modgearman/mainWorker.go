@@ -3,6 +3,7 @@ package modgearman
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"net"
 	"net/http"
 	hpprof "net/http/pprof"
@@ -108,12 +109,12 @@ func (w *mainWorker) InitDebugOptions() {
 	}
 }
 
-func (w *mainWorker) manageWorkers(initialStart int) {
+func (w *mainWorker) manageWorkers(initialStart int) (reason string) {
 	// if there are no servers, we cannot do anything
 	if len(w.ActiveServerList()) == 0 {
 		log.Tracef("manageWorkers: no active servers available, retrying...")
 
-		return
+		return ""
 	}
 
 	// start status worker
@@ -158,34 +159,38 @@ func (w *mainWorker) manageWorkers(initialStart int) {
 	w.adjustWorkerBottomLevel()
 
 	// check if we need more workers
-	w.adjustWorkerTopLevel()
+	reason = w.adjustWorkerTopLevel()
 
 	newTotalWorker := len(w.workerMap)
 	if newTotalWorker != totalWorker {
 		log.Debugf("adjusted workers: %d (utilization: %d%%)", newTotalWorker, w.workerUtilization)
 	}
+
+	return reason
 }
 
 // check if we need more workers and start new ones
-func (w *mainWorker) adjustWorkerTopLevel() {
+func (w *mainWorker) adjustWorkerTopLevel() (failreason string) {
 	// only if all are busy
 	if w.activeWorkers < len(w.workerMap) {
-		return
+		return ""
 	}
 	// do not exceed maxWorker level
 	if len(w.workerMap) >= w.cfg.maxWorker {
-		return
+		return ""
 	}
 	// check load levels
 	w.updateLoadAvg()
-	if !w.checkLoads() {
-		return
+	passed, failreason := w.checkLoads()
+	if !passed {
+		return failreason
 	}
 
 	// check memory levels
 	w.updateMemInfo()
-	if !w.checkMemory() {
-		return
+	passed, failreason = w.checkMemory()
+	if !passed {
+		return failreason
 	}
 
 	// start new workers at spawn speed
@@ -198,6 +203,8 @@ func (w *mainWorker) adjustWorkerTopLevel() {
 		w.registerWorker(worker)
 		w.idleSince = time.Now()
 	}
+
+	return ""
 }
 
 // check if we have too many workers (less than 90% UtilizationWatermarkLow) active and above minWorker)
@@ -327,31 +334,34 @@ func (w *mainWorker) updateLoadAvg() {
 	file.Close()
 }
 
-// checks if all the loadlimits get checked, when values are set
-func (w *mainWorker) checkLoads() bool {
+// checks all the load limits, if values are set
+func (w *mainWorker) checkLoads() (ok bool, reason string) {
 	if w.cfg.loadLimit1 <= 0 && w.cfg.loadLimit5 <= 0 && w.cfg.loadLimit15 <= 0 {
-		return true
+		return true, ""
 	}
 
 	if w.cfg.loadLimit1 > 0 && w.min1 > 0 && w.cfg.loadLimit1 < w.min1 {
-		log.Debugf("not starting any more worker, load1 is too high: %f > %f", w.min1, w.cfg.loadLimit1)
+		reason = fmt.Sprintf("cannot start any more worker, load1 is too high: %f > %f", w.min1, w.cfg.loadLimit1)
+		log.Debug(reason)
 
-		return false
+		return false, reason
 	}
 
 	if w.cfg.loadLimit5 > 0 && w.min5 > 0 && w.cfg.loadLimit5 < w.min5 {
-		log.Debugf("not starting any more worker, load5 is too high: %f > %f", w.min5, w.cfg.loadLimit5)
+		reason = fmt.Sprintf("cannot start any more worker, load5 is too high: %f > %f", w.min5, w.cfg.loadLimit5)
+		log.Debug(reason)
 
-		return false
+		return false, reason
 	}
 
 	if w.cfg.loadLimit15 > 0 && w.min15 > 0 && w.cfg.loadLimit15 < w.min15 {
-		log.Debugf("not starting any more worker, load15 is too high: %f > %f", w.min15, w.cfg.loadLimit15)
+		reason = fmt.Sprintf("cannot start any more worker, load15 is too high: %f > %f", w.min15, w.cfg.loadLimit15)
+		log.Debug(reason)
 
-		return false
+		return false, reason
 	}
 
-	return true
+	return true, ""
 }
 
 // reads the total/free memory by parsing /proc/meminfo
@@ -394,23 +404,24 @@ func (w *mainWorker) updateMemInfo() {
 }
 
 // checks the memory threshold in percent
-func (w *mainWorker) checkMemory() bool {
+func (w *mainWorker) checkMemory() (ok bool, reason string) {
 	if w.cfg.memLimit <= 0 {
-		return true
+		return true, ""
 	}
 
 	if w.memTotal <= 0 {
-		return true
+		return true, ""
 	}
 
 	usedPercent := 100 - (w.memFree*100)/w.memTotal
 	if w.cfg.memLimit > 0 && usedPercent >= w.cfg.memLimit {
-		log.Debugf("not starting any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.cfg.memLimit)
+		reason := fmt.Sprintf("cannot start any more worker, memory usage is too high: %d%% > %d%%", usedPercent, w.cfg.memLimit)
+		log.Debug(reason)
 
-		return false
+		return false, reason
 	}
 
-	return true
+	return true, ""
 }
 
 func (w *mainWorker) unregisterWorker(worker *worker) {

@@ -210,11 +210,18 @@ func mainLoop(cfg *config, osSignalChan chan os.Signal, workerMap map[string]*wo
 	// just wait till someone hits ctrl+c or we have to reload
 	mainworker.manageWorkers(initStart)
 	ticker := time.NewTicker(1 * time.Second)
+	reasonLastLogged := time.Now().Add(-1 * time.Minute)
 	for {
 		select {
 		case <-ticker.C:
-			mainworker.manageWorkers(0)
+			reason := mainworker.manageWorkers(0)
 			checkRestartEPNServer(cfg)
+
+			// log reason for not starting workers once every minute
+			if reason != "" && time.Now().Add(-1*time.Minute).After(reasonLastLogged) {
+				log.Info(reason)
+				reasonLastLogged = time.Now()
+			}
 		case sig := <-osSignalChan:
 			exit = mainSignalHandler(sig, cfg)
 			switch exit {

@@ -213,11 +213,13 @@ func (worker *worker) startballooning() bool {
 		return false
 	}
 
-	if !worker.mainWorker.checkLoads() {
+	passed, _ := worker.mainWorker.checkLoads()
+	if !passed {
 		return false
 	}
 
-	if !worker.mainWorker.checkMemory() {
+	passed, _ = worker.mainWorker.checkMemory()
+	if !passed {
 		return false
 	}
 

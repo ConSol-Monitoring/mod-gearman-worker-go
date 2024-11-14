@@ -233,7 +233,7 @@ func execCmd(command *command, received *request, result *answer, config *config
 			processTimeoutKill(proc)
 		case errors.Is(ctxErr, context.Canceled):
 			// normal exit
-			logDebug(proc.Kill())
+			logTrace(proc.Kill())
 		}
 	}(cmd.Process)
 

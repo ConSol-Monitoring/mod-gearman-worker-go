@@ -101,6 +101,17 @@ func logDebug(err error) {
 	}
 }
 
+// log any error with trace log level
+func logTrace(err error) {
+	if err == nil {
+		return
+	}
+	logErr := log.Output(factorlog.TRACE, 2, err.Error())
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "failed to log: %s (%s)", err.Error(), logErr.Error())
+	}
+}
+
 func setLogLevel(lvl int) {
 	verbosity := getSeverity(lvl)
 	log.SetMinMaxSeverity(factorlog.StringToSeverity(verbosity), factorlog.StringToSeverity("PANIC"))

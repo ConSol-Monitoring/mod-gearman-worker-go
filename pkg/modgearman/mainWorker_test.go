@@ -19,15 +19,17 @@ func TestCheckLoads(t *testing.T) {
 	mainworker := newMainWorker(&cfg, []byte("key"), workerMap)
 
 	mainworker.updateLoadAvg()
-	if !mainworker.checkLoads() {
-		t.Errorf("loads are to ok, checkload says they are too hight")
+	passed, _ := mainworker.checkLoads()
+	if !passed {
+		t.Errorf("loads are to ok, checkload says they are too high")
 	}
 
 	cfg.loadLimit1 = 0.01
 	cfg.loadLimit5 = 999
 	cfg.loadLimit15 = 999
 
-	if mainworker.checkLoads() {
+	passed, _ = mainworker.checkLoads()
+	if passed {
 		t.Errorf("load limit 1 exceeded")
 	}
 
@@ -35,7 +37,8 @@ func TestCheckLoads(t *testing.T) {
 	cfg.loadLimit5 = 0.01
 	cfg.loadLimit15 = 999
 
-	if mainworker.checkLoads() {
+	passed, _ = mainworker.checkLoads()
+	if passed {
 		t.Errorf("load limit 10 exceeded")
 	}
 
@@ -43,7 +46,8 @@ func TestCheckLoads(t *testing.T) {
 	cfg.loadLimit5 = 999
 	cfg.loadLimit15 = 0.01
 
-	if mainworker.checkLoads() {
+	passed, _ = mainworker.checkLoads()
+	if passed {
 		t.Errorf("load limit 15 exceeded")
 	}
 	setLogLevel(0)
