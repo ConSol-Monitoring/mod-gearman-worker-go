@@ -231,7 +231,7 @@ func mainLoop(cfg *config, osSignalChan chan os.Signal, workerMap map[string]*wo
 			delta := jobs - lastJobs
 			seconds := time.Since(statsTime).Seconds()
 			if seconds > 0 {
-				log.Infof("stats: workers: %4d/-%4d busy: %4d | current job rate: %7.2f/s",
+				log.Infof("stats: workers: %4d/%-4d busy: %4d | current job rate: %7.2f/s",
 					len(mainworker.workerMap),
 					cfg.maxWorker,
 					mainworker.activeWorkers,
