@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.5.3    Mon Nov 18 14:53:45 CET 2024
           - change graceful shutdown timeout to 5seconds
           - log regular worker statistics
           - fix epn warnings perspective when using printf wrong
