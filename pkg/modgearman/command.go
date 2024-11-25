@@ -52,10 +52,7 @@ func parseCommand(rawCommand string, config *config) *command {
 	parsed.Command = args[0]
 	parsed.Args = args[1:]
 	parsed.ExecType = Exec
-	for _, env := range envs {
-		splitted := strings.SplitN(env, "=", 2)
-		parsed.Env[splitted[0]] = splitted[1]
-	}
+	parsed.appendEnv(envs)
 
 	if fileUsesEmbeddedPerl(parsed.Command, config) {
 		parsed.ExecType = EPN
@@ -79,4 +76,11 @@ func parseCommand(rawCommand string, config *config) *command {
 	}
 
 	return parsed
+}
+
+func (com *command) appendEnv(envs []string) {
+	for _, env := range envs {
+		splitted := strings.SplitN(env, "=", 2)
+		com.Env[splitted[0]] = splitted[1]
+	}
 }
