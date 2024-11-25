@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/sni/shelltoken"
 )
 
 // NegateDefaultTimeout sets the default timeout if negate is used
@@ -122,9 +124,28 @@ func ParseNegate(com *command) {
 
 		return
 	}
+
 	com.Command = com.Args[mainProgIndex]
 	com.Args = com.Args[mainProgIndex+1:]
 	com.Negate = negate
+
+	if len(com.Args) > 0 {
+		return
+	}
+
+	// recombine remaining program and args
+	remainingArgs := []string{}
+	_, subargs, suberr := shelltoken.SplitLinux(com.Command)
+	if suberr != nil {
+		log.Debugf("failed to parse shell args: %w: %s", suberr, suberr.Error())
+
+		return
+	}
+
+	remainingArgs = append(remainingArgs, subargs...)
+
+	com.Command = remainingArgs[0]
+	com.Args = remainingArgs[1:]
 }
 
 func (n *Negate) Apply(result *answer) {
