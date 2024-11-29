@@ -343,7 +343,7 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 			}
 		}
 	}
-	config.removeDuplicates()
+	config.cleanListAttributes()
 
 	if config.debug >= LogLevelDebug {
 		createLogger(config)

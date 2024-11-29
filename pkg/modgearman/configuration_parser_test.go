@@ -30,7 +30,7 @@ server=hostname2
 `)
 
 	testConfig.readSettingsFile("testConfigFile")
-	testConfig.removeDuplicates()
+	testConfig.cleanListAttributes()
 
 	if testConfig.debug != 2 {
 		t.Errorf("wrong value expected 2 got %d", testConfig.debug)
@@ -91,7 +91,7 @@ server=hostname2
 `)
 
 	testConfig.readSettingsPath("testConfigFolder")
-	testConfig.removeDuplicates()
+	testConfig.cleanListAttributes()
 
 	if testConfig.debug != 2 {
 		t.Errorf("wrong value expected 2 got %d", testConfig.debug)

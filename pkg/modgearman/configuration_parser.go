@@ -117,13 +117,13 @@ func (config *config) setDefaultValues() {
 	config.delimiter = "\t"
 }
 
-// removeDuplicates removes duplicate entries from all string lists
-func (config *config) removeDuplicates() {
-	config.server = removeDuplicateStrings(config.server)
-	config.dupserver = removeDuplicateStrings(config.dupserver)
-	config.hostgroups = removeDuplicateStrings(config.hostgroups)
-	config.servicegroups = removeDuplicateStrings(config.servicegroups)
-	config.restrictPath = removeDuplicateStrings(config.restrictPath)
+// cleanListAttributes removes duplicate and empty entries from all string lists
+func (config *config) cleanListAttributes() {
+	config.server = cleanListAttribute(config.server)
+	config.dupserver = cleanListAttribute(config.dupserver)
+	config.hostgroups = cleanListAttribute(config.hostgroups)
+	config.servicegroups = cleanListAttribute(config.servicegroups)
+	config.restrictPath = cleanListAttribute(config.restrictPath)
 }
 
 // dump logs all config items
@@ -458,14 +458,15 @@ func fixGearmandServerAddress(address string) string {
 	return address
 }
 
-func removeDuplicateStrings(elements []string) []string {
+// cleanListAttribute removes duplicate and empty entries from all string lists
+func cleanListAttribute(elements []string) []string {
 	encountered := map[string]bool{}
 	uniq := []string{}
 
-	for v := range elements {
-		if !encountered[elements[v]] {
-			encountered[elements[v]] = true
-			uniq = append(uniq, elements[v])
+	for _, s := range elements {
+		if s != "" && !encountered[s] {
+			encountered[s] = true
+			uniq = append(uniq, s)
 		}
 	}
 
