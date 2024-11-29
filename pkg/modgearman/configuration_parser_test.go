@@ -3,6 +3,9 @@ package modgearman
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadSettingsFile(t *testing.T) {
@@ -12,16 +15,13 @@ func TestReadSettingsFile(t *testing.T) {
 	testConfig.setDefaultValues()
 
 	file, err := os.Create("testConfigFile")
-	if err != nil {
-		t.Errorf("could not create config testfile")
-
-		return
-	}
+	require.NoError(t, err)
 
 	file.WriteString(`#ich bin ein kommentar also werde ich ignoriert
 debug=2
 servicegroups=a,b,c
 servicegroups=d
+hostgroups=
 idle-timeout=200
 server=hostname:4730
 server=:4730
@@ -32,29 +32,11 @@ server=hostname2
 	testConfig.readSettingsFile("testConfigFile")
 	testConfig.cleanListAttributes()
 
-	if testConfig.debug != 2 {
-		t.Errorf("wrong value expected 2 got %d", testConfig.debug)
-	}
-
-	if len(testConfig.servicegroups) != 4 {
-		t.Errorf("servicegroups len false expected 4 got %d", len(testConfig.servicegroups))
-	}
-
-	if testConfig.idleTimeout != 200 {
-		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idleTimeout)
-	}
-
-	if testConfig.server[0] != "hostname:4730" {
-		t.Errorf("server 1 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[0])
-	}
-
-	if testConfig.server[1] != "0.0.0.0:4730" {
-		t.Errorf("server 2 parsed incorrect: '%s' vs. '0.0.0.0:4730'", testConfig.server[1])
-	}
-
-	if testConfig.server[2] != "hostname2:4730" {
-		t.Errorf("server 3 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[2])
-	}
+	assert.Equalf(t, 2, testConfig.debug, "debug set to 2")
+	assert.Equal(t, []string{"a", "b", "c", "d"}, testConfig.servicegroups)
+	assert.Equal(t, []string{}, testConfig.hostgroups)
+	assert.Equal(t, 200, testConfig.idleTimeout)
+	assert.Equal(t, []string{"hostname:4730", "0.0.0.0:4730", "hostname2:4730"}, testConfig.server)
 
 	os.Remove("testConfigFile")
 }
@@ -66,23 +48,16 @@ func TestReadSettingsPath(t *testing.T) {
 	testConfig.setDefaultValues()
 
 	err := os.Mkdir("testConfigFolder", 0o755)
-	if err != nil {
-		t.Errorf("could not create config test folder")
-
-		return
-	}
+	require.NoError(t, err)
 
 	file, err := os.Create("testConfigFolder/file.cfg")
-	if err != nil {
-		t.Errorf("could not create config testfile")
-
-		return
-	}
+	require.NoError(t, err)
 
 	file.WriteString(`#ich bin ein kommentar also werde ich ignoriert
 debug=2
 servicegroups=a,b,c
 servicegroups=d
+hostgroups=
 idle-timeout=200
 server=hostname:4730
 server=:4730
@@ -93,29 +68,11 @@ server=hostname2
 	testConfig.readSettingsPath("testConfigFolder")
 	testConfig.cleanListAttributes()
 
-	if testConfig.debug != 2 {
-		t.Errorf("wrong value expected 2 got %d", testConfig.debug)
-	}
-
-	if len(testConfig.servicegroups) != 4 {
-		t.Errorf("servicegroups len false expected 4 got %d", len(testConfig.servicegroups))
-	}
-
-	if testConfig.idleTimeout != 200 {
-		t.Errorf("idle_timeout should have been overwritten to 200 but is %d", testConfig.idleTimeout)
-	}
-
-	if testConfig.server[0] != "hostname:4730" {
-		t.Errorf("server 1 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[0])
-	}
-
-	if testConfig.server[1] != "0.0.0.0:4730" {
-		t.Errorf("server 2 parsed incorrect: '%s' vs. '0.0.0.0:4730'", testConfig.server[1])
-	}
-
-	if testConfig.server[2] != "hostname2:4730" {
-		t.Errorf("server 3 parsed incorrect: '%s' vs. 'hostname:4730'", testConfig.server[2])
-	}
+	assert.Equalf(t, 2, testConfig.debug, "debug set to 2")
+	assert.Equal(t, []string{"a", "b", "c", "d"}, testConfig.servicegroups)
+	assert.Equal(t, []string{}, testConfig.hostgroups)
+	assert.Equal(t, 200, testConfig.idleTimeout)
+	assert.Equal(t, []string{"hostname:4730", "0.0.0.0:4730", "hostname2:4730"}, testConfig.server)
 
 	os.RemoveAll("testConfigFolder")
 }
