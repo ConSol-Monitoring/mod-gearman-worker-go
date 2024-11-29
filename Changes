@@ -1,7 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.5.5    Fri Nov 29 14:02:46 CET 2024
           - fix running quoted commands with internal negate
+          - update dependencies
 
 1.5.4    Fri Nov 22 14:09:37 CET 2024
           - improve statistics log output
