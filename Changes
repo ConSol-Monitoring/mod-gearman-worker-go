@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - epn worker kills all spawned processes on shutdown
+
 1.5.5    Fri Nov 29 14:02:46 CET 2024
           - fix running quoted commands with internal negate
           - update dependencies

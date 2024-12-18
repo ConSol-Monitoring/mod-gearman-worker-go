@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vim: expandtab:ts=4:sw=4:syntax=perl
 
 package main;
 
@@ -40,7 +41,7 @@ Test single plugin call
 
 =head1 AUTHOR
 
-2022, Sven Nierlein, <sven@consol.de>
+2022-present, Sven Nierlein, <sven@consol.de>
 
 =cut
 
@@ -104,11 +105,9 @@ sub _server {
     printf("**ePN: listening on %s\n", $socketpath) if $opt->{'verbose'};
     $unixsocket = $socketpath;
     local $SIG{CHLD} = 'IGNORE';
-    local $SIG{INT}  = sub {
-        CORE::exit(0);
-    };
+    local $SIG{INT}  = \&_clean_exit;
     alarm($main_loop_interval);
-    while(1) {
+    while(getppid() != 1) {
         local $SIG{CHLD} = \&_sigchld_handler;
         local $SIG{ALRM} = \&_timeout_handler;
         while(my $client = $server->accept()) {
@@ -118,6 +117,7 @@ sub _server {
         }
     }
     close($server);
+    _clean_exit();
 }
 
 ###########################################################
