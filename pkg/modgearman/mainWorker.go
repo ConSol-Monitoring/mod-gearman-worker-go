@@ -262,6 +262,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, cfg *config) {
 		if prometheusListener != nil {
 			prometheusListener.Close()
 		}
+		log.Debugf("restarting prometheus listener")
 		prometheusListener = startPrometheus(cfg)
 	}
 
@@ -274,6 +275,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, cfg *config) {
 			ePNServer.Stop(ePNGraceDelay)
 			ePNServer = nil
 		}
+		log.Debugf("restarting epn worker")
 		startEmbeddedPerl(cfg)
 	}
 
@@ -299,10 +301,12 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, cfg *config) {
 		restartRequired = true
 	}
 
-	if !restartRequired {
-		// reopen logfile
-		createLogger(cfg)
+	// reopen logfile
+	createLogger(cfg)
 
+	if restartRequired {
+		log.Debugf("reloading configuration finished, worker need to be restarted")
+	} else {
 		// recreate cipher
 		key := getKey(cfg)
 		myCipher = createCipher(key, cfg.encryption)
