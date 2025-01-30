@@ -296,7 +296,7 @@ func executeWithEmbeddedPerl(cmd *command, result *answer, received *request) er
 	defer con.Close()
 
 	received.Cancel = func() {
-		log.Errorf("closing epn conn")
+		log.Debugf("cancel epn job")
 		received.Canceled = true
 		con.Close()
 	}
