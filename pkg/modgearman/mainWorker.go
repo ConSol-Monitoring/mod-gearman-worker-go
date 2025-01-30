@@ -530,7 +530,7 @@ func (w *mainWorker) Shutdown(exitState MainStateType) {
 	w.StopAllWorker(exitState)
 
 	// wait 5 seconds for result queue to empty
-	for x := 0; x <= 5; x++ {
+	for range 5 {
 		if len(resultServerQueue) == 0 {
 			break
 		}
