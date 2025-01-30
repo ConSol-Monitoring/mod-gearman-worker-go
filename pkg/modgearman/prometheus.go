@@ -95,12 +95,21 @@ func startPrometheus(config *config) (prometheusListener net.Listener) {
 			promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
 		)
 		mux.Handle("/metrics", handler)
-		logError(http.Serve(listen, mux))
+		logDebug(http.Serve(listen, mux))
 		log.Debugf("prometheus listener %s stopped", config.prometheusServer)
 	}()
 	log.Debugf("serving prometheus metrics at %s/metrics", config.prometheusServer)
 
 	return prometheusListener
+}
+
+func stopPrometheus(prometheusListener net.Listener) {
+	if prometheusListener == nil {
+		return
+	}
+
+	log.Debugf("stopping prometheus listener")
+	prometheusListener.Close()
 }
 
 var prometheusRegistered bool

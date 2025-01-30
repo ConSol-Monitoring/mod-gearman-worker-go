@@ -259,10 +259,7 @@ func (w *mainWorker) applyConfigChanges() (restartRequired bool, cfg *config) {
 
 	// restart prometheus if necessary
 	if cfg.prometheusServer != w.cfg.prometheusServer {
-		if prometheusListener != nil {
-			prometheusListener.Close()
-		}
-		log.Debugf("restarting prometheus listener")
+		stopPrometheus(prometheusListener)
 		prometheusListener = startPrometheus(cfg)
 	}
 
