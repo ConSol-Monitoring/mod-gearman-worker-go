@@ -64,8 +64,8 @@ func TestExecuteCommandWithTimeout(t *testing.T) {
 	cfg.encryption = false
 	result := &answer{}
 
-	executeCommandLine(result, &request{commandLine: "ls readAndExecute_test.go", timeout: 10}, &cfg)
-	if result.output != "readAndExecute_test.go" || result.returnCode != 0 {
+	executeCommandLine(result, &request{commandLine: "ls readAndExecute_linux_test.go", timeout: 10}, &cfg)
+	if result.output != "readAndExecute_linux_test.go" || result.returnCode != 0 {
 		t.Errorf("got %s, with code: %d but expected: %s and code: %d",
 			result.output, result.returnCode, "readAndExecute_test.go", 0)
 	}
@@ -290,6 +290,8 @@ func TestGetCommandBasename(t *testing.T) {
 		{"/python3 /tmp/file1 args1", "python3 file1"},
 		{"lib/negate /bin/python3 /tmp/file1 args1", "python3 file1"},
 		{`ENV1="1 2 3" ENV2='2' ./test arg1 -P 'm1|m2';`, "test"},
+		{"/python3 -m testmodule args", "python3 testmodule"},
+		{"/python3 -u somescript args", "python3 somescript"},
 	}
 
 	for _, test := range tests {
