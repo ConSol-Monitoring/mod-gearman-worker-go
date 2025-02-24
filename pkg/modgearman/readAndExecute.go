@@ -291,7 +291,7 @@ func execEPN(result *answer, cmd *command, received *request) {
 
 func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 	if result.returnCode >= 0 && result.returnCode <= 3 {
-		if config.workerNameInResult != "off" {
+		if config.workerNameInResult != "off" && config.workerNameInResult != "" {
 			switch config.workerNameInResult {
 			case "on":
 				result.output = fmt.Sprintf("(worker: %s) %s", config.identifier, result.output)
@@ -303,7 +303,7 @@ func fixReturnCodes(result *answer, config *config, state *os.ProcessState) {
 					result.output = fmt.Sprintf("%s (worker: %s)", result.output, config.identifier)
 				}
 			default:
-				log.Warnf("unknown worker_name_in_result value: %s. Defaulting to 'off'", config.workerNameInResult)
+				log.Warnf("unknown worker_name_in_result value: '%s'. Defaulting to 'off'", config.workerNameInResult)
 			}
 		}
 
