@@ -434,7 +434,7 @@ func getCommandQualifier(com *command) string {
 		// add basename of first argument
 		for _, arg1 := range args {
 			switch arg1 {
-			case "-c", "-w", "-u", "-m":
+			case "-c", "-w", "-u", "-m", "-x":
 				// skip some known none-filenames
 				continue
 			}

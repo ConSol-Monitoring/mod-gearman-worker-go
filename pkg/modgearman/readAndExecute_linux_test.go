@@ -292,6 +292,8 @@ func TestGetCommandBasename(t *testing.T) {
 		{`ENV1="1 2 3" ENV2='2' ./test arg1 -P 'm1|m2';`, "test"},
 		{"/python3 -m testmodule args", "python3 testmodule"},
 		{"/python3 -u somescript args", "python3 somescript"},
+		{"perl somescript.pl", "perl somescript.pl"},
+		{"/usr/bin/perl -x somescript.pl", "perl somescript.pl"},
 	}
 
 	for _, test := range tests {
