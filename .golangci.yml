@@ -47,7 +47,7 @@ linters:
     - wsl
     - err113
     # deprecated
-    - exportloopref
+    - tenv
 issues:
   max-same-issues: 0
   exclude-use-default: true
