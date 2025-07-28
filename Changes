@@ -1,5 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+1.5.8    Mon Jul 28 21:40:27 CEST 2025
+          - improve metrics label for python scripts
+
+          - update dependencies
 1.5.7    Mon Apr 14 16:18:54 CEST 2025
           - improve metrics label for python scripts
           - update dependencies
