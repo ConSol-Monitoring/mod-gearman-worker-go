@@ -7,10 +7,10 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-# also update .github/workflows/citest.yml when changing minumum version
-# find . -name go.mod
-MINGOVERSION:=00010023
-MINGOVERSIONSTR:=1.23
+# also update all go.mod files when changing minumum version
+# find . -name go.mod (run make gomods afterwards)
+MINGOVERSION:=00010024
+MINGOVERSIONSTR:=1.24
 BUILD:=$(shell git rev-parse --short HEAD)
 # see https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 # and https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
@@ -66,6 +66,9 @@ dump:
 		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/$(PROJECT)/dump.go; \
 	fi
 	rm -f pkg/$(PROJECT)/dump.go.bak
+
+gomods:
+	find . -name go.mod -exec sed -i {} -e "s/^go .*/go $(MINGOVERSIONSTR).0/" \;
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
