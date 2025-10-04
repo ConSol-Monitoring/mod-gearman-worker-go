@@ -3,10 +3,6 @@ on:
   push:
   pull_request:
 
-# set go version for all steps
-env:
-  GOVERSION: 1.22.x
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,9 +10,9 @@ jobs:
     - uses: actions/checkout@v5
     - run: sudo apt-get -y install gearman-job-server
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: ${{ env.GOVERSION }}
+        go-version-file: './go.mod'
     - run: make clean
     - run: make citest
     - run: CGO_ENABLED=0 make
@@ -37,11 +33,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: ${{ env.GOVERSION }}
+        go-version-file: './go.mod'
     - run: |
-          echo "Testing with ${{ env.GOVERSION }}"
           go work init
           go work use .
           $Env:GOWORK = "off"
