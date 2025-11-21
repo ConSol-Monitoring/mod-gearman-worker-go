@@ -7,7 +7,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - run: sudo apt-get -y install gearman-job-server
     - name: Install Go
       uses: actions/setup-go@v6
@@ -31,7 +31,7 @@ jobs:
   windows-nscp:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install Go
       uses: actions/setup-go@v6
       with:
