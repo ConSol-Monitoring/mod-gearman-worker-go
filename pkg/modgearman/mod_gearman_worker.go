@@ -312,22 +312,22 @@ func initConfiguration(name, build string, helpFunc helpCallback, verifyFunc ver
 		}
 
 		arg := strings.ToLower(os.Args[idx])
-		switch {
-		case arg == "--help" || arg == "-h":
+		switch arg {
+		case "--help", "-h":
 			helpFunc()
 			cleanExit(ExitCodeUnknown)
-		case arg == "--version" || arg == "-v":
+		case "--version", "-v":
 			printVersion(config)
 			cleanExit(ExitCodeUnknown)
-		case arg == "-d" || arg == "--daemon":
+		case "-d", "--daemon":
 			config.daemon = true
-		case arg == "-r":
+		case "-r":
 			if len(os.Args) < idx+1 {
 				return nil, fmt.Errorf("-r requires an argument")
 			}
 			config.returnCode = getInt(os.Args[idx+1])
 			idx++
-		case arg == "-m":
+		case "-m":
 			if len(os.Args) < idx+1 {
 				return nil, fmt.Errorf("-m requires an argument")
 			}
@@ -397,7 +397,7 @@ func createPidFile(path string) {
 		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
 
-	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0o644)
+	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0o644) //nolint:modernize // no need for fmt.Appendf here
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
 		cleanExit(ExitCodeError)

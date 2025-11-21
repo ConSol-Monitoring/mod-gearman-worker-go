@@ -16,7 +16,7 @@ type ASCIITableHeader struct {
 }
 
 // ASCIITable creates an ascii table from columns and data rows
-func ASCIITable(header []ASCIITableHeader, rows interface{}, escapePipes bool) (string, error) {
+func ASCIITable(header []ASCIITableHeader, rows any, escapePipes bool) (string, error) {
 	dataRows := reflect.ValueOf(rows)
 	if dataRows.Kind() != reflect.Slice {
 		return "", fmt.Errorf("rows is not a slice")
@@ -29,17 +29,20 @@ func ASCIITable(header []ASCIITableHeader, rows interface{}, escapePipes bool) (
 
 	// output header
 	out := ""
+	strBuilder := strings.Builder{}
 	for _, head := range header {
-		out += fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), head.Name)
+		strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), head.Name))
 	}
-	out += "|\n"
+	out += strBuilder.String() + "|\n"
 
 	// output separator
+	strBuilder.Reset()
 	for _, head := range header {
 		padding := " "
-		out += fmt.Sprintf("|%s%s%s", padding, strings.Repeat("-", head.Size), padding)
+		strBuilder.WriteString(fmt.Sprintf("|%s%s%s", padding, strings.Repeat("-", head.Size), padding))
 	}
-	out += "|\n"
+	out += strBuilder.String() + "|\n"
+	strBuilder.Reset()
 
 	// output data
 	for i := range dataRows.Len() {
@@ -49,20 +52,23 @@ func ASCIITable(header []ASCIITableHeader, rows interface{}, escapePipes bool) (
 
 			switch head.Alignment {
 			case "right":
-				out += fmt.Sprintf(fmt.Sprintf("| %%%ds ", head.Size), value)
+				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%%ds ", head.Size), value))
 			case "left", "":
-				out += fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), value)
+				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), value))
 			case "centered":
 				padding := (head.Size - len(value)) / 2
-				out += fmt.Sprintf("| %*s%-*s ", padding, "", head.Size-padding, value)
+				strBuilder.WriteString(fmt.Sprintf("| %*s%-*s ", padding, "", head.Size-padding, value))
 			default:
 				err := fmt.Errorf("unsupported alignment '%s' in table", head.Alignment)
 
 				return "", err
 			}
 		}
-		out += "|\n"
+		strBuilder.WriteString("|\n")
 	}
+
+	out += strBuilder.String()
+	strBuilder.Reset()
 
 	return out, nil
 }

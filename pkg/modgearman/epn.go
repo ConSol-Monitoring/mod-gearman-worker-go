@@ -3,6 +3,7 @@ package modgearman
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -94,7 +95,7 @@ func startEmbeddedPerl(config *config) {
 	socketPath.Close()
 	os.Remove(socketPath.Name())
 
-	cmd := exec.Command(config.p1File, args...)
+	cmd := exec.CommandContext(context.Background(), config.p1File, args...)
 	passthroughLogs("stdout", log.Debugf, cmd.StdoutPipe)
 	passthroughLogs("stderr", log.Errorf, cmd.StderrPipe)
 
@@ -245,8 +246,8 @@ func detectFileUsesEmbeddedPerl(file string, config *config) bool {
 			continue
 		}
 		for _, prefix := range ePNFilePrefix {
-			if strings.HasPrefix(line, prefix) {
-				line = strings.TrimPrefix(line, prefix)
+			var ok bool
+			if line, ok = strings.CutPrefix(line, prefix); ok {
 				line = strings.TrimSpace(line)
 				switch line[0:1] {
 				case "+":
@@ -433,7 +434,7 @@ func ePNReadResponse(conn io.Reader) ([]byte, error) {
 }
 
 // redirect log output from epn server to main worker log file
-func passthroughLogs(name string, logFn func(f string, v ...interface{}), pipeFn func() (io.ReadCloser, error)) {
+func passthroughLogs(name string, logFn func(f string, v ...any), pipeFn func() (io.ReadCloser, error)) {
 	pipe, err := pipeFn()
 	if err != nil {
 		err = fmt.Errorf("failed to connect to %s: %w: %s", name, err, err.Error())

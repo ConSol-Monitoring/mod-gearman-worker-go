@@ -3,6 +3,7 @@ package modgearman
 import (
 	"flag"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"strconv"
@@ -150,9 +151,7 @@ func runInteractiveMode(args *gmTopArgs, hostList []string, connectionMap map[st
 		correct string (table) that should be printed */
 		case tables := <-tableChan:
 			mutex.Lock()
-			for host, table := range tables {
-				printMap[host] = table
-			}
+			maps.Copy(printMap, tables)
 			mutex.Unlock()
 		}
 	}
@@ -183,9 +182,7 @@ func initPrint(mutex *sync.Mutex, printMap map[string]string, hostList []string,
 	printHosts(mutex, hostList, printMap)
 	tables := <-tableChan
 	mutex.Lock()
-	for host, table := range tables {
-		printMap[host] = table
-	}
+	maps.Copy(printMap, tables)
 	mutex.Unlock()
 	printHosts(mutex, hostList, printMap)
 }

@@ -308,7 +308,7 @@ func BenchmarkReadAndExecuteShell(b *testing.B) {
 	cfg.debug = 0
 	createLogger(&cfg)
 	received := &request{commandLine: "/bin/pwd \"|\"", timeout: 10}
-	for range b.N {
+	for b.Loop() {
 		readAndExecute(received, &cfg)
 	}
 }
@@ -318,7 +318,7 @@ func BenchmarkReadAndExecuteExec(b *testing.B) {
 	cfg.debug = 0
 	createLogger(&cfg)
 	received := &request{commandLine: "/bin/pwd", timeout: 10}
-	for range b.N {
+	for b.Loop() {
 		readAndExecute(received, &cfg)
 	}
 }
@@ -327,7 +327,7 @@ func BenchmarkParseCommandI(b *testing.B) {
 	cfg := config{}
 	cfg.debug = 0
 	cmdLine := `VAR1=test VAR2=test /bin/test -f "sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd"`
-	for range b.N {
+	for b.Loop() {
 		parseCommand(cmdLine, &cfg)
 	}
 	com := parseCommand(cmdLine, &cfg)
@@ -340,7 +340,7 @@ func BenchmarkParseCommandII(b *testing.B) {
 	cfg := config{}
 	cfg.debug = 0
 	cmdLine := `VAR1=test VAR2=test /bin/test -f sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd hjskahd ash sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd sadhajshdkashdjhasjkdhjashdkhasdhakshdashdkhaskjdhaksjhdkjahsdkjhaskjdhasjhdkashdkjhaskjdhaksjhdkjahsdkjhaskjdhakshdkashkd  da s a dasdjhaskdhkashdkjhaskjhdkjas  ashdjahskdjhakshdkjahskd   ashdkjahsdkhaskdhkjashd`
-	for range b.N {
+	for b.Loop() {
 		parseCommand(cmdLine, &cfg)
 	}
 	com := parseCommand(cmdLine, &cfg)
