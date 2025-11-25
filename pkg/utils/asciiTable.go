@@ -12,7 +12,7 @@ type ASCIITableHeader struct {
 	Name      string // name in table header
 	Field     string // attribute name in data row
 	Alignment string // flag whether column is aligned to the right
-	Size      int    // calculated max Size of column
+	size      int    // calculated max size of column
 }
 
 // ASCIITable creates an ascii table from columns and data rows
@@ -31,7 +31,7 @@ func ASCIITable(header []ASCIITableHeader, rows any, escapePipes bool) (string, 
 	out := ""
 	strBuilder := strings.Builder{}
 	for _, head := range header {
-		strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), head.Name))
+		strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.size), head.Name))
 	}
 	out += strBuilder.String() + "|\n"
 
@@ -39,7 +39,7 @@ func ASCIITable(header []ASCIITableHeader, rows any, escapePipes bool) (string, 
 	strBuilder.Reset()
 	for _, head := range header {
 		padding := " "
-		strBuilder.WriteString(fmt.Sprintf("|%s%s%s", padding, strings.Repeat("-", head.Size), padding))
+		strBuilder.WriteString(fmt.Sprintf("|%s%s%s", padding, strings.Repeat("-", head.size), padding))
 	}
 	out += strBuilder.String() + "|\n"
 	strBuilder.Reset()
@@ -52,12 +52,12 @@ func ASCIITable(header []ASCIITableHeader, rows any, escapePipes bool) (string, 
 
 			switch head.Alignment {
 			case "right":
-				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%%ds ", head.Size), value))
+				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%%ds ", head.size), value))
 			case "left", "":
-				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.Size), value))
+				strBuilder.WriteString(fmt.Sprintf(fmt.Sprintf("| %%-%ds ", head.size), value))
 			case "centered":
-				padding := (head.Size - len(value)) / 2
-				strBuilder.WriteString(fmt.Sprintf("| %*s%-*s ", padding, "", head.Size-padding, value))
+				padding := (head.size - len(value)) / 2
+				strBuilder.WriteString(fmt.Sprintf("| %*s%-*s ", padding, "", head.size-padding, value))
 			default:
 				err := fmt.Errorf("unsupported alignment '%s' in table", head.Alignment)
 
@@ -97,12 +97,12 @@ func asciiTableRowValue(escape bool, rowVal reflect.Value, head ASCIITableHeader
 }
 
 func calculateHeaderSize(header []ASCIITableHeader, dataRows reflect.Value, escapePipes bool) error {
-	// set headers as minimum Size
+	// set headers as minimum size
 	for i, head := range header {
-		header[i].Size = len(head.Name)
+		header[i].size = len(head.Name)
 	}
 
-	// adjust column Size from max row data
+	// adjust column size from max row data
 	for i := range dataRows.Len() {
 		rowVal := dataRows.Index(i)
 		if rowVal.Kind() != reflect.Struct {
@@ -114,8 +114,8 @@ func calculateHeaderSize(header []ASCIITableHeader, dataRows reflect.Value, esca
 				return err
 			}
 			length := len(value)
-			if length > header[num].Size {
-				header[num].Size = length
+			if length > header[num].size {
+				header[num].size = length
 			}
 		}
 	}
@@ -123,7 +123,7 @@ func calculateHeaderSize(header []ASCIITableHeader, dataRows reflect.Value, esca
 	// calculate total line length
 	total := 0
 	for i := range header {
-		total += header[i].Size + 3 // add padding
+		total += header[i].size + 3 // add padding
 	}
 
 	if total < maxLineLength {
@@ -134,15 +134,19 @@ func calculateHeaderSize(header []ASCIITableHeader, dataRows reflect.Value, esca
 	tooWide := []int{}
 	sumTooWide := 0
 	for i := range header {
-		if header[i].Size > avgAvail {
+		if header[i].size > avgAvail {
 			tooWide = append(tooWide, i)
-			sumTooWide += header[i].Size
+			sumTooWide += header[i].size
 		}
 	}
 	avgLargeCol := (maxLineLength - (total - sumTooWide)) / len(tooWide)
 	for _, i := range tooWide {
-		header[i].Size = avgLargeCol
+		header[i].size = avgLargeCol
 	}
 
 	return nil
+}
+
+func (header ASCIITableHeader) Size() int {
+	return header.size
 }

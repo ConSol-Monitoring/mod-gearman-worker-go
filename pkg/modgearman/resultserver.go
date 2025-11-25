@@ -76,8 +76,6 @@ func runResultServerConsumer(server *resultServerConsumer) {
 			if shouldExit {
 				return
 			}
-
-			break
 		}
 	}
 }

@@ -260,7 +260,7 @@ func createTable(queueList []queue) (string, error) {
 func calcTableSize(tableHeaders []utils.ASCIITableHeader) int {
 	tableSize := 0
 	for _, header := range tableHeaders {
-		tableSize += header.Size
+		tableSize += header.Size() // calculated size of column
 		tableSize += 3
 	}
 
