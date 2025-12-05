@@ -434,6 +434,7 @@ EOSUB
     undef %{ $package . '::' };
     use strict 'refs';
 
+    local $ENV{NAGIOS_PLUGIN} = $filename;
     printf("**ePN: compiling %s\n", $filename) if $opt->{'verbose'} > 2;
 
     # Compile &$package::hndlr. (will run BEGIN blocks)
@@ -584,6 +585,8 @@ sub DESTROY {
     my $self = shift;
     undef $self;
 }
+
+sub BINMODE {}
 
 ################################################################################
 
