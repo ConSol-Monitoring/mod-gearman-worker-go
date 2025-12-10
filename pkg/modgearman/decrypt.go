@@ -66,15 +66,33 @@ func createCipher(key []byte, encrypt bool) cipher.Block {
 	return nil
 }
 
+func decryptJobData(rawRequest []byte, encryption bool) (received *request, err error) {
+	b64Data, err := decodeBase64(string(rawRequest))
+	if err != nil {
+		return nil, err
+	}
+
+	received, err = decrypt(b64Data, encryption)
+	if err != nil {
+		return nil, err
+	}
+	received.rawRequest = rawRequest
+
+	return received, nil
+}
+
 /**
 *
 *@input: string to be converted to base64
-*@return: byte array representing the string in b64
+*@return: byte array representing the string in b64 and error if any
  */
-func decodeBase64(data string) []byte {
-	decodedBase, _ := b64.StdEncoding.DecodeString(data)
+func decodeBase64(data string) ([]byte, error) {
+	dec, err := b64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, fmt.Errorf("base64 decode error: %w: %s", err, err.Error())
+	}
 
-	return decodedBase
+	return dec, nil
 }
 
 /* Decrypt

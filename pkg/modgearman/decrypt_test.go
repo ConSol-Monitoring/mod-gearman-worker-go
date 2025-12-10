@@ -2,15 +2,17 @@ package modgearman
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeBase64(t *testing.T) {
 	base64Encoded := "VGVzdCBFbmNvZGVkIFN0cmluZw=="
-	result := decodeBase64(base64Encoded)
+	result, err := decodeBase64(base64Encoded)
+	require.NoError(t, err)
 
-	if string(result) != "Test Encoded String" {
-		t.Errorf("expected: %s, got:%s", "Test Encoded String", string(result))
-	}
+	assert.Equalf(t, "Test Encoded String", string(result), "expected: %s, got:%s", "Test Encoded String", string(result))
 }
 
 func TestCreateMap(t *testing.T) {
@@ -28,8 +30,14 @@ func TestDecrypt(t *testing.T) {
 	key := getKey(&cfg)
 	myCipher = createCipher(key, true)
 	encrypted := encrypt([]byte("type=test123"), true)
-	result, _ := decrypt(encrypted, true)
-	if result.typ != "test123" {
-		t.Errorf("expected: %s, got:%s", "test123", result.typ)
-	}
+	result, err := decrypt(encrypted, true)
+	require.NoError(t, err)
+	assert.Equalf(t, "test123", result.typ, "expected: %s, got:%s", "test123", result.typ)
+}
+
+func TestDecryptErrors(t *testing.T) {
+	brokenB64 := "VGVzdCBFbmNvZGVkIFN.-12456"
+	result, err := decryptJobData([]byte(brokenB64), true)
+	assert.Nilf(t, result, "no result expected, got:%s", result)
+	assert.Errorf(t, err, "expected an error")
 }

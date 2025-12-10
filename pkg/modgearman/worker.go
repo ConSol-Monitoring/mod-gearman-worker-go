@@ -120,18 +120,15 @@ func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
 	log.Tracef("worker got a job: %s", job.Handle())
 
 	worker.activeJobs++
-
-	rawRequest := job.Data()
-	received, err := decrypt(decodeBase64(string(rawRequest)), worker.config.encryption)
+	received, err := decryptJobData(job.Data(), worker.config.encryption)
 	if err != nil {
 		log.Errorf("decrypt failed: %w", err)
 		worker.activeJobs--
 
 		return nil, err
 	}
-	received.rawRequest = rawRequest
-	worker.mainWorker.tasks++
 
+	worker.mainWorker.tasks++
 	logJob(job, received, "incoming", nil)
 	log.Trace(received)
 

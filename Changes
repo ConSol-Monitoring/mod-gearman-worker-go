@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - improve handling of broken job data
+
 1.5.8    Mon Jul 28 21:40:27 CEST 2025
           - improve metrics label for python scripts
 
