@@ -248,13 +248,7 @@ func detectFileUsesEmbeddedPerl(file string, config *config) bool {
 		for _, prefix := range ePNFilePrefix {
 			var ok bool
 			if line, ok = strings.CutPrefix(line, prefix); ok {
-				line = strings.TrimSpace(line)
-				switch line[0:1] {
-				case "+":
-					return true
-				case "-":
-					return false
-				}
+				return strings.HasPrefix(strings.TrimSpace(line), "+")
 			}
 		}
 	}

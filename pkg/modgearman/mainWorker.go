@@ -329,9 +329,11 @@ func (w *mainWorker) updateLoadAvg() {
 	firstline := scanner.Text()
 	values := strings.Fields(firstline)
 
-	w.min1 = getFloat(values[0])
-	w.min5 = getFloat(values[1])
-	w.min15 = getFloat(values[2])
+	if len(values) >= 3 {
+		w.min1 = getFloat(values[0])
+		w.min5 = getFloat(values[1])
+		w.min15 = getFloat(values[2])
+	}
 	file.Close()
 }
 

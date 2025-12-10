@@ -176,9 +176,13 @@ func checkWorker(args *checkGmArgs) int {
 	}
 
 	// If result starts with a number followed by a colon, use this as exit code
-	if res.response != "" && len(res.response) > 1 && res.response[1] == ':' {
+	if len(res.response) > 1 && res.response[1] == ':' {
 		res.statusCode = int(res.response[0] - '0')
-		res.response = res.response[2:]
+		if len(res.response) > 2 {
+			res.response = res.response[2:]
+		} else {
+			res.response = ""
+		}
 		fmt.Fprintf(os.Stdout, "%s\n", res.response)
 
 		return res.statusCode

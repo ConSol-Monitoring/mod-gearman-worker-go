@@ -143,6 +143,11 @@ func ParseNegate(com *command) {
 	}
 
 	remainingArgs = append(remainingArgs, subargs...)
+	if len(remainingArgs) <= 1 {
+		log.Debugf("failed to parse args, number of arguments insufficient: %d", len(remainingArgs))
+
+		return
+	}
 
 	com.Command = remainingArgs[0]
 	com.Args = remainingArgs[1:]
