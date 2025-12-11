@@ -116,6 +116,8 @@ func (worker *worker) registerFunctions(configuration *config) {
 }
 
 func (worker *worker) doWork(job libworker.Job) (res []byte, err error) {
+	defer logPanicExit()
+
 	res = []byte("OK")
 	log.Tracef("worker got a job: %s", job.Handle())
 
