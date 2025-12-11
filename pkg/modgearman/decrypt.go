@@ -100,12 +100,19 @@ func decodeBase64(data string) ([]byte, error) {
 *  returns a received struct
  */
 func decrypt(data []byte, encryption bool) (*request, error) {
+	data = bytes.TrimSpace(data)
+
 	if !encryption {
 		return createReceived(data)
 	}
 
 	decrypted := make([]byte, len(data))
 	size := 16
+
+	// data must be multiple of block size
+	if len(data)%size != 0 {
+		return nil, fmt.Errorf("decrypt error, invalid data package received, data must be multiple of %d bytes, has: %d", size, len(data))
+	}
 
 	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
 		myCipher.Decrypt(decrypted[bs:be], data[bs:be])

@@ -35,8 +35,16 @@ func TestDecrypt(t *testing.T) {
 	assert.Equalf(t, "test123", result.typ, "expected: %s, got:%s", "test123", result.typ)
 }
 
-func TestDecryptErrors(t *testing.T) {
+func TestDecryptErrors1(t *testing.T) {
 	brokenB64 := "VGVzdCBFbmNvZGVkIFN.-12456"
+	result, err := decryptJobData([]byte(brokenB64), true)
+	assert.Nilf(t, result, "no result expected, got:%s", result)
+	assert.Errorf(t, err, "expected an error")
+}
+
+func TestDecryptErrors2(t *testing.T) {
+	// valid base64 but invalid cipher text
+	brokenB64 := "dGVzdGFzamhka2phaHNramRoYWtqc2hka2phaGtqc2RoamthaHNkamtoYWtqc2hkawo="
 	result, err := decryptJobData([]byte(brokenB64), true)
 	assert.Nilf(t, result, "no result expected, got:%s", result)
 	assert.Errorf(t, err, "expected an error")
