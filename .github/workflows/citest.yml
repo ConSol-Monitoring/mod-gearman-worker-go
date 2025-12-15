@@ -18,12 +18,12 @@ jobs:
     - run: CGO_ENABLED=0 make
     - run: make build-windows-amd64
     - name: extract mod_gearman_worker
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: mod_gearman_worker_linux_amd64_go${{ matrix.go-version }}
         path: mod_gearman_worker
     - name: extract built send_gearman.exe
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: send_gearman_windows_amd64_go${{ matrix.go-version }}.exe
         path: send_gearman.windows.amd64.exe
