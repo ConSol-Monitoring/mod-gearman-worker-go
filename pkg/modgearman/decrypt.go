@@ -100,9 +100,9 @@ func decodeBase64(data string) ([]byte, error) {
 *  returns a received struct
  */
 func decrypt(data []byte, encryption bool) (*request, error) {
-	data = bytes.TrimSpace(data)
-
 	if !encryption {
+		data = bytes.TrimSpace(data)
+
 		return createReceived(data)
 	}
 

@@ -23,7 +23,7 @@ func TestCreateMap(t *testing.T) {
 	}
 }
 
-func TestDecrypt(t *testing.T) {
+func TestDecrypt1(t *testing.T) {
 	cfg := config{}
 	cfg.encryption = true
 	cfg.key = "LaDPjcEqfZuKnUJStXHX27bxkHLAHSbD"
@@ -33,6 +33,22 @@ func TestDecrypt(t *testing.T) {
 	result, err := decrypt(encrypted, true)
 	require.NoError(t, err)
 	assert.Equalf(t, "test123", result.typ, "expected: %s, got:%s", "test123", result.typ)
+}
+
+func TestDecrypt2(t *testing.T) {
+	testdata := `5dp7w0Fk5oJBsrnWb31CgT5LHnbgtMi7KTcXz8OWVHDVsxDK2cfcWetQfYFin97e7i3J0ORAMTqSxQ7y/rENH1nVaWb6AzewELmj+TdYX85SDUWixWStx4PjYQ9kOSMLR4vpTx568fLtFUPd/9g5iQaAtdHZkNwp4/eeASqDAKOW2CqvrJyP1rvMLX/zsXGqSWO6FQMRf19yVFBiVexAJLDDFOEiU+APBAwc8Ds1OVcXpUCIefsPgFbLbAp/i72X+9/bmCjFfueV31ikSJX/w91XW08719z413UIBFF9I7toN9neHYZhUXjIUlm7RysK`
+	cfg := config{}
+	cfg.encryption = true
+	cfg.key = `OtiuaSDFgpgEUrR6T0998egCAhCksIKh`
+	key := getKey(&cfg)
+	myCipher = createCipher(key, true)
+
+	decoded, err := decodeBase64(testdata)
+	require.NoError(t, err)
+	result, err := decrypt(decoded, true)
+	require.NoError(t, err)
+	assert.Equalf(t, "service", result.typ, "expected type")
+	assert.Equalf(t, "perl test", result.serviceDescription, "expected type")
 }
 
 func TestDecryptErrors1(t *testing.T) {
