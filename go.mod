@@ -1,6 +1,6 @@
 module github.com/consol-monitoring/mod-gearman-worker-go
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
@@ -16,6 +16,12 @@ require (
 )
 
 require (
+	github.com/consol-monitoring/check_x v0.0.0-20251223162931-7133b8f73ce9
+	github.com/prometheus/common v0.67.4
+	github.com/urfave/cli/v3 v3.6.1
+)
+
+require (
 	github.com/appscode/go v0.0.0-20201105063637-5613f3b8169f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -23,15 +29,17 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/golang/glog v1.2.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/common v0.67.3 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/sys v0.38.0 // indirect
