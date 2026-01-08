@@ -236,7 +236,7 @@ func detectFileUsesEmbeddedPerl(file string, config *config) bool {
 		linesRead++
 		if linesRead == 1 {
 			// check if first line contains perl shebang
-			if !strings.Contains(line, "/bin/perl") {
+			if !strings.Contains(line, "perl") {
 				return false
 			}
 
