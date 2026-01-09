@@ -10,11 +10,16 @@ import (
 	time "time"
 
 	"github.com/appscode/g2/client"
-	"github.com/appscode/g2/pkg/runtime"
+	g2runtime "github.com/appscode/g2/pkg/runtime"
 	libworker "github.com/appscode/g2/worker"
 )
 
 var resultChannel chan bool
+
+const (
+	testPort = "54730"
+	testHost = "127.0.0.1"
+)
 
 func BenchmarkJobs(b *testing.B) {
 	// prepare benchmark
@@ -22,7 +27,7 @@ func BenchmarkJobs(b *testing.B) {
 	resultChannel = make(chan bool, b.N)
 	resultsTotal := 0
 	cfg := config{
-		server:     []string{"127.0.0.1:54730"},
+		server:     []string{testHost + ":" + testPort},
 		key:        "testkey",
 		encryption: true,
 		hosts:      true,
@@ -36,9 +41,10 @@ func BenchmarkJobs(b *testing.B) {
 	disableLogging()
 	cmd := exec.Command(
 		"gearmand",
-		"--port", "54730",
-		"--listen", "127.0.0.1",
+		"--port", testPort,
+		"--listen", testHost,
 		"--backlog", "512",
+		"--threads", "0",
 		"--log-file", "stderr",
 		"--verbose", "DEBUG",
 	)
@@ -62,13 +68,17 @@ func BenchmarkJobs(b *testing.B) {
 	)
 	testJob := encodeBase64(encrypt([]byte(testData), true))
 
-	sender, err := client.New("tcp", "127.0.0.1:54730")
+	sender, err := client.New("tcp", testHost+":"+testPort)
+	sender.ResponseTimeout = 10 * time.Second
 	if err != nil {
 		b.Fatalf("failed to create client: %s", err.Error())
 	}
+	sender.ErrorHandler = func(err error) {
+		b.Logf("gearman client error: %s", err.Error())
+	}
 
 	resultWorker := libworker.New(libworker.OneByOne)
-	resultWorker.AddServer("tcp", "127.0.0.1:54730")
+	resultWorker.AddServer("tcp", testHost+":"+testPort)
 	resultWorker.AddFunc("results", countResults, libworker.Unlimited)
 	go resultWorker.Work()
 	defer resultWorker.Close()
@@ -88,9 +98,14 @@ func BenchmarkJobs(b *testing.B) {
 	go func() {
 		for n := range b.N {
 			// run e2e test
-			_, err := sender.DoBg("host", testJob, runtime.JobNormal)
+			ts := time.Now().Format(time.StampMicro)
+			handle, err := sender.DoBg("host", testJob, g2runtime.JobNormal)
 			if err != nil {
-				sendError = fmt.Errorf("sending job %d of %d failed: %w", n, b.N, err)
+				sendError = fmt.Errorf("sending job %d of %d failed (local time: %s / %s | handle: %s): %w", n, b.N, ts, time.Now().Format(time.StampMicro), handle, err)
+				b.Logf("%s", sendError.Error())
+				close(resultChannel)
+
+				break
 			}
 		}
 	}()
@@ -99,11 +114,12 @@ func BenchmarkJobs(b *testing.B) {
 		resultsTotal++
 	}
 	b.StopTimer()
+	sender.Close()
 	cmd.Process.Kill()
 	if sendError != nil {
 		b.Log(stdout.String())
 		b.Log(stderr.String())
-		b.Fatalf("%s", sendError.Error())
+		b.Fatalf("sending had errors (already logged)")
 	}
 }
 
