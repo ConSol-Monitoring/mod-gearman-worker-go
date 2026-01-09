@@ -9,9 +9,11 @@ import (
 
 type internalCheckPrometheus struct{}
 
-func (chk *internalCheckPrometheus) Check(ctx context.Context, output *bytes.Buffer, args []string) int {
-	// args passed to this function does not have the executable at first.
-	var argsForCheck []string = make([]string, 0)
+func (chk *internalCheckPrometheus) Check(_ context.Context, output *bytes.Buffer, args []string) int {
+	// args passed to this function does not have the executable as first element.
+	// The cli parser library of check_prometheus however expects a program name
+	// Just like a normal argc , argv invocation
+	argsForCheck := make([]string, 0)
 	argsForCheck = append(argsForCheck, "check_prometheus")
 	argsForCheck = append(argsForCheck, args...)
 
