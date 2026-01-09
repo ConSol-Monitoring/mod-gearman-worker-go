@@ -134,15 +134,13 @@ func ParseNegate(com *command) {
 	}
 
 	// recombine remaining program and args
-	remainingArgs := []string{}
-	_, subargs, suberr := shelltoken.SplitLinux(com.Command)
+	_, remainingArgs, suberr := shelltoken.SplitLinux(com.Command)
 	if suberr != nil {
 		log.Debugf("failed to parse shell args: %w: %s", suberr, suberr.Error())
 
 		return
 	}
 
-	remainingArgs = append(remainingArgs, subargs...)
 	if len(remainingArgs) <= 1 {
 		log.Debugf("failed to parse args, number of arguments insufficient: %d", len(remainingArgs))
 
