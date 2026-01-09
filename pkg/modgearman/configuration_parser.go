@@ -55,9 +55,10 @@ type config struct {
 	usePerlCache              bool
 	p1File                    string
 	// internal plugins
-	internalNegate      bool
-	internalCheckDummy  bool
-	internalCheckNscWeb bool
+	internalNegate          bool
+	internalCheckDummy      bool
+	internalCheckNscWeb     bool
+	internalCheckPrometheus bool
 	// send_gearman specific
 	timeout     int
 	delimiter   string
@@ -104,6 +105,7 @@ func (config *config) setDefaultValues() {
 	config.internalNegate = true
 	config.internalCheckDummy = true
 	config.internalCheckNscWeb = true
+	config.internalCheckPrometheus = true
 	config.workerNameInResult = "off"
 	filename, err := os.Executable()
 	if err == nil {
@@ -172,6 +174,7 @@ func (config *config) dump() {
 	log.Debugf("internal_negate               %v\n", config.internalNegate)
 	log.Debugf("internal_check_dummy          %v\n", config.internalCheckDummy)
 	log.Debugf("internal_check_nsc_web        %v\n", config.internalCheckNscWeb)
+	log.Debugf("internal_check_prometheus     %v\n", config.internalCheckPrometheus)
 	log.Debugf("worker_name_in_result         %v\n", config.workerNameInResult)
 	if config.binary == "send_gearman" {
 		log.Debugf("returncode                    %d\n", config.returnCode)
@@ -334,6 +337,8 @@ func (config *config) parseConfigItem(raw string) error {
 		config.internalCheckDummy = getBool(value)
 	case "internal_check_nsc_web":
 		config.internalCheckNscWeb = getBool(value)
+	case "internal_check_prometheus":
+		config.internalCheckPrometheus = getBool(value)
 	case "worker_name_in_result":
 		config.workerNameInResult = value
 	case "fork_on_exec":
