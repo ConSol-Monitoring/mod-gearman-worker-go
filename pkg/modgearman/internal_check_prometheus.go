@@ -13,9 +13,12 @@ func (chk *internalCheckPrometheus) Check(_ context.Context, output *bytes.Buffe
 	// args passed to this function does not have the executable as first element.
 	// The cli parser library of check_prometheus however expects a program name
 	// Just like a normal argc , argv invocation
-	argsForCheck := make([]string, 0)
-	argsForCheck = append(argsForCheck, "check_prometheus")
-	argsForCheck = append(argsForCheck, args...)
+	argsForCheck := make([]string, 1+len(args))
+
+	argsForCheck[0] = "check_prometheus"
+	for i, arg := range args {
+		argsForCheck[i+1] = arg
+	}
 
 	state, msg, collection, _ := checker.Check(argsForCheck)
 
