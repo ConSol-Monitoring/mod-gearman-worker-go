@@ -38,6 +38,7 @@ func BenchmarkJobs(b *testing.B) {
 		"gearmand",
 		"--port", "54730",
 		"--listen", "127.0.0.1",
+		"--backlog", "512",
 		"--log-file", "stderr",
 		"--verbose", "DEBUG",
 	)
@@ -85,11 +86,11 @@ func BenchmarkJobs(b *testing.B) {
 	var sendError error
 	b.StartTimer()
 	go func() {
-		for range b.N {
+		for n := range b.N {
 			// run e2e test
 			_, err := sender.DoBg("host", testJob, runtime.JobNormal)
 			if err != nil {
-				sendError = fmt.Errorf("sending job failed: %w", err)
+				sendError = fmt.Errorf("sending job %d of %d failed: %w", n, b.N, err)
 			}
 		}
 	}()
