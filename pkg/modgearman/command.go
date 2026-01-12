@@ -75,6 +75,11 @@ func parseCommand(rawCommand string, config *config) *command {
 		parsed.ExecType = Internal
 	}
 
+	if config.internalCheckPrometheus && strings.HasSuffix(parsed.Command, "/check_prometheus") {
+		parsed.InternalCheck = &internalCheckPrometheus{}
+		parsed.ExecType = Internal
+	}
+
 	return parsed
 }
 
