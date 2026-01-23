@@ -87,8 +87,8 @@ func startPrometheus(config *config) (prometheusListener net.Listener) {
 	}
 	prometheusListener = listen
 	go func() {
-		// make sure we log panics properly
 		defer logPanicExit()
+
 		mux := http.NewServeMux()
 		handler := promhttp.InstrumentMetricHandler(
 			prometheus.DefaultRegisterer,
@@ -201,6 +201,8 @@ func promCounterVecSum(counterVec *prometheus.CounterVec) (totalSum float64) {
 
 	// Run collection in a separate goroutine
 	go func() {
+		defer logPanicExit()
+
 		counterVec.Collect(metrics)
 		close(metrics)
 	}()

@@ -70,6 +70,8 @@ func setSysProcAttr(cmd *exec.Cmd) {
 
 func processTimeoutKill(proc *os.Process) {
 	go func(pid int) {
+		defer logPanicExit()
+
 		// kill the process itself and the hole process group
 		logDebug(syscall.Kill(-pid, syscall.SIGTERM))
 		time.Sleep(1 * time.Second)

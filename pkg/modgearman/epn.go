@@ -163,6 +163,8 @@ func (d *EPNDaemon) Stop(gracefulSeconds int64) {
 
 	if gracefulSeconds > 0 {
 		go func() {
+			defer logPanicExit()
+
 			time.Sleep(1 * time.Second)
 			if d.Socket != "" {
 				os.Remove(d.Socket)
@@ -174,6 +176,8 @@ func (d *EPNDaemon) Stop(gracefulSeconds int64) {
 
 	if gracefulSeconds > 0 {
 		go func() {
+			defer logPanicExit()
+
 			time.Sleep(time.Duration(gracefulSeconds) * time.Second)
 			stop()
 		}()

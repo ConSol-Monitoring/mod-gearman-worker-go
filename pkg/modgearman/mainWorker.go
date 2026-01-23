@@ -82,7 +82,6 @@ func (w *mainWorker) InitDebugOptions() {
 		runtime.SetBlockProfileRate(BlockProfileRateInterval)
 		runtime.SetMutexProfileFraction(BlockProfileRateInterval)
 		go func() {
-			// make sure we log panics properly
 			defer logPanicExit()
 			_ = hpprof.Handler("/debug/pprof/")
 			err := http.ListenAndServe(w.cfg.flagProfile, http.DefaultServeMux)
@@ -548,16 +547,16 @@ func (w *mainWorker) Shutdown(exitState MainStateType) {
 // StopAllWorker stops all check worker and the status worker
 func (w *mainWorker) StopAllWorker(state MainStateType) {
 	w.workerMapLock.RLock()
-	workerMap := w.workerMap
-	workerNum := len(workerMap)
+	workerNum := len(w.workerMap)
 	w.workerMapLock.RUnlock()
 
 	if workerNum == 0 {
 		return
 	}
 
+	w.workerMapLock.RLock()
 	exited := make(chan int, workerNum)
-	for _, wrk := range workerMap {
+	for _, wrk := range w.workerMap {
 		log.Tracef("worker removed...")
 		go func(wo *worker, ch chan int) {
 			defer logPanicExit()
@@ -566,6 +565,7 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 			ch <- 1
 		}(wrk, exited)
 	}
+	w.workerMapLock.RUnlock()
 
 	// do not wait on shutdown via sigint
 	wait := 5 * time.Second
@@ -583,11 +583,10 @@ func (w *mainWorker) StopAllWorker(state MainStateType) {
 			w.StopStatusWorker()
 			// cancel remaining worker
 			w.workerMapLock.RLock()
-			workerMap = w.workerMap
-			w.workerMapLock.RUnlock()
-			for _, wo := range workerMap {
+			for _, wo := range w.workerMap {
 				wo.Cancel()
 			}
+			w.workerMapLock.RUnlock()
 
 			return
 		case <-exited:
