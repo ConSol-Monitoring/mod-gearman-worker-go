@@ -39,8 +39,11 @@ const (
 	// OpenFilesExtraPercent adds 30% safety level when calculating required open files
 	OpenFilesExtraPercent = 1.2
 
-	// ResultServerWorker sets the number of result worker
-	ResultServerWorker = 10
+	// MinResultServerWorker sets the minimum number of result workers
+	MinResultServerWorker = 10
+
+	// MaxResultServerWorker sets the maximum number of result workers
+	MaxResultServerWorker = 100
 
 	// ResultServerQueueSize sets the queue size for results
 	ResultServerQueueSize = 1000

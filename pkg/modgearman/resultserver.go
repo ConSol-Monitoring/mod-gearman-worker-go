@@ -19,7 +19,13 @@ var (
 )
 
 func initializeResultServerConsumers(config *config) {
-	numResultServer := ResultServerWorker
+	numResultServer := max(config.maxWorker/10, MinResultServerWorker)
+	if numResultServer > MaxResultServerWorker {
+		numResultServer = MaxResultServerWorker
+	}
+	if config.numResultWorker > 0 {
+		numResultServer = config.numResultWorker
+	}
 	if numResultServer > config.maxWorker {
 		numResultServer = config.maxWorker
 	}
@@ -30,7 +36,7 @@ func initializeResultServerConsumers(config *config) {
 	// all result worker share one queue
 	resultServerQueue = make(chan *answer, ResultServerQueueSize) // queue at least 1k results before stalling
 
-	// create 10 result worker
+	// create result workers
 	for len(resultServerConsumers) < numResultServer {
 		consumer := &resultServerConsumer{
 			terminationRequest: make(chan bool),

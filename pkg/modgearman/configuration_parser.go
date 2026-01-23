@@ -32,6 +32,7 @@ type config struct {
 	jobTimeout                int
 	minWorker                 int
 	maxWorker                 int
+	numResultWorker           int
 	idleTimeout               int
 	maxAge                    int
 	spawnRate                 int
@@ -94,6 +95,7 @@ func (config *config) setDefaultValues() {
 	config.daemon = false
 	config.minWorker = 1
 	config.maxWorker = 20
+	config.numResultWorker = 0
 	config.spawnRate = 3
 	config.sinkRate = 1
 	config.backgroundingThreshold = 30
@@ -150,6 +152,7 @@ func (config *config) dump() {
 	log.Debugf("jobTimeout                    %ds\n", config.jobTimeout)
 	log.Debugf("minWorker                     %d\n", config.minWorker)
 	log.Debugf("maxWorker                     %d\n", config.maxWorker)
+	log.Debugf("numResultWorker               %d\n", config.numResultWorker)
 	log.Debugf("idleTimeout                   %ds\n", config.idleTimeout)
 	log.Debugf("maxAge                        %d\n", config.maxAge)
 	log.Debugf("spawnRate                     %d/s\n", config.spawnRate)
@@ -263,6 +266,8 @@ func (config *config) parseConfigItem(raw string) error {
 		config.minWorker = getInt(value)
 	case "max-worker":
 		config.maxWorker = getInt(value)
+	case "num-result-worker":
+		config.numResultWorker = getInt(value)
 	case "idle-timeout":
 		config.idleTimeout = getInt(value)
 	case "max-age":
