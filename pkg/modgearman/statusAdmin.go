@@ -197,7 +197,9 @@ func readConnection(conn net.Conn) (string, error) {
 	for {
 		numReadBytes, err := conn.Read(tmp)
 		if numReadBytes > 0 {
-			buffer.Write(tmp[:numReadBytes])
+			if _, werr := buffer.Write(tmp[:numReadBytes]); werr != nil {
+				return "", fmt.Errorf("error while writing to buffer -> %w", werr)
+			}
 		}
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -206,8 +208,11 @@ func readConnection(conn net.Conn) (string, error) {
 
 			return "", fmt.Errorf("error while reading from tcp connection -> %w", err)
 		}
-		if numReadBytes > 0 && tmp[numReadBytes-1] == '\n' {
-			break
+		if numReadBytes > 0 {
+			lastByteIdx := numReadBytes - 1
+			if lastByteIdx < len(tmp) && tmp[lastByteIdx] == '\n' {
+				break
+			}
 		}
 	}
 
