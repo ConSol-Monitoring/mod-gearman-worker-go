@@ -13,7 +13,10 @@ import (
 	"github.com/kdar/factorlog"
 )
 
-const ServiceAnswerSize = 4
+const (
+	ServiceAnswerSize = 4
+	HostAnswerSize    = 3
+)
 
 // Sendgearman starts the mod_gearman_worker program
 func Sendgearman(build string) {
@@ -24,9 +27,8 @@ func Sendgearman(build string) {
 		config.timeout = 10
 	}
 
-	sendSuccess, resultsCounter, lastAddress, err := sendgearmanLoop(config, result)
-
-	if !sendSuccess {
+	resultsCounter, lastAddress, err := sendgearmanLoop(config, result)
+	if err != nil {
 		log.Errorf("failed to send back result: %s", err.Error())
 		cleanExit(ExitCodeError)
 	}
@@ -58,7 +60,7 @@ func sendgearmanInit(build string) *config {
 	return config
 }
 
-func sendgearmanLoop(config *config, result *answer) (success bool, resultsCounter int, lastAddress string, err error) {
+func sendgearmanLoop(config *config, result *answer) (resultsCounter int, lastAddress string, err error) {
 	read := make([]byte, 1024*1024*1024)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(read, cap(read))
@@ -92,7 +94,6 @@ func sendgearmanLoop(config *config, result *answer) (success bool, resultsCount
 			clt, err = sendAnswer(clt, result, a, config.encryption)
 			if err == nil {
 				resultsCounter++
-				success = true
 
 				break
 			}
@@ -103,11 +104,11 @@ func sendgearmanLoop(config *config, result *answer) (success bool, resultsCount
 		}
 
 		if config.host != "" {
-			return success, resultsCounter, lastAddress, err
+			return resultsCounter, lastAddress, err
 		}
 	}
 
-	return success, resultsCounter, lastAddress, err
+	return resultsCounter, lastAddress, err
 }
 
 func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool {
@@ -130,8 +131,12 @@ func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool 
 		return false
 	}
 	err := parseLine2Answer(config, result, input)
+	if err != nil {
+		log.Errorf("parsing stdin failed: %s", err.Error())
+		cleanExit(ExitCodeError)
+	}
 
-	return err == nil
+	return true
 }
 
 func readStdinData(config *config, result *answer, scanner *bufio.Scanner) {
@@ -200,7 +205,7 @@ func parseLine2Answer(config *config, result *answer, input string) error {
 		result.serviceDescription = fields[1]
 		result.returnCode = getInt(fields[2])
 		result.output = fields[3]
-	} else {
+	} else if len(fields) >= HostAnswerSize {
 		// host result
 		result.hostName = fields[0]
 		result.serviceDescription = ""
