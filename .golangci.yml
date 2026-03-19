@@ -121,8 +121,6 @@ linters:
         text: Function 'printUsageCheckGearman' has too many statements
       - path: (.+)\.go$
         text: 'minmax: if statement can be modernized using min'
-      - path: (.+)asciiTable\.go$
-        text: 'var-naming: avoid meaningless package names'
       - path: (.+)\.go$
         text: 'net.* must not be called'
       - path: (.+)_test\.go$
@@ -130,11 +128,7 @@ linters:
       - path: (.+)statusworker\.go$
         text: 'with fmt.Appendf'
       - path: (.+)\.go$
-        text: 'G702: Command injection via taint analysis'
-      - path: (.+)\.go$
         text: 'G703: Path traversal via taint analysis'
-      - path: (.+)\.go$
-        text: 'G705: XSS via taint analysis'
 issues:
   max-same-issues: 0
 formatters:
