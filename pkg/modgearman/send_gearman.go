@@ -27,13 +27,16 @@ func Sendgearman(build string) {
 		config.timeout = 10
 	}
 
-	resultsCounter, lastAddress, err := sendgearmanLoop(config, result)
-	if err != nil {
-		log.Errorf("failed to send back result: %s", err.Error())
+	readCounter, sentCounter, errorCounter := sendgearmanLoop(config, result)
+	errorText := ""
+	if errorCounter > 0 {
+		errorText = fmt.Sprintf(", %d result(s) failed", errorCounter)
+	}
+	log.Infof("Summary: %d result(s) read, %d result(s) sent successfully%s.", readCounter, sentCounter, errorText)
+	if errorCounter > 0 {
 		cleanExit(ExitCodeError)
 	}
-	log.Infof("%d data packet(s) sent to host %s successfully.", resultsCounter, lastAddress)
-	cleanExit(ExitCodeError)
+	cleanExit(0)
 }
 
 func sendgearmanInit(build string) *config {
@@ -60,55 +63,107 @@ func sendgearmanInit(build string) *config {
 	return config
 }
 
-func sendgearmanLoop(config *config, result *answer) (resultsCounter int, lastAddress string, err error) {
+func readResults(config *config, baseResult *answer, resultsChan chan<- *answer) {
+	defer close(resultsChan)
+
 	read := make([]byte, 1024*1024*1024)
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(read, cap(read))
 
-	// send result back to any server
-	var clt *client.Client
 	for {
-		// if no host is given from command line arguments, read from stdin
+		res := *baseResult
+
 		if config.host == "" {
-			// read all fields from stdin
-			if !readStdinLine(config, result, scanner) {
+			if !readStdinLine(config, &res, scanner) {
 				break
 			}
 		} else if config.message == "" {
-			// read just the message from stdin
-			readStdinData(config, result, scanner)
-			log.Debugf("msg: %s", result.output)
+			readStdinData(config, &res, scanner)
+			log.Debugf("msg: %s", res.output)
 		}
 
-		if config.startTime <= 0 {
-			result.startTime = float64(time.Now().Unix())
+		resultsChan <- &res
+
+		if config.host != "" {
+			break
 		}
-		if config.finishTime <= 0 {
-			result.finishTime = float64(time.Now().Unix())
-		}
+	}
+}
+
+func trySendAnswerWithRetries(config *config, res *answer, clt *client.Client) (*client.Client, bool, error) {
+	var err error
+	var sent bool
+
+	for attempt := 0; attempt <= config.sendRetries; attempt++ {
 		for _, a := range config.server {
 			if clt == nil {
 				log.Debugf("connecting to: %s", a)
-				lastAddress = a
 			}
-			clt, err = sendAnswer(clt, result, a, config.encryption)
+			clt, err = sendAnswer(clt, res, a, config.encryption)
 			if err == nil {
-				resultsCounter++
+				sent = true
 
 				break
 			}
-			log.Debugf("connection failed: %w", err)
+			log.Debugf("connection failed: %v", err)
 			if clt != nil {
 				clt.Close()
+				clt = nil
 			}
 		}
 
-		if config.host != "" {
-			return resultsCounter, lastAddress, err
+		if sent {
+			break
+		}
+		if attempt < config.sendRetries {
+			log.Debugf("failed to send result, retrying in %.2f s (attempt %d/%d)", config.sendRetryInterval, attempt+1, config.sendRetries)
+			time.Sleep(time.Duration(config.sendRetryInterval * float64(time.Second)))
 		}
 	}
 
-	return resultsCounter, lastAddress, err
+	return clt, sent, err
+}
+
+func sendgearmanLoop(config *config, result *answer) (readCounter, sentCounter, errorCounter int) {
+	resultsChan := make(chan *answer, 100)
+	go readResults(config, result, resultsChan)
+
+	var clt *client.Client
+	var err error
+	var sent bool
+
+	for res := range resultsChan {
+		readCounter++
+
+		if config.startTime <= 0 {
+			res.startTime = float64(time.Now().Unix())
+		}
+		if config.finishTime <= 0 {
+			res.finishTime = float64(time.Now().Unix())
+		}
+
+		clt, sent, err = trySendAnswerWithRetries(config, res, clt)
+
+		if sent {
+			sentCounter++
+		} else {
+			errorCounter++
+			log.Errorf("failed to send back result: %v", err)
+
+			break
+		}
+	}
+
+	if clt != nil {
+		clt.Close()
+	}
+
+	// add remaining results from queue as errors
+	remaining := len(resultsChan)
+	readCounter += remaining
+	errorCounter += remaining
+
+	return readCounter, sentCounter, errorCounter
 }
 
 func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool {
@@ -247,6 +302,8 @@ options:
              [ --result_queue=<queue>       ]
              [ --message|-m=<pluginoutput>  ]
              [ --returncode|-r=<returncode> ]
+             [ --retries=<retries>          ]
+             [ --retry-interval=<seconds>   ]
 
 for sending active checks:
              [ --active                     ]

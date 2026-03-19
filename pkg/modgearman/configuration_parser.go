@@ -61,17 +61,19 @@ type config struct {
 	internalCheckNscWeb     bool
 	internalCheckPrometheus bool
 	// send_gearman specific
-	timeout     int
-	delimiter   string
-	host        string
-	service     string
-	resultQueue string
-	returnCode  int
-	message     string
-	active      bool
-	startTime   float64
-	finishTime  float64
-	latency     float64
+	timeout           int
+	delimiter         string
+	host              string
+	service           string
+	resultQueue       string
+	returnCode        int
+	message           string
+	active            bool
+	startTime         float64
+	finishTime        float64
+	latency           float64
+	sendRetries       int
+	sendRetryInterval float64
 	// worker debug profile
 	flagProfile    string
 	flagCPUProfile string
@@ -119,6 +121,8 @@ func (config *config) setDefaultValues() {
 		config.identifier = "unknown"
 	}
 	config.delimiter = "\t"
+	config.sendRetries = 0
+	config.sendRetryInterval = 1.0
 }
 
 // cleanListAttributes removes duplicate and empty entries from all string lists
@@ -350,6 +354,10 @@ func (config *config) parseConfigItem(raw string) error {
 		// skip legacy option
 	case "workaround_rc_25":
 		// skip legacy option
+	case "retries":
+		config.sendRetries = getInt(value)
+	case "retry-interval":
+		config.sendRetryInterval = getFloat(value)
 	default:
 		log.Warnf("unknown configuration option: %s", raw)
 	}

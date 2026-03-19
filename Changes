@@ -4,6 +4,7 @@ next:
           - fix crash on shutdown
           - add internal check_prometheus handler
           - switch golang version to latest 1.25.7
+          - send_gearman: add --retries  and --retry-interval arguments
 
 1.5.9    Thu Jan  8 08:55:40 CET 2026
           - improve handling of broken job data
