@@ -94,6 +94,12 @@ func trySendAnswerWithRetries(config *config, res *answer, clt *client.Client) (
 	var err error
 	var sent bool
 
+	if res.serviceDescription != "" {
+		log.Debugf("sending result for: %s - %s", res.hostName, res.serviceDescription)
+	} else {
+		log.Debugf("sending result for: %s", res.hostName)
+	}
+
 	for attempt := 0; attempt <= config.sendRetries; attempt++ {
 		for _, a := range config.server {
 			if clt == nil {
@@ -148,7 +154,7 @@ func sendgearmanLoop(config *config, result *answer) (readCounter, sentCounter, 
 			sentCounter++
 		} else {
 			errorCounter++
-			log.Errorf("failed to send back result: %v", err)
+			log.Errorf("failed to send result: %v", err)
 
 			break
 		}
@@ -185,6 +191,8 @@ func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool 
 	if input == "" {
 		return false
 	}
+	log.Debugf("input: %s", input)
+
 	err := parseLine2Answer(config, result, input)
 	if err != nil {
 		log.Errorf("parsing stdin failed: %s", err.Error())
