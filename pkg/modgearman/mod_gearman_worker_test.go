@@ -9,7 +9,6 @@ import (
 	"testing"
 	time "time"
 
-	"github.com/appscode/g2/client"
 	g2runtime "github.com/appscode/g2/pkg/runtime"
 	libworker "github.com/appscode/g2/worker"
 )
@@ -68,8 +67,7 @@ func BenchmarkJobs(b *testing.B) {
 	)
 	testJob := encodeBase64(encrypt([]byte(testData), true))
 
-	sender, err := client.New("tcp", testHost+":"+testPort)
-	sender.ResponseTimeout = 10 * time.Second
+	sender, err := buildClient(testHost + ":" + testPort)
 	if err != nil {
 		b.Fatalf("failed to create client: %s", err.Error())
 	}

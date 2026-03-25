@@ -194,7 +194,7 @@ func checkWorker(args *checkGmArgs) int {
 }
 
 func createWorkerJob(args *checkGmArgs, res *responseData) (err error) {
-	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in neamon
+	// Unique id for all tasks is just "check" because it's the main task performed and helps with performance in naemon
 	client.IdGen = &checkGearmanIDGen{}
 
 	if args.SendAsync {
@@ -202,6 +202,7 @@ func createWorkerJob(args *checkGmArgs, res *responseData) (err error) {
 		_, err = sendWorkerJobBg(args)
 		if err != nil {
 			res.statusCode = stateCritical
+			res.response = fmt.Sprintf("client: %s", err.Error())
 
 			return
 		}
@@ -209,6 +210,7 @@ func createWorkerJob(args *checkGmArgs, res *responseData) (err error) {
 		res.response, err = sendWorkerJob(args)
 		if err != nil {
 			res.statusCode = stateCritical
+			res.response = fmt.Sprintf("client: %s", err.Error())
 
 			return
 		}

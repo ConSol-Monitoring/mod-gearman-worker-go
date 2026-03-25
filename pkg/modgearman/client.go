@@ -3,10 +3,21 @@ package modgearman
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/appscode/g2/client"
 	"github.com/appscode/g2/pkg/runtime"
 )
+
+func buildClient(server string) (*client.Client, error) {
+	clt, err := client.New("tcp", server)
+	if err != nil {
+		return nil, fmt.Errorf("client: %s", err.Error())
+	}
+	clt.ResponseTimeout = 10 * time.Second
+
+	return clt, nil
+}
 
 /**
 *@input answer: the struct containing the data to be sent
@@ -14,9 +25,9 @@ import (
  */
 func sendAnswer(currentClient *client.Client, answer *answer, server string, encrypted bool) (*client.Client, error) {
 	if currentClient == nil {
-		cl1, err := client.New("tcp", server)
+		cl1, err := buildClient(server)
 		if err != nil {
-			return nil, fmt.Errorf("client: %w", err)
+			return nil, err
 		}
 		currentClient = cl1
 	}
@@ -26,17 +37,15 @@ func sendAnswer(currentClient *client.Client, answer *answer, server string, enc
 	// send the data in the background to the right queue
 	_, err := currentClient.DoBg(answer.resultQueue, byteAnswer, runtime.JobNormal)
 	if err != nil {
-		return currentClient, fmt.Errorf("bgclient: %w", err)
+		return currentClient, fmt.Errorf("client: %s", err.Error())
 	}
 
 	return currentClient, nil
 }
 
 func sendWorkerJobBg(args *checkGmArgs) (string, error) {
-	cl1, err := client.New("tcp", args.Host)
+	cl1, err := buildClient(args.Host)
 	if err != nil {
-		err = fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
-
 		return "", err
 	}
 	defer cl1.Close()
@@ -52,9 +61,9 @@ func sendWorkerJobBg(args *checkGmArgs) (string, error) {
 }
 
 func sendWorkerJob(args *checkGmArgs) (string, error) {
-	cl1, err := client.New("tcp", args.Host)
+	cl1, err := buildClient(args.Host)
 	if err != nil {
-		return "", fmt.Errorf("%s UNKNOWN - cannot create gearman client", pluginName)
+		return "", err
 	}
 	defer cl1.Close()
 
