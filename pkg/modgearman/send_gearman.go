@@ -105,7 +105,7 @@ func trySendAnswerWithRetries(config *config, res *answer, clt *client.Client) (
 			if clt == nil {
 				log.Debugf("connecting to: %s", a)
 			}
-			clt, err = sendAnswer(clt, res, a, config.encryption)
+			clt, err = sendAnswer(clt, res, a, config.encryption, time.Duration(config.timeout)*time.Second)
 			if err == nil {
 				sent = true
 
@@ -174,7 +174,8 @@ func sendgearmanLoop(config *config, result *answer) (readCounter, sentCounter, 
 
 func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-		log.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=.../--host=...", config.timeout)
+		log.Errorf("got no input after %s! Either send plugin output to stdin or use --message=.../--host=...",
+			time.Duration(config.timeout)*time.Second)
 		cleanExit(ExitCodeError)
 	})
 	if !scanner.Scan() {
@@ -204,8 +205,8 @@ func readStdinLine(config *config, result *answer, scanner *bufio.Scanner) bool 
 
 func readStdinData(config *config, result *answer, scanner *bufio.Scanner) {
 	timeout := time.AfterFunc(time.Duration(config.timeout)*time.Second, func() {
-		log.Errorf("got no input after %d seconds! Either send plugin output to stdin or use --message=...",
-			config.timeout)
+		log.Errorf("got no input after %s! Either send plugin output to stdin or use --message=...",
+			time.Duration(config.timeout)*time.Second)
 		cleanExit(ExitCodeError)
 	})
 	lines := make([]string, 0)
@@ -321,6 +322,9 @@ for sending active checks:
 
 plugin output is read from stdin unless --message is used.
 Use --message when plugin has multiple lines of plugin output.
+
+--timeout is used as timeout when reading results from stdin as well
+as when sending results to the gearman daemon.
 
 Note: When using a delimiter you may also submit one result
       for each line.

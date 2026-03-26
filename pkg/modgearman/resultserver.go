@@ -93,7 +93,7 @@ func sendResult(server *resultServerConsumer, curClient *client.Client, result *
 	for {
 		var clt *client.Client
 		for _, address := range server.config.server {
-			clt, err = sendAnswer(curClient, result, address, server.config.encryption)
+			clt, err = sendAnswer(curClient, result, address, server.config.encryption, defaultClientTimeout)
 			if err == nil {
 				curClient = clt
 				success = true

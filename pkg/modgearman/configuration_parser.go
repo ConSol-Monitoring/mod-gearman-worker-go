@@ -61,7 +61,7 @@ type config struct {
 	internalCheckNscWeb     bool
 	internalCheckPrometheus bool
 	// send_gearman specific
-	timeout           int
+	timeout           float64
 	delimiter         string
 	host              string
 	service           string
@@ -305,7 +305,7 @@ func (config *config) parseConfigItem(raw string) error {
 	case "restrict_path":
 		config.restrictPath = append(config.restrictPath, value)
 	case "timeout", "t":
-		config.timeout = getInt(value)
+		config.timeout = getFloat(value)
 	case "delimiter", "d":
 		config.delimiter = value
 	case "host":

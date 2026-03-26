@@ -86,7 +86,7 @@ func sendResultDup(clt *client.Client, item *answer, dupAddress string, config *
 		item.active = "passive"
 	}
 
-	return sendAnswer(clt, item, dupAddress, config.encryption)
+	return sendAnswer(clt, item, dupAddress, config.encryption, defaultClientTimeout)
 }
 
 func enqueueDupServerResult(config *config, result *answer) {

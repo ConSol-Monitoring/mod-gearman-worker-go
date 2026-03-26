@@ -9,12 +9,23 @@ import (
 	"github.com/appscode/g2/pkg/runtime"
 )
 
+const defaultClientTimeout = 10 * time.Second
+
 func buildClient(server string) (*client.Client, error) {
+	return buildClientWithTimeout(server, defaultClientTimeout)
+}
+
+func buildClientWithTimeout(server string, timeout time.Duration) (*client.Client, error) {
 	clt, err := client.New("tcp", server)
 	if err != nil {
 		return nil, fmt.Errorf("client: %s", err.Error())
 	}
-	clt.ResponseTimeout = 10 * time.Second
+
+	if timeout <= 0 {
+		timeout = defaultClientTimeout
+	}
+
+	clt.ResponseTimeout = timeout
 
 	return clt, nil
 }
@@ -23,9 +34,9 @@ func buildClient(server string) (*client.Client, error) {
 *@input answer: the struct containing the data to be sent
 *@input server: the server:port address where to send the data
  */
-func sendAnswer(currentClient *client.Client, answer *answer, server string, encrypted bool) (*client.Client, error) {
+func sendAnswer(currentClient *client.Client, answer *answer, server string, encrypted bool, timeout time.Duration) (*client.Client, error) {
 	if currentClient == nil {
-		cl1, err := buildClient(server)
+		cl1, err := buildClientWithTimeout(server, timeout)
 		if err != nil {
 			return nil, err
 		}
