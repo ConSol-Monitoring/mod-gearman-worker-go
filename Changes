@@ -1,6 +1,6 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.6.0    Fri Mar 27 10:26:20 CET 2026
           - fix crash on shutdown
           - add internal check_prometheus handler
           - switch golang version to latest 1.26.1
