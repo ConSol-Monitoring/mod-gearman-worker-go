@@ -5,6 +5,7 @@ next:
           - add internal check_prometheus handler
           - switch golang version to latest 1.26.1
           - send_gearman: add --retries  and --retry-interval arguments
+          - send_gearman: use --timeout to set gearman client timeout
 
 1.5.9    Thu Jan  8 08:55:40 CET 2026
           - improve handling of broken job data
