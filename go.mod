@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
-	github.com/consol-monitoring/check_nsc_web v0.7.4
+	github.com/consol-monitoring/check_nsc_web v0.7.5-0.20260331160743-69b547f20a77
 	github.com/consol-monitoring/check_prometheus v0.0.0-20260211103550-7975b0b2fb41
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
