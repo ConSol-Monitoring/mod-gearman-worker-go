@@ -471,6 +471,7 @@ Basic Settings:
        --config=<configfile>
        --server=<server>
        --dupserver=<server>
+	   -d / --daemon : Turns on the daemon mode. A second process will serve requests while the main process exits after starting it.
 
 Encryption:
        --encryption=<yes|no>
