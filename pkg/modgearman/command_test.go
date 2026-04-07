@@ -89,7 +89,7 @@ func TestEnvironmentVariablesWithInternalChecks(t *testing.T) {
 		"check_drive_io " +
 		"warn=\"write_bytes_rate > 1Mb\" "
 	cmd := parseCommand(cmdLine, &cfg)
-	assert.Equal(t, CommandExecType(Internal), cmd.ExecType)
+	assert.Equal(t, Internal, cmd.ExecType)
 	assert.Equal(t, "/omd/sites/dev/lib/monitoring-plugins/check_nsc_web", cmd.Command)
 	assert.Equal(t, []string{
 		"-u",

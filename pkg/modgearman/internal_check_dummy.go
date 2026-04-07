@@ -9,7 +9,7 @@ import (
 
 type InternalCheckDummy struct{}
 
-func (chk *InternalCheckDummy) Check(_ context.Context, output *bytes.Buffer, args, env []string) (rc int) {
+func (chk *InternalCheckDummy) Check(_ context.Context, output *bytes.Buffer, args, _ []string) (rc int) {
 	if len(args) == 0 {
 		chk.printHelp(output)
 

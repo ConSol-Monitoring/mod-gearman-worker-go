@@ -92,9 +92,11 @@ func (com *command) appendEnv(envs []string) {
 
 // converts command environment to os.Environ() style, where they turn into an []string of <key>=<value>
 func (com *command) convertEnvToArray() []string {
-	env := make([]string, len(com.Env))
+	env := make([]string, 0, len(com.Env))
+
 	for key, value := range com.Env {
 		env = append(env, key+"="+value)
 	}
+
 	return env
 }

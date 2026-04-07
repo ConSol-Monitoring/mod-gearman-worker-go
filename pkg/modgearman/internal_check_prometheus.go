@@ -9,7 +9,7 @@ import (
 
 type internalCheckPrometheus struct{}
 
-func (chk *internalCheckPrometheus) Check(_ context.Context, output *bytes.Buffer, args, env []string) int {
+func (chk *internalCheckPrometheus) Check(_ context.Context, output *bytes.Buffer, args, _ []string) int {
 	// args passed to this function does not have the executable as first element.
 	// The cli parser library of check_prometheus however expects a program name
 	// Just like a normal argc , argv invocation
