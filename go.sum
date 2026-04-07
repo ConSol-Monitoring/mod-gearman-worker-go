@@ -12,12 +12,8 @@ github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJ
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/codeskyblue/go-sh v0.0.0-20200712050446-30169cf553fe/go.mod h1:VQx0hjo2oUeQkQUET7wRwradO6f+fN5jzXgB/zROxxE=
-github.com/consol-monitoring/check_nsc_web v0.7.4 h1:EF9wO0NRmYuefSOkIB3c+oepqPRua+/cM4Znb5YQnhk=
-github.com/consol-monitoring/check_nsc_web v0.7.4/go.mod h1:erbc72XmMAiTK7IbZcclFBNjdEKB1xKVDk38dI4WR/k=
-github.com/consol-monitoring/check_nsc_web v0.7.5-0.20260327092505-fe50a2fb0020 h1:r1jtNpoFVqcsY+4jekNVqS04nppleX4TuwMlY94B3dA=
-github.com/consol-monitoring/check_nsc_web v0.7.5-0.20260327092505-fe50a2fb0020/go.mod h1:erbc72XmMAiTK7IbZcclFBNjdEKB1xKVDk38dI4WR/k=
-github.com/consol-monitoring/check_nsc_web v0.7.5-0.20260331160743-69b547f20a77 h1:bm5D62mI0ZgRrOjbApvTiNCE2RSO0rGg0v0RkrpIlg0=
-github.com/consol-monitoring/check_nsc_web v0.7.5-0.20260331160743-69b547f20a77/go.mod h1:erbc72XmMAiTK7IbZcclFBNjdEKB1xKVDk38dI4WR/k=
+github.com/consol-monitoring/check_nsc_web v0.7.5 h1:Fw7LgON8dAzADenDNDeWrVaarOTBka/PmAZD/UJeleM=
+github.com/consol-monitoring/check_nsc_web v0.7.5/go.mod h1:+CJERdSAKaQ2b5+zayinPRgny12VQYmUBcER8zquQgA=
 github.com/consol-monitoring/check_prometheus v0.0.0-20260211103550-7975b0b2fb41 h1:SBviw8FuSWWGNOShoJNJQu6ebxPtWkAN3rZhU+4sxu8=
 github.com/consol-monitoring/check_prometheus v0.0.0-20260211103550-7975b0b2fb41/go.mod h1:9N9L50PJGZXunjkeQF+GF2WODirKIPEBwbuFUg+iX/I=
 github.com/consol-monitoring/check_x v0.0.0-20260108170459-f7c19720a9ad h1:vf0rv/4E0dT4fc6A8H0hL/U9zUQBJPq2EXLEfwqc+yI=
