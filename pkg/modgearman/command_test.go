@@ -78,3 +78,26 @@ func TestCommandParser_BackslashSingle(t *testing.T) {
 	assert.Equal(t, []string{`\t\n`}, cmd.Args)
 	assert.Equal(t, map[string]string{}, cmd.Env)
 }
+
+func TestEnvironmentVariablesWithInternalChecks(t *testing.T) {
+	cfg := config{}
+	cfg.setDefaultValues()
+	cfg.internalCheckNscWeb = true
+	cmdLine := "check_nsc_web_password=hello " +
+		"/omd/sites/dev/lib/monitoring-plugins/check_nsc_web " +
+		"-u \"http://host.docker.internal:8443\" " +
+		"check_drive_io " +
+		"warn=\"write_bytes_rate > 1Mb\" "
+	cmd := parseCommand(cmdLine, &cfg)
+	assert.Equal(t, Internal, cmd.ExecType)
+	assert.Equal(t, "/omd/sites/dev/lib/monitoring-plugins/check_nsc_web", cmd.Command)
+	assert.Equal(t, []string{
+		"-u",
+		"http://host.docker.internal:8443",
+		"check_drive_io",
+		"warn=write_bytes_rate > 1Mb",
+	}, cmd.Args)
+	assert.Equal(t, map[string]string{
+		"check_nsc_web_password": "hello",
+	}, cmd.Env)
+}

@@ -9,6 +9,6 @@ import (
 
 type InternalCheckNSCWeb struct{}
 
-func (chk *InternalCheckNSCWeb) Check(ctx context.Context, output *bytes.Buffer, args []string) int {
-	return checknscweb.Check(ctx, output, args)
+func (chk *InternalCheckNSCWeb) Check(ctx context.Context, output *bytes.Buffer, args, env []string) int {
+	return checknscweb.Check(ctx, output, args, env)
 }

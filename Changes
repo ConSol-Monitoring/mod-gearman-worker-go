@@ -1,5 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+Next     -------
+          - support passing environment variables to internal checks
+          - update internal check_nsc_web handler
+
 1.6.0    Fri Mar 27 10:26:20 CET 2026
           - fix crash on shutdown
           - add internal check_prometheus handler
