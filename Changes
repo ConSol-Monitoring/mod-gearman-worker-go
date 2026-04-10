@@ -1,8 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-Next     -------
+1.7.0    Fri Apr 10 16:26:05 CEST 2026
           - support passing environment variables to internal checks
           - update internal check_nsc_web handler
+          - update dependencies
 
 1.6.0    Fri Mar 27 10:26:20 CET 2026
           - fix crash on shutdown
