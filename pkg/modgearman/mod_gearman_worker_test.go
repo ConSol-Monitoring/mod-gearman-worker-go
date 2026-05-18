@@ -58,7 +58,8 @@ func BenchmarkJobs(b *testing.B) {
 
 	key := getKey(&cfg)
 	myCipher = createCipher(key, cfg.encryption)
-	testData := fmt.Sprintf("type=host\nresult_queue=%s\nhost_name=%s\nstart_time=%f\ncore_time=%f\ncommand_line=%s\n",
+	testData := fmt.Sprintf(
+		"type=host\nresult_queue=%s\nhost_name=%s\nstart_time=%f\ncore_time=%f\ncommand_line=%s\n",
 		"results",
 		"testhost",
 		float64(time.Now().Unix()),

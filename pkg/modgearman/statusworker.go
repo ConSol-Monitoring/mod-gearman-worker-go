@@ -22,7 +22,8 @@ func (worker *worker) returnStatus(job libworker.Job) (result []byte, err error)
 	received := string(job.Data())
 	log.Tracef("job data: %s", received)
 
-	result = []byte(fmt.Sprintf("%s has %d worker and is working on %d jobs. Version: %s|worker=%d;;;%d;%d jobs=%dc",
+	result = []byte(fmt.Sprintf(
+		"%s has %d worker and is working on %d jobs. Version: %s|worker=%d;;;%d;%d jobs=%dc",
 		worker.config.identifier,
 		len(worker.mainWorker.workerMap),
 		worker.mainWorker.activeWorkers,

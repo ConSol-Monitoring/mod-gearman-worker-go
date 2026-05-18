@@ -45,7 +45,8 @@ func (a *answer) String() string {
 	if a.coreStartTime > 0 {
 		optional += fmt.Sprintf("\ncore_start_time=%f", a.coreStartTime)
 	}
-	result := fmt.Sprintf(`type=%s
+	result := fmt.Sprintf(
+		`type=%s
 host_name=%s%s
 start_time=%f
 finish_time=%f
@@ -265,9 +266,9 @@ func execCmd(command *command, received *request, result *answer, config *config
 	}
 
 	// extract stdout and stderr
-	result.output = string(bytes.TrimSpace((bytes.Trim(outBuf.Bytes(), "\x00"))))
+	result.output = string(bytes.TrimSpace(bytes.Trim(outBuf.Bytes(), "\x00")))
 	if config.showErrorOutput && result.returnCode != 0 {
-		err := string(bytes.TrimSpace((bytes.Trim(errBuf.Bytes(), "\x00"))))
+		err := string(bytes.TrimSpace(bytes.Trim(errBuf.Bytes(), "\x00")))
 		if err != "" {
 			result.output += "\n[" + err + "]"
 		}

@@ -7,6 +7,7 @@ linters:
     - err113
     - exhaustruct
     - funcorder
+    - goconst
     - gochecknoglobals
     - gochecknoinits
     - godot

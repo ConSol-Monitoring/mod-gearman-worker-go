@@ -154,13 +154,15 @@ func checkWorker(args *checkGmArgs) int {
 
 	if !args.SendAsync && args.TextToExpect != "" && res.response != "" {
 		if strings.Contains(res.response, args.TextToExpect) {
-			fmt.Fprintf(os.Stdout, "%s OK - send worker: '%s' response: '%s'\n",
+			fmt.Fprintf(
+				os.Stdout, "%s OK - send worker: '%s' response: '%s'\n",
 				pluginName,
 				args.TextToSend,
 				res.response,
 			)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s CRITICAL - send worker: '%s' response: '%s', expected '%s'\n",
+			fmt.Fprintf(
+				os.Stdout, "%s CRITICAL - send worker: '%s' response: '%s', expected '%s'\n",
 				pluginName,
 				args.TextToSend,
 				res.response,
@@ -278,21 +280,24 @@ func processServerData(queueList []queue, data *serverCheckData, args *checkGmAr
 		switch {
 		case element.Waiting > 0 && element.AvailWorker == 0:
 			data.RC = stateCritical
-			data.Message = fmt.Sprintf("Queue %s has %d job%s without any worker. ",
+			data.Message = fmt.Sprintf(
+				"Queue %s has %d job%s without any worker. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
 		case args.JobCritical > 0 && element.Waiting >= args.JobCritical:
 			data.RC = stateCritical
-			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
+			data.Message = fmt.Sprintf(
+				"Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
 			)
 		case args.WorkerCritical > 0 && element.AvailWorker >= args.WorkerCritical:
 			data.RC = stateCritical
-			data.Message = fmt.Sprintf("Queue %s has %d worker. ",
+			data.Message = fmt.Sprintf(
+				"Queue %s has %d worker. ",
 				element.Name,
 				element.AvailWorker,
 			)
@@ -301,7 +306,8 @@ func processServerData(queueList []queue, data *serverCheckData, args *checkGmAr
 			data.Message = fmt.Sprintf("Queue %s has no worker. ", element.Name)
 		case args.JobWarning > 0 && element.Waiting >= args.JobWarning:
 			data.RC = stateWarning
-			data.Message = fmt.Sprintf("Queue %s has %d waiting job%s. ",
+			data.Message = fmt.Sprintf(
+				"Queue %s has %d waiting job%s. ",
 				element.Name,
 				element.Waiting,
 				ternary(element.Waiting > 1, "s", ""),
@@ -324,7 +330,8 @@ func printData(data *serverCheckData, queueList []queue, args *checkGmArgs) {
 	fmt.Fprintf(os.Stdout, "%s ", pluginName)
 	switch data.RC {
 	case stateOk:
-		fmt.Fprintf(os.Stdout, "OK - %d job%s running and %d job%s waiting. Version: %s",
+		fmt.Fprintf(
+			os.Stdout, "OK - %d job%s running and %d job%s waiting. Version: %s",
 			data.TotalRunning,
 			ternary(data.TotalRunning == 1, "", "s"),
 			data.TotalWaiting,
@@ -347,7 +354,8 @@ func printData(data *serverCheckData, queueList []queue, args *checkGmArgs) {
 			if args.Queue != "" && args.Queue != element.Name {
 				continue
 			}
-			fmt.Fprintf(os.Stdout, "'%s_waiting'=%d;%d;%d;0 '%s_running'=%d '%s_worker'=%d;%d;%d;0 ",
+			fmt.Fprintf(
+				os.Stdout, "'%s_waiting'=%d;%d;%d;0 '%s_running'=%d '%s_worker'=%d;%d;%d;0 ",
 				element.Name,
 				element.Waiting,
 				args.JobWarning,

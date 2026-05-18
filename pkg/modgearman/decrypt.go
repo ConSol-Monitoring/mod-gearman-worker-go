@@ -50,7 +50,8 @@ func (r *request) String() string {
 		r.nextCheck,
 		r.coreTime,
 		r.timeout,
-		r.commandLine)
+		r.commandLine,
+	)
 }
 
 func createCipher(key []byte, encrypt bool) cipher.Block {

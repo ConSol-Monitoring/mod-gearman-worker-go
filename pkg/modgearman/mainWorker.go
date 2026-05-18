@@ -417,7 +417,8 @@ func (w *mainWorker) checkMemory() (ok bool, reason string) {
 
 	usedPercent := 100 - (w.memFree*100)/w.memTotal
 	if w.cfg.memLimit > 0 && usedPercent >= w.cfg.memLimit {
-		reason := fmt.Sprintf("cannot start any more worker, memory usage is too high: %d%% > %d%% (free: %s)",
+		reason := fmt.Sprintf(
+			"cannot start any more worker, memory usage is too high: %d%% > %d%% (free: %s)",
 			usedPercent,
 			w.cfg.memLimit,
 			bytes2Human(w.memFree*1024),

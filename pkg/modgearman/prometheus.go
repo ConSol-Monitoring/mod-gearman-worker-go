@@ -16,7 +16,8 @@ var (
 			Name: "modgearmanworker_info",
 			Help: "information about this worker",
 		},
-		[]string{"version", "identifier"})
+		[]string{"version", "identifier"},
+	)
 
 	workerCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "modgearmanworker_workers_total",
@@ -43,14 +44,16 @@ var (
 			Name: "modgearmanworker_tasks_completed_total",
 			Help: "total number of completed tasks since startup",
 		},
-		[]string{"type", "exec"})
+		[]string{"type", "exec"},
+	)
 
 	errorCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "modgearmanworker_tasks_errors_total",
 			Help: "total number of errors in executed plugins (plugins with exit code > 0)",
 		},
-		[]string{"type", "exec"})
+		[]string{"type", "exec"},
+	)
 
 	userTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -58,7 +61,8 @@ var (
 			Help:       "sum of the userTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
-		[]string{"description", "exec"})
+		[]string{"description", "exec"},
+	)
 
 	systemTimes = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -66,7 +70,8 @@ var (
 			Help:       "sum of the systemTimes of executed plugins",
 			Objectives: map[float64]float64{1: 0.01},
 		},
-		[]string{"description", "exec"})
+		[]string{"description", "exec"},
+	)
 )
 
 func startPrometheus(config *config) (prometheusListener net.Listener) {

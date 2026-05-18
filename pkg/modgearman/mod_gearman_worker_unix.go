@@ -40,7 +40,7 @@ func mainSignalHandler(sig os.Signal, config *config) MainStateType {
 		if config.flagMemProfile == "" {
 			log.Errorf("requested memory profile, but flag -memprofile missing")
 
-			return (Resume)
+			return Resume
 		}
 		file, err := os.Create(config.flagMemProfile)
 		if err != nil {
@@ -53,7 +53,7 @@ func mainSignalHandler(sig os.Signal, config *config) MainStateType {
 		}
 		log.Warnf("memory profile written to: %s", config.flagMemProfile)
 
-		return (Resume)
+		return Resume
 	default:
 		log.Warnf("Signal not handled: %v", sig)
 	}
