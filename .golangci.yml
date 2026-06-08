@@ -7,12 +7,13 @@ linters:
     - err113
     - exhaustruct
     - funcorder
-    - goconst
     - gochecknoglobals
     - gochecknoinits
+    - goconst
     - godot
-    - nonamedreturns
+    - gomodguard
     - noinlineerr
+    - nonamedreturns
     - paralleltest
     - perfsprint
     - tagliatelle
