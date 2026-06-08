@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"runtime/debug"
 	time "time"
 )
 
@@ -18,12 +20,12 @@ func execInternal(result *answer, cmd *command, received *request) {
 	defer cancel()
 
 	go func() {
-		defer logPanicExit()
+		defer cancel()
+		defer logPanicInternalCheck(result)
 		output := bytes.NewBuffer(nil)
 		rc := cmd.InternalCheck.Check(ctx, output, cmd.Args, cmd.convertEnvToArray())
 		result.output = output.String()
 		result.returnCode = rc
-		cancel()
 	}()
 
 	<-ctx.Done() // wait till command runs into timeout or is finished (canceled)
@@ -32,5 +34,18 @@ func execInternal(result *answer, cmd *command, received *request) {
 	case errors.Is(ctxErr, context.DeadlineExceeded):
 		result.timedOut = true
 	case errors.Is(ctxErr, context.Canceled):
+	}
+}
+
+func logPanicInternalCheck(result *answer) {
+	if rec := recover(); rec != nil {
+		log.Errorf("********* PANIC (internal check) *********")
+		log.Errorf("Panic: %s", rec)
+		log.Errorf("**** Stack:")
+		log.Errorf("%s", debug.Stack())
+		log.Errorf("******************************************")
+
+		result.output = fmt.Sprintf("UNKNOWN - internal check crashed: %s", rec)
+		result.returnCode = stateUnknown
 	}
 }
