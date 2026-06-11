@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
 	github.com/consol-monitoring/check_nsc_web v0.7.6
-	github.com/consol-monitoring/check_prometheus v0.0.0-20260508074657-98954417d5ad
+	github.com/consol-monitoring/check_prometheus v0.0.0-20260610160258-069b04a28bd9
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/nsf/termbox-go v1.1.1
@@ -36,7 +36,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/common v0.68.1 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
-	github.com/urfave/cli/v3 v3.9.0 // indirect
+	github.com/urfave/cli/v3 v3.9.1 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
