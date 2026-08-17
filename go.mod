@@ -1,6 +1,6 @@
 module github.com/consol-monitoring/mod-gearman-worker-go
 
-go 1.26.4
+go 1.26.6
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
