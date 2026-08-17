@@ -132,6 +132,7 @@ linters:
       - path: (.+)\.go$
         text: 'G703: Path traversal via taint analysis'
 issues:
+  max-issues-per-linter: 0
   max-same-issues: 0
 formatters:
   enable:

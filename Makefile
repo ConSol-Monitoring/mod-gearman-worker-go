@@ -7,8 +7,8 @@ GOVERSION:=$(shell \
     go version | \
     awk -F'go| ' '{ split($$5, a, /\./); printf ("%04d%04d", a[1], a[2]); exit; }' \
 )
-# also update all go.mod files when changing minumum version
-# find . -name go.mod (run make gomods afterwards)
+# also update other go.mod files when changing minimum version
+# find . -name go.mod
 MINGOVERSION:=00010026
 MINGOVERSIONSTR:=1.26
 BUILD:=$(shell git rev-parse --short HEAD)
@@ -17,6 +17,7 @@ BUILD:=$(shell git rev-parse --short HEAD)
 TOOLSFOLDER=$(shell pwd)/tools
 export GOBIN := $(TOOLSFOLDER)
 export PATH := $(GOBIN):$(PATH)
+GOLANG_CI_OPTIONS=--show-stats=0 --uniq-by-line=0 --timeout=5m
 
 BUILD_FLAGS=-ldflags "-s -w -X main.Build=$(BUILD)"
 TEST_FLAGS=-timeout=5m $(BUILD_FLAGS)
@@ -66,9 +67,6 @@ dump:
 		sed -i.bak -e 's/\/\/ :build.*/\/\/go:build ignore/' -e 's/\/\/ build.*/\/\/ +build ignore/' pkg/$(PROJECT)/dump.go; \
 	fi
 	rm -f pkg/$(PROJECT)/dump.go.bak
-
-gomods:
-	find . -name go.mod -exec sed -i {} -e "s/^go .*/go $(MINGOVERSIONSTR).0/" \;
 
 build: vendor
 	set -e; for CMD in $(CMDS); do \
@@ -216,9 +214,9 @@ golangci: tools
 	# See https://github.com/golangci/golangci-lint
 	#
 	@echo "  - GOOS=linux"; \
-	GOOS=linux CGO_ENABLED=0 golangci-lint run --timeout=5m pkg/... cmd/...
+	GOOS=linux CGO_ENABLED=0 golangci-lint run $(GOLANG_CI_OPTIONS) pkg/... cmd/...
 	@echo "  - GOOS=windows"; \
-	GOOS=windows CGO_ENABLED=0 golangci-lint run --timeout=5m pkg/... cmd/...
+	GOOS=windows CGO_ENABLED=0 golangci-lint run $(GOLANG_CI_OPTIONS) pkg/... cmd/...
 
 govulncheck: tools
 	govulncheck ./...
