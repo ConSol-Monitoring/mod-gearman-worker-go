@@ -6,14 +6,13 @@ require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
 	github.com/consol-monitoring/check_nsc_web v0.7.6
 	github.com/consol-monitoring/check_prometheus v0.0.0-20260610160258-069b04a28bd9
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/nsf/termbox-go v1.1.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/client_model v0.6.2
 	github.com/sevlyar/go-daemon v0.1.7
 	github.com/sni/shelltoken v0.0.0-20260716060139-9ecb2e79f09d
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 )
 
 require (
@@ -33,7 +32,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/urfave/cli/v3 v3.11.0 // indirect
