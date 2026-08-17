@@ -3,6 +3,7 @@ This file documents the revision history for the Mod-Gearman-Worker-Go
 next:
           - update dependencies
           - switch golang version to latest 1.26.6
+          - show version of internal check libraries on "-V"
 
 1.7.0    Fri Apr 10 16:26:05 CEST 2026
           - support passing environment variables to internal checks

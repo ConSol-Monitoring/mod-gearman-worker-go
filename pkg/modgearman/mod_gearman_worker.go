@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	// VERSION contains the actual lmd version
+	// VERSION contains the actual worker version
 	VERSION = "1.6.0"
 
 	// ExitCodeError is used for erroneous exits
@@ -456,6 +457,20 @@ func logThreadDump() {
 // printVersion prints the version
 func printVersion(config *config) {
 	fmt.Fprintf(os.Stdout, "%s - version %s (Build: %s, %s)\n", config.binary, VERSION, config.build, runtime.Version())
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return
+	}
+
+	fmt.Fprintf(os.Stdout, "internal check libraries:\n")
+	for _, lib := range info.Deps {
+		switch {
+		case strings.Contains(lib.Path, "/check_nsc_web"),
+			strings.Contains(lib.Path, "/check_prometheus"),
+			config.debug >= LogLevelTrace:
+			fmt.Fprintf(os.Stdout, "  - %-50s - %s\n", lib.Path, lib.Version)
+		}
+	}
 }
 
 func printUsage() {
