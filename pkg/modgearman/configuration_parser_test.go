@@ -41,6 +41,25 @@ server=hostname2
 	os.Remove("testConfigFile")
 }
 
+func TestRestrictCommandCharactersConfiguration(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		var testConfig config
+		testConfig.setDefaultValues()
+
+		assert.Equal(t, "$&();<>`\"'|", testConfig.restrictCommandCharacters)
+	})
+
+	t.Run("custom", func(t *testing.T) {
+		var testConfig config
+		testConfig.setDefaultValues()
+
+		err := testConfig.parseConfigItem("restrict_command_characters=@#")
+		require.NoError(t, err)
+
+		assert.Equal(t, "@#", testConfig.restrictCommandCharacters)
+	})
+}
+
 func TestReadSettingsPath(t *testing.T) {
 	var testConfig config
 

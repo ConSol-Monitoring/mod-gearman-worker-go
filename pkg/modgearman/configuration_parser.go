@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const defaultRestrictCommandCharacters = "$&();<>`\"'|"
+
 type config struct {
 	binary                    string
 	build                     string
@@ -47,6 +49,7 @@ type config struct {
 	dupResultsArePassive      bool
 	dupServerBacklogQueueSize int
 	restrictPath              []string
+	restrictCommandCharacters string
 	server                    []string
 	timeoutReturn             int
 	daemon                    bool
@@ -111,6 +114,7 @@ func (config *config) setDefaultValues() {
 	config.internalCheckNscWeb = true
 	config.internalCheckPrometheus = true
 	config.workerNameInResult = "off"
+	config.restrictCommandCharacters = defaultRestrictCommandCharacters
 	filename, err := os.Executable()
 	if err == nil {
 		config.p1File = path.Join(path.Dir(filename), "mod_gearman_worker_epn.pl")
@@ -171,6 +175,7 @@ func (config *config) dump() {
 	log.Debugf("dupResultsArePassive          %v\n", config.dupResultsArePassive)
 	log.Debugf("dupServerBacklogQueueSize     %d\n", config.dupServerBacklogQueueSize)
 	log.Debugf("restrictPath                  %v\n", config.restrictPath)
+	log.Debugf("restrictCommandCharacters     %s\n", config.restrictCommandCharacters)
 	log.Debugf("timeoutReturn                 %d\n", config.timeoutReturn)
 	log.Debugf("daemon                        %v\n", config.daemon)
 	log.Debugf("prometheusServer              %s\n", config.prometheusServer)
@@ -304,6 +309,8 @@ func (config *config) parseConfigItem(raw string) error {
 		// unused
 	case "restrict_path":
 		config.restrictPath = append(config.restrictPath, value)
+	case "restrict_command_characters":
+		config.restrictCommandCharacters = value
 	case "timeout", "t":
 		config.timeout = getFloat(value)
 	case "delimiter", "d":
