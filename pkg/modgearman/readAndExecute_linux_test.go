@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -12,7 +13,118 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func writeRestrictPathTestPlugin(t *testing.T, filename, body string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0o755))
+	require.NoError(t, os.WriteFile(filename, []byte("#!/bin/sh\n"+body+"\n"), 0o755))
+}
+
+func TestRestrictPathSecurity(t *testing.T) {
+	testDir := t.TempDir()
+	allowedDir := filepath.Join(testDir, "allowed")
+	outsideDir := filepath.Join(testDir, "outside")
+	allowedPlugin := filepath.Join(allowedDir, "check_allowed")
+	outsidePlugin := filepath.Join(outsideDir, "check_outside")
+	environmentPlugin := filepath.Join(allowedDir, "check_environment")
+
+	writeRestrictPathTestPlugin(t, allowedPlugin, `printf 'allowed'`)
+	writeRestrictPathTestPlugin(t, outsidePlugin, `printf 'outside'`)
+	writeRestrictPathTestPlugin(t, environmentPlugin, `printf '%s' "$RESTRICT_TEST"`)
+
+	run := func(commandLine string, configure func(*config)) *answer {
+		t.Helper()
+		cfg := config{}
+		cfg.setDefaultValues()
+		cfg.restrictPath = []string{allowedDir}
+		if configure != nil {
+			configure(&cfg)
+		}
+		result := &answer{}
+		executeCommandLine(result, &request{commandLine: commandLine, timeout: 10}, &cfg)
+
+		return result
+	}
+
+	assertRejected := func(t *testing.T, result *answer) {
+		t.Helper()
+		assert.Equal(t, "bad_path", result.execType)
+		assert.Equal(t, "command contains bad path", result.output)
+		assert.Equal(t, 3, result.returnCode)
+	}
+
+	t.Run("allows canonical executable inside restricted directory", func(t *testing.T) {
+		result := run(allowedPlugin, nil)
+
+		assert.Equal(t, "exec", result.execType)
+		assert.Equal(t, "allowed", result.output)
+		assert.Equal(t, 0, result.returnCode)
+	})
+
+	t.Run("allows environment assignment before executable", func(t *testing.T) {
+		result := run("RESTRICT_TEST=ok "+environmentPlugin, nil)
+
+		assert.Equal(t, "exec", result.execType)
+		assert.Equal(t, "ok", result.output)
+		assert.Equal(t, 0, result.returnCode)
+	})
+
+	t.Run("rejects parent directory traversal", func(t *testing.T) {
+		result := run(allowedDir+"/../outside/check_outside", nil)
+
+		assertRejected(t, result)
+	})
+
+	t.Run("rejects symlink escape", func(t *testing.T) {
+		symlinkPlugin := filepath.Join(allowedDir, "check_symlink")
+		require.NoError(t, os.Symlink(outsidePlugin, symlinkPlugin))
+
+		result := run(symlinkPlugin, nil)
+
+		assertRejected(t, result)
+	})
+
+	t.Run("rejects final executable selected by internal negate", func(t *testing.T) {
+		result := run(filepath.Join(allowedDir, "negate")+" "+outsidePlugin, nil)
+
+		assertRejected(t, result)
+	})
+
+	t.Run("rejects default restricted command character", func(t *testing.T) {
+		result := run(allowedPlugin+"; "+outsidePlugin, nil)
+
+		assertRejected(t, result)
+	})
+
+	t.Run("rejects configured command character", func(t *testing.T) {
+		result := run(allowedPlugin+" @", func(cfg *config) {
+			cfg.restrictCommandCharacters = "@"
+		})
+
+		assertRejected(t, result)
+	})
+
+	t.Run("rejects shell fallback with empty character restriction", func(t *testing.T) {
+		result := run(allowedPlugin+" 'unterminated", func(cfg *config) {
+			cfg.restrictCommandCharacters = ""
+		})
+
+		assertRejected(t, result)
+	})
+
+	t.Run("does not apply command character restriction without restrict path", func(t *testing.T) {
+		cfg := config{}
+		cfg.setDefaultValues()
+		result := &answer{}
+		executeCommandLine(result, &request{commandLine: "/bin/echo @", timeout: 10}, &cfg)
+
+		assert.Equal(t, "exec", result.execType)
+		assert.Equal(t, "@", result.output)
+		assert.Equal(t, 0, result.returnCode)
+	})
+}
 
 func TestReadAndExecute(t *testing.T) {
 	cfg := config{}

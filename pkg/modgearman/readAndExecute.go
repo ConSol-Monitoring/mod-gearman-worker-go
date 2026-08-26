@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
@@ -116,20 +117,58 @@ func readAndExecute(received *request, config *config) *answer {
 	return &result
 }
 
-func checkRestrictPath(cmdString string, restrictPath []string) bool {
-	if len(restrictPath) == 0 {
+func checkRestrictPath(command *command, rawCommand string, config *config) bool {
+	if len(config.restrictPath) == 0 {
 		return true
 	}
 
-	// check for restricted path
-	splittedString := strings.Fields(cmdString)
-	for _, v := range restrictPath {
-		if strings.HasPrefix(splittedString[0], v) {
+	if config.restrictCommandCharacters != "" &&
+		strings.ContainsAny(rawCommand, config.restrictCommandCharacters) {
+		return false
+	}
+
+	// Never fall back to a shell when command execution is restricted.
+	if command.ExecType == Shell {
+		return false
+	}
+
+	executable, err := canonicalPath(command.Command)
+	if err != nil {
+		return false
+	}
+
+	for _, allowedPath := range config.restrictPath {
+		allowedDirectory, err := canonicalPath(allowedPath)
+		if err != nil {
+			continue
+		}
+
+		relativePath, err := filepath.Rel(allowedDirectory, executable)
+		if err != nil {
+			continue
+		}
+		if relativePath != ".." &&
+			!strings.HasPrefix(relativePath, ".."+string(filepath.Separator)) &&
+			!filepath.IsAbs(relativePath) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func canonicalPath(filename string) (string, error) {
+	absolutePath, err := filepath.Abs(filename)
+	if err != nil {
+		return "", fmt.Errorf("make path absolute: %w", err)
+	}
+
+	resolvedPath, err := filepath.EvalSymlinks(absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("resolve path symlinks: %w", err)
+	}
+
+	return filepath.Clean(resolvedPath), nil
 }
 
 // executes a command in the bash, returns whatever gets printed on the bash
@@ -139,7 +178,7 @@ func executeCommandLine(result *answer, received *request, config *config) {
 	command := parseCommand(received.commandLine, config)
 	defer updatePrometheusExecMetrics(config, result, received, command)
 
-	if !checkRestrictPath(received.commandLine, config.restrictPath) {
+	if !checkRestrictPath(command, received.commandLine, config) {
 		result.execType = "bad_path"
 		taskCounter.WithLabelValues(received.typ, result.execType).Inc()
 		result.output = "command contains bad path"
