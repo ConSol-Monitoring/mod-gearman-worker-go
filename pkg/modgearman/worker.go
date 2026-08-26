@@ -253,8 +253,7 @@ func (worker *worker) executeJob(received *request) *answer {
 
 // errorHandler gets called if the libworker worker throws an error
 func (worker *worker) errorHandler(err error) {
-	var discoErr *libworker.WorkerDisconnectError
-	if errors.As(err, &discoErr) {
+	if discoErr, ok := errors.AsType[*libworker.WorkerDisconnectError](err); ok {
 		_, addr := discoErr.Server()
 		log.Debugf("worker disconnect: %w from %s", err, addr)
 		worker.mainWorker.SetServerStatus(addr, discoErr.Error())

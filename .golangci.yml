@@ -6,6 +6,7 @@ linters:
     - depguard
     - err113
     - exhaustruct
+    - exhaustruct_v5
     - funcorder
     - gochecknoglobals
     - gochecknoinits
@@ -118,7 +119,7 @@ linters:
       - path: (.+)\.go$
         text: 'Metric: modgearmanworker_workers_total Error: non-counter metrics'
       - path: (.+)\.go$
-        text: 'fieldalignment: struct'
+        text: 'fieldalignment:.*has'
       - path: (.+)\.go$
         text: Function 'printUsageCheckGearman' has too many statements
       - path: (.+)\.go$
@@ -127,8 +128,6 @@ linters:
         text: 'net.* must not be called'
       - path: (.+)_test\.go$
         text: 'exec.Command.* must not be called'
-      - path: (.+)statusworker\.go$
-        text: 'with fmt.Appendf'
       - path: (.+)\.go$
         text: 'G703: Path traversal via taint analysis'
 issues:

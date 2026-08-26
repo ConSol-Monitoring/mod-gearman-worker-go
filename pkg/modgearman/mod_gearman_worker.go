@@ -402,7 +402,7 @@ func createPidFile(path string) {
 		fmt.Fprintf(os.Stderr, "Warning: removing stale pidfile %s\n", path)
 	}
 
-	err := os.WriteFile(path, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0o644) //nolint:modernize // no need for fmt.Appendf here
+	err := os.WriteFile(path, fmt.Appendf(nil, "%d\n", os.Getpid()), 0o644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Could not write pidfile: %s\n", err.Error())
 		cleanExit(ExitCodeError)
