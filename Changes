@@ -1,5 +1,8 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
+next:
+          - fix crash in epn handler
+
 1.7.1    Thu Aug 27 16:01:10 CEST 2026
           - update dependencies
           - switch golang version to latest 1.26.6
