@@ -52,7 +52,8 @@ var (
 	// ePNFilePrefix contains prefixes to look for explicit epn flag
 	ePNFilePrefix = []string{"# nagios:", "# naemon:", "# icinga:"}
 
-	fileUsesEPNCache = make(map[string]EPNCacheItem)
+	fileUsesEPNCache     = make(map[string]EPNCacheItem)
+	fileUsesEPNCacheLock sync.RWMutex
 
 	ePNStarted *time.Time
 
@@ -211,15 +212,19 @@ func fileUsesEmbeddedPerl(file string, config *config) bool {
 		return false
 	}
 
+	fileUsesEPNCacheLock.RLock()
 	cached, ok := fileUsesEPNCache[file]
+	fileUsesEPNCacheLock.RUnlock()
 	if ok && cached.Mtime <= fileinfo.ModTime().Unix() {
 		return cached.EPN
 	}
 	fileUsesEPN := detectFileUsesEmbeddedPerl(file, config)
+	fileUsesEPNCacheLock.Lock()
 	fileUsesEPNCache[file] = EPNCacheItem{
 		Mtime: fileinfo.ModTime().Unix(),
 		EPN:   fileUsesEPN,
 	}
+	fileUsesEPNCacheLock.Unlock()
 
 	return fileUsesEPN
 }

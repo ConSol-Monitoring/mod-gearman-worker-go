@@ -169,7 +169,9 @@ func mainLoop(cfg *config, osSignalChan chan os.Signal, workerMap map[string]*wo
 	// create the logger, everything logged until here gets printed to stdOut
 	createLogger(cfg)
 
+	fileUsesEPNCacheLock.Lock()
 	fileUsesEPNCache = make(map[string]EPNCacheItem)
+	fileUsesEPNCacheLock.Unlock()
 
 	// create the cipher
 	key := getKey(cfg)
