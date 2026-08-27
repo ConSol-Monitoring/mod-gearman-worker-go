@@ -19,7 +19,7 @@ import (
 
 const (
 	// VERSION contains the actual worker version
-	VERSION = "1.6.0"
+	VERSION = "1.7.2"
 
 	// ExitCodeError is used for erroneous exits
 	ExitCodeError = 2
