@@ -213,14 +213,24 @@ func (w *mainWorker) adjustWorkerBottomLevel() {
 	}
 	// below minimum level
 	if len(w.workerMap) <= w.cfg.minWorker {
+		w.idleSince = time.Time{}
+
 		return
 	}
 	// above 90% (UtilizationWatermarkLow) utilization
-	if (w.activeWorkers / len(w.workerMap) * 100) >= UtilizationWatermarkLow {
+	if (w.activeWorkers*100)/len(w.workerMap) >= UtilizationWatermarkLow {
+		w.idleSince = time.Time{}
+
+		return
+	}
+	// start the idle timeout when utilization first drops below the watermark
+	if w.idleSince.IsZero() {
+		w.idleSince = time.Now()
+
 		return
 	}
 	// not idling long enough
-	if time.Now().Unix()-w.idleSince.Unix() <= int64(w.cfg.idleTimeout) {
+	if time.Since(w.idleSince) <= time.Duration(w.cfg.idleTimeout)*time.Second {
 		return
 	}
 

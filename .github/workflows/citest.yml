@@ -8,7 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
-    - run: sudo apt-get -y install gearman-job-server
+    - name: Install Gearman
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes gearman-job-server
     - name: Install Go
       uses: actions/setup-go@v7
       with:
