@@ -130,6 +130,8 @@ linters:
         text: 'exec.Command.* must not be called'
       - path: (.+)\.go$
         text: 'G703: Path traversal via taint analysis'
+      - path: (.+)\.mod$
+        text: 'replacement are not allowed: github.com/appscode/g2'
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
