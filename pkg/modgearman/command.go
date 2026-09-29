@@ -70,8 +70,13 @@ func parseCommand(rawCommand string, config *config) *command {
 	}
 
 	// use internal check_nsc_web implementation
-	if config.internalCheckNscWeb && strings.HasSuffix(parsed.Command, "/check_nsc_web") {
-		parsed.InternalCheck = &InternalCheckNSCWeb{}
+	if config.internalCheckSNClient && strings.HasSuffix(parsed.Command, "/check_nsc_web") {
+		parsed.InternalCheck = &InternalCheckSNClient{}
+		parsed.ExecType = Internal
+	}
+
+	if config.internalCheckSNClient && strings.HasSuffix(parsed.Command, "/check_snclient") {
+		parsed.InternalCheck = &InternalCheckSNClient{}
 		parsed.ExecType = Internal
 	}
 

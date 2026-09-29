@@ -82,7 +82,7 @@ func TestCommandParser_BackslashSingle(t *testing.T) {
 func TestEnvironmentVariablesWithInternalChecks(t *testing.T) {
 	cfg := config{}
 	cfg.setDefaultValues()
-	cfg.internalCheckNscWeb = true
+	cfg.internalCheckSNClient = true
 	cmdLine := "check_nsc_web_password=hello " +
 		"/omd/sites/dev/lib/monitoring-plugins/check_nsc_web " +
 		"-u \"http://host.docker.internal:8443\" " +

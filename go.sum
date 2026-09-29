@@ -14,6 +14,8 @@ github.com/consol-monitoring/check_nsc_web v0.7.6 h1:uhOhHOxIQF9MzHnJBhWztbMPqu4
 github.com/consol-monitoring/check_nsc_web v0.7.6/go.mod h1:9NwVC64JP/I5siKGw9JWubIQCY0vIJ1fNsrXIUChXOo=
 github.com/consol-monitoring/check_prometheus v0.0.0-20260610160258-069b04a28bd9 h1:9VKUD4xZqX6dSnJaqpS6/kbCAwOG24u5+HT0t4r00EM=
 github.com/consol-monitoring/check_prometheus v0.0.0-20260610160258-069b04a28bd9/go.mod h1:9N9L50PJGZXunjkeQF+GF2WODirKIPEBwbuFUg+iX/I=
+github.com/consol-monitoring/check_snclient v0.7.7-0.20260929110318-359ac04609f8 h1:/o7vZPTcwuQlihRNDbPLcvkjadhm2O8ePOq6mifA67w=
+github.com/consol-monitoring/check_snclient v0.7.7-0.20260929110318-359ac04609f8/go.mod h1:JCs6X1HJVU0E+vbZC2DTe6mzpstPnnzuyJRAL5pk2tg=
 github.com/consol-monitoring/check_x v0.0.0-20260709081430-c4562508a464 h1:jydMWhJBPK8jytOWm6uYdTBqk5x74vo7w8r6ssvZ0qY=
 github.com/consol-monitoring/check_x v0.0.0-20260709081430-c4562508a464/go.mod h1:NVETti6i+ZU5nH7slbTo6Muugvml+0heXX1oswt1FHE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

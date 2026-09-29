@@ -4,8 +4,8 @@ go 1.26.6
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
-	github.com/consol-monitoring/check_nsc_web v0.7.6
 	github.com/consol-monitoring/check_prometheus v0.0.0-20260610160258-069b04a28bd9
+	github.com/consol-monitoring/check_snclient v0.7.7-0.20260929110318-359ac04609f8
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/nsf/termbox-go v1.1.2
 	github.com/prometheus/client_golang v1.24.1

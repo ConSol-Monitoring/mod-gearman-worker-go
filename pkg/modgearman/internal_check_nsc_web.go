@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/consol-monitoring/check_nsc_web/pkg/checknscweb"
+	"github.com/consol-monitoring/check_snclient/pkg/checksnclient"
 )
 
-type InternalCheckNSCWeb struct{}
+type InternalCheckSNClient struct{}
 
-func (chk *InternalCheckNSCWeb) Check(ctx context.Context, output *bytes.Buffer, args, env []string) int {
-	return checknscweb.Check(ctx, output, args, env)
+func (chk *InternalCheckSNClient) Check(ctx context.Context, output *bytes.Buffer, args, env []string) int {
+	return checksnclient.Check(ctx, output, args, env)
 }
