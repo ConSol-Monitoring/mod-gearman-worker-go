@@ -1,7 +1,9 @@
 This file documents the revision history for the Mod-Gearman-Worker-Go
 
-next:
+1.7.3    Fri Oct  9 13:22:31 CEST 2026
           - add support for check_snclient
+          - fix idleTimeout and integer division utilization bug (#46)
+          - update dependencies
 
 1.7.2    Thu Aug 27 17:42:10 CEST 2026
           - fix crash in epn handler
