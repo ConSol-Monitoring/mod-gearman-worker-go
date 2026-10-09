@@ -4,7 +4,7 @@ go 1.26.6
 
 require (
 	github.com/appscode/g2 v0.0.0-20190123131438-388ba74fd273
-	github.com/consol-monitoring/check_prometheus v0.0.0-20260817100350-c4dd3c895629
+	github.com/consol-monitoring/check_prometheus v0.0.0-20261009140200-8e8657136153
 	github.com/consol-monitoring/check_snclient v0.7.7-0.20260929110318-359ac04609f8
 	github.com/kdar/factorlog v0.0.0-20211012144011-6ea75a169038
 	github.com/nsf/termbox-go v1.1.2
@@ -36,7 +36,7 @@ require (
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/urfave/cli/v3 v3.14.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
 )
