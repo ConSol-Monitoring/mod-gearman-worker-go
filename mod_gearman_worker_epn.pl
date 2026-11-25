@@ -53,6 +53,7 @@ use Cpanel::JSON::XS;
 use Socket ();
 use IO::Socket;
 use IO::Socket::UNIX;
+use IO::Handle;
 use Pod::Usage;
 use POSIX ":sys_wait_h";
 use Getopt::Long;
@@ -82,6 +83,7 @@ Getopt::Long::GetOptions(
 pod2usage( { -verbose => 2,  -exit => 3 } ) if $opt->{'help'};
 
 my $unixsocket;
+my $epn_log;
 END {
     if($unixsocket) {
         unlink($unixsocket);
@@ -95,6 +97,9 @@ our $child_procs = {};
 # listen on the socket and run the plugins
 sub _server {
     my($opt) = @_;
+    # Signal handlers need a stable handle while plugin output is captured.
+    open($epn_log, '>&', \*STDOUT) or die "Cannot duplicate stdout: $!\n";
+    $epn_log->autoflush(1);
     my $socketpath = $opt->{'socket'}->[0];
     unlink($socketpath);
     my $server = IO::Socket::UNIX->new(Local  => $socketpath,
@@ -124,7 +129,7 @@ sub _server {
 # cleanup exited child process
 sub _sigchld_handler {
     while((my $chldpid = waitpid(-1, &WNOHANG)) > 0) {
-        printf("**ePN: chld pid %d exited\n", $chldpid) if $opt->{'verbose'} > 1;
+        printf({$epn_log} "**ePN: chld pid %d exited\n", $chldpid) if $opt->{'verbose'} > 1;
         delete $child_procs->{$chldpid};
     }
     $SIG{CHLD} = \&_sigchld_handler;
@@ -137,7 +142,7 @@ sub _check_chld_timeouts {
     for my $pid (sort keys %{$child_procs}) {
         my $proc = $child_procs->{$pid};
         if($proc->{'end_time'} < $now) {
-            printf("**ePN: killing chld pid %d, %ds timeout (%s) reached but still running\n",
+            printf({$epn_log} "**ePN: killing chld pid %d, %ds timeout (%s) reached but still running\n",
                 $pid,
                 $proc->{'timeout'},
                 scalar localtime $proc->{'end_time'},
@@ -156,7 +161,7 @@ sub _check_chld_timeouts {
 sub _timeout_handler {
     _check_chld_timeouts();
     if(getppid() == 1) {
-        printf("**ePN: exiting, ppid is 1, this means usually our parent worker has gone away.\n") if $opt->{'verbose'};
+        printf({$epn_log} "**ePN: exiting, ppid is 1, this means usually our parent worker has gone away.\n") if $opt->{'verbose'};
         _clean_exit();
     }
     alarm($main_loop_interval);
